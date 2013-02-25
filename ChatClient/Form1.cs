@@ -9,8 +9,11 @@ using System.Windows.Forms;
 
 namespace ChatClient
 {
+
     public partial class Form1 : Form
     {
+        private Ports comPort;
+
         public Form1()
         {
             InitializeComponent();
@@ -18,8 +21,13 @@ namespace ChatClient
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Ports comPort = new Ports("COM3",0);
+             comPort = new Ports("COM3",0);
 
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            comPort.SendPacket("Ololololo");
         }
     }
 }
