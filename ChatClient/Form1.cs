@@ -21,13 +21,13 @@ namespace ChatClient
 
         private void Form1_Load(object sender, EventArgs e)
         {
-             comPort = new Ports("COM3",0);
+             comPort = new Ports("COM2",0);
 
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            comPort.SendPacket("Ololololo");
+            comPort.SendPacket("Ололололо");
         }
     }
 }
