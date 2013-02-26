@@ -43,29 +43,43 @@ namespace ChatClient
 
         public void SendPacket(string message)
         {
-
+            // Переводим строку в массив байтов 
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
             
+            //Массив всего выходного пакета, Header + тело сообщения(Data)
+            byte[] outPacket = new byte[10+messageBody.Length];
 
-            byte[] outPacket = new byte[8+messageBody.Length];
-
+            // Debug message
             MessageBox.Show("Sended message lenght "+messageBody.Length.ToString());
 
-            byte[] packetWithOutHash = new byte[4];
+            // Пакет без учета сигнатуры и CRC для вычисления CRC
+            byte[] packetWithOutHash = new byte[6];
 
+            //Сигнатура header'а
             outPacket[0] = 0xAA;
             outPacket[1] = 0x55;
 
-            Array.Copy(messageBody,0,outPacket,8,messageBody.Length);
+            //Адрес получателя
+            outPacket[2] = 0x00;
 
-            Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 0, 2);
+            //Адрес отправителя
+            outPacket[3] = 0x00;
 
-            packetWithOutHash[2] = 0x48;
-            packetWithOutHash[3] = 0x49;
+            // Копируем тело сообщения в позицию после Header'а
+            Array.Copy(messageBody,0,outPacket,10,messageBody.Length);
 
-            Array.Copy(packetWithOutHash, 0, outPacket, 2, 4);
+            // Вставляем длинну сообщения тела сообщения в Header'а
+            Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 2, 2);
 
-            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,6,2);
+            // Выставляем опции в Header
+            packetWithOutHash[4] = 0x48;
+            packetWithOutHash[5] = 0x49;
+
+            // Вставляем header без CRC в начало пакета 
+            Array.Copy(packetWithOutHash, 0, outPacket, 2, 6);
+
+            // Вычисляем и вставляет CRC Header'а в пакет
+            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,8,2);
 
             // just hint to array copy
 
@@ -92,18 +106,18 @@ namespace ChatClient
             {
                 if (_comPort.BytesToRead > 1 && _comPort.ReadByte() == 0xAA && _comPort.ReadByte() == 0x55)
                 {
-                    if (_comPort.BytesToRead > 5)
+                    if (_comPort.BytesToRead > 7)
                     {
                         MessageBox.Show("Ok");
 
-                        byte[] messageHeaderWithoutHash = new byte[4];
-                        _comPort.Read(messageHeaderWithoutHash, 0, 4);
+                        byte[] messageHeaderWithoutHash = new byte[6];
+                        _comPort.Read(messageHeaderWithoutHash, 0, 6);
 
                       //  MessageBox.Show("Calculated hash = " + Convert.ToString(_crc16.ComputeChecksum(messageHeaderWithoutHash))
                       //      + "Recived hash = " + Convert.ToString(BitConverter.ToUInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0)));
 
                         ushort lenght =
-                            BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[0], messageHeaderWithoutHash[1] }, 0);
+                            BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
 
                         MessageBox.Show("Lenght of recived message " + lenght.ToString());
 
