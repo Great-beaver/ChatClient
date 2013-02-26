@@ -44,13 +44,21 @@ namespace ChatClient
         public void SendPacket(string message)
         {
 
-            byte[] outPacket = new byte[8];
+            byte[] messageBody = Encoding.UTF8.GetBytes(message);
+            
+
+            byte[] outPacket = new byte[8+messageBody.Length];
+
+            MessageBox.Show("Sended message lenght "+messageBody.Length.ToString());
+
             byte[] packetWithOutHash = new byte[4];
 
             outPacket[0] = 0xAA;
             outPacket[1] = 0x55;
 
-            Array.Copy(BitConverter.GetBytes(((short)message.Length)), 0, packetWithOutHash, 0, 2);
+            Array.Copy(messageBody,0,outPacket,8,messageBody.Length);
+
+            Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 0, 2);
 
             packetWithOutHash[2] = 0x48;
             packetWithOutHash[3] = 0x49;
@@ -68,13 +76,13 @@ namespace ChatClient
            // 0 = start index in destination array
            // 3 = elements to copy
 
-            MessageBox.Show(System.Text.Encoding.UTF8.GetString(outPacket));
+         //  MessageBox.Show(System.Text.Encoding.UTF8.GetString(outPacket));
+         //
+         //  MessageBox.Show(Convert.ToString(BitConverter.ToInt16(packetWithOutHash, 2)));
 
-            MessageBox.Show(Convert.ToString(BitConverter.ToInt16(packetWithOutHash, 2)));
 
-            
 
-            _comPort.Write(outPacket,0,8);
+            _comPort.Write(outPacket, 0, outPacket.Length);
 
         }
 
@@ -94,12 +102,33 @@ namespace ChatClient
                       //  MessageBox.Show("Calculated hash = " + Convert.ToString(_crc16.ComputeChecksum(messageHeaderWithoutHash))
                       //      + "Recived hash = " + Convert.ToString(BitConverter.ToUInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0)));
 
-           
+                        ushort lenght =
+                            BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[0], messageHeaderWithoutHash[1] }, 0);
 
-                       if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0))
+                        MessageBox.Show("Lenght of recived message " + lenght.ToString());
+
+                        if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0))
                        {
                            MessageBox.Show("Hash matches!");
+                          // short lenght =
+                         //   BitConverter.ToInt16(new byte[] { messageHeaderWithoutHash[0], messageHeaderWithoutHash[1] }, 0);
+
+                           byte[] messageBody = new byte[lenght];
+
+                           _comPort.Read(messageBody, 0, lenght);
+
+                           MessageBox.Show(Encoding.UTF8.GetString(messageBody));
+
+
+
+
                        }
+                       else
+                       {
+                          MessageBox.Show("Hash NOT matches!"); 
+                       }
+                         
+                        
                 
 
               //
