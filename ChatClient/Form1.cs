@@ -27,7 +27,7 @@ namespace ChatClient
 
         private void button1_Click(object sender, EventArgs e)
         {
-            comPort.SendPacket(textBox1.Text,0);
+            comPort.SendPacket(richTextBox1.Text,0);
         }
     }
 }
