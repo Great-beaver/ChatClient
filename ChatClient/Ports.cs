@@ -18,6 +18,8 @@ namespace ChatClient
         private Crc16 _crc16 = new Crc16();
         byte[] _reciveMessageLenght;
 
+        public bool Debug = false;
+
         // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
         private bool[] _sendedPacketDelivered = new bool[5];
         
@@ -53,6 +55,30 @@ namespace ChatClient
             _readThread.Start();
         }
 
+
+        public void SendTextMessage(string message, byte toId)
+        {
+            // Переводит строку в массив байтов
+            byte[] messageBody = Encoding.UTF8.GetBytes(message);
+
+            // Массив байтов для отправки
+            byte[] messagePacket = new byte[messageBody.Length+3];
+
+            // Задает тип пакета
+            messagePacket[0] = 0x54;
+
+            // Вычисляет и вставляет CRC Header'а в пакет
+            Array.Copy(_crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
+
+            // Копирует тело сообщения в позицию после Header'а
+            Array.Copy(messageBody, 0, messagePacket, 3, messageBody.Length);
+
+            SendPacket(messagePacket, toId);
+
+
+        }
+
+
         public void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
         // Переводит строку в массив байтов 
@@ -65,8 +91,9 @@ namespace ChatClient
         public bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
             // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
-            if (!_sendedPacketDelivered[toId])
+            if (!_sendedPacketDelivered[toId] )
             {
+                MessageBox.Show("HERE");
                 return false;
             }
 
@@ -124,7 +151,14 @@ namespace ChatClient
 
             // Отправляет пакет
             _comPort.Write(outPacket, 0, outPacket.Length);
-            _sendedPacketDelivered[toId] = false;
+            
+            if (option1 != 0x06)
+            {
+                _sendedPacketDelivered[toId] = false;
+            }
+            
+
+
             return true;
             
         }
@@ -133,15 +167,18 @@ namespace ChatClient
         {
             while (_continue)
             {
-                    //Если найдена сигнатура начинается обработка пакета
+                if (Debug)
+                {
+                    MessageBox.Show("in loop");
+                    Debug = false;
+                }
+
+                //Если найдена сигнатура начинается обработка пакета
                 if (_comPort.BytesToRead >= 2 && _comPort.ReadByte() == 0xAA && _comPort.ReadByte() == 0x55)
                 {
-                    // Если количество входныъ байтов равно или более количества байтов в Header'е
+                    // Если количество входных байтов равно или более количества байтов в Header'е
                     if (_comPort.BytesToRead >= 8)
                     {
-                        // Debug message
-                        MessageBox.Show("Ok");
-
                         // Считывает header без CRC 
                         byte[] messageHeaderWithoutHash = new byte[6];
                         _comPort.Read(messageHeaderWithoutHash, 0, 6);
@@ -149,36 +186,57 @@ namespace ChatClient
                         // Сверка CRC и id
                         if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
                        {
-                            // Debug message
-                           MessageBox.Show("Hash and IDs matches!");
+                            // Вынести проверку опции в отдельный метод
 
                             // Если первый бит опций равен ACK 
+
+                           MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
+
                             if (messageHeaderWithoutHash[4]==0x06)
                             {
                                 // То сообщение клиенту от которого поступило подверждение было доставлено
                                 _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
                                 // Debug message
                                 MessageBox.Show("Сообщение доставлено!");
-                                return;
+                                //return;
+                                
                             }
 
+                            else
+                            {
+                                // Получает значение длинны тела сообщения
+                                ushort lenght =
+                               BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
 
-                           // Получает значение длинны тела сообщения
-                           ushort lenght =
-                          BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
+                                // Считывает тело сообщения 
+                                byte[] messageBody = new byte[lenght];
+                                _comPort.Read(messageBody, 0, lenght);
 
-                            // Debug message
-                           MessageBox.Show("Lenght of recived message " + lenght.ToString());
+                                // Обработка полученого пакета
+                                if (messageBody[0] == 0x54)
+                                {
+                                    byte[] messageWithOutHash = new byte[messageBody.Length - 3];
+                                    Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                                    if (_crc16.ComputeChecksum(messageWithOutHash) == BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                                    {
+                                        MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
 
-                            // Считывает тело сообщения 
-                           byte[] messageBody = new byte[lenght];
-                           _comPort.Read(messageBody, 0, lenght);
+                                        // Debug message
+                                        MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
 
-                            // Выслать подверждение получения пакета
-                           SendPacket("", messageHeaderWithoutHash[1], 0x06);
+                                        // Выслать подверждение получения пакета
+                                        SendPacket("", messageHeaderWithoutHash[1], 0x06);
 
-                            // Debug message
-                           MessageBox.Show(Encoding.UTF8.GetString(messageBody));
+                                    }
+                                }
+  
+                            }
+
+                           
+
+
+
+
                        }
                        else
                        {

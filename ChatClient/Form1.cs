@@ -27,7 +27,13 @@ namespace ChatClient
 
         private void button1_Click(object sender, EventArgs e)
         {
-            comPort.SendPacket(richTextBox1.Text,0);
+           // comPort.SendPacket(richTextBox1.Text,0);
+            comPort.SendTextMessage(richTextBox1.Text, 0);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            comPort.Debug = true;
         }
     }
 }
