@@ -19,7 +19,7 @@ namespace ChatClient
                 crc = (ushort)((crc >> 8) ^ table[index]);
             }
             return crc;
-        }
+        } 
 
         public byte[] ComputeChecksumBytes(byte[] bytes)
         {

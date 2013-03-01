@@ -13,6 +13,7 @@ namespace ChatClient
         private bool _continue = false;
         private SerialPort _comPort;
         private Thread _readThread;
+        private Thread _writeThread;
         private byte _clietnId;
         private byte[] _readBufferHeader = new byte[6];
         private Crc16 _crc16 = new Crc16();
@@ -35,6 +36,9 @@ namespace ChatClient
             _comPort.ReadTimeout = 500;
             _comPort.WriteTimeout = 500;
 
+            _comPort.WriteBufferSize = 65000;
+            _comPort.ReadBufferSize = 65000;
+
             // Пакет разрешается отправить только если значение равно true
             // При отправке пакета значение устанавливается в false
             // Пакет должен стать true после получения подтверждения о доставке или отмены доставки
@@ -50,9 +54,16 @@ namespace ChatClient
             _clietnId = id;
 
             _readThread = new Thread(Read);
+            _writeThread = new Thread(Sender);
             _comPort.Open();
             _continue = true;
             _readThread.Start();
+            _writeThread.Start("dsa");
+        }
+
+        public void Sender(object text)
+        {
+       //     MessageBox.Show(text.ToString());
         }
 
 
@@ -67,6 +78,8 @@ namespace ChatClient
 
             // Массив байтов для отправки
             byte[] messagePacket = new byte[messageBody.Length+3];
+
+            MessageBox.Show("Длина тела отправленного сообщения = " + messageBody.Length);
 
             // Задает тип пакета, 0x54 - текстовое сообщение
             messagePacket[0] = 0x54;
@@ -103,12 +116,13 @@ namespace ChatClient
             // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
 
             // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
-            if (!_sendedPacketDelivered[toId] )
-            {
-                // Debug message
-                MessageBox.Show("HERE");
-                return false;
-            }
+            // Но если сообщение является подверждением доставки то оно будет отправлено
+           if (!_sendedPacketDelivered[toId] && option1 != 0x06)
+           {
+               // Debug message
+               MessageBox.Show("HERE");
+               return false;
+           }
 
             // Если указанный id не предусмотрен
             if (toId > _sendedPacketDelivered.Length)
@@ -172,8 +186,6 @@ namespace ChatClient
                 _sendedPacketDelivered[toId] = false;
             }
             
-
-
             return true;
             
         }
@@ -189,11 +201,15 @@ namespace ChatClient
                 //Если найдена сигнатура | 0xAA 0x55 | начинается обработка пакета
                 if (_comPort.BytesToRead >= 2 && _comPort.ReadByte() == 0xAA && _comPort.ReadByte() == 0x55)
                 {
+                    MessageBox.Show("Сигнатура найдена");
+
                     // | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |
                     // |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | = 8 байт
                     // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
                     if (_comPort.BytesToRead >= 8)
                     {
+                        MessageBox.Show("Хэдер считан");
+
                         // | Получатель | Отправитель | Длинна данных |  Опции   |
                         // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
                         // Считывает header без CRC 
@@ -233,6 +249,7 @@ namespace ChatClient
                                 {
                                     byte[] messageWithOutHash = new byte[messageBody.Length - 3];
                                     Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+
                                     if (_crc16.ComputeChecksum(messageWithOutHash) == BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
                                     {
                                         MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
@@ -257,7 +274,7 @@ namespace ChatClient
                          
                     }
                     // Надо ли оно тут?!
-                    Thread.Sleep(500);
+                    Thread.Sleep(5000);
                 }
             }
 
