@@ -58,19 +58,23 @@ namespace ChatClient
 
         public void SendTextMessage(string message, byte toId)
         {
+            // Структура пакета данных текстового сообщения 
+            // | Тип пакета | Контрольная сумма данных |   Данные   |
+            // |   1 байт   |          2 байта         | 0 - x байт | 
+
             // Переводит строку в массив байтов
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
 
             // Массив байтов для отправки
             byte[] messagePacket = new byte[messageBody.Length+3];
 
-            // Задает тип пакета
+            // Задает тип пакета, 0x54 - текстовое сообщение
             messagePacket[0] = 0x54;
 
-            // Вычисляет и вставляет CRC Header'а в пакет
+            // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
             Array.Copy(_crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
 
-            // Копирует тело сообщения в позицию после Header'а
+            // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[3+]
             Array.Copy(messageBody, 0, messagePacket, 3, messageBody.Length);
 
             SendPacket(messagePacket, toId);
@@ -90,13 +94,21 @@ namespace ChatClient
 
         public bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
+            // Структура пакета
+            // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   |
+            // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт |
+            // | 0xAA 0x55 |  
+
+            // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   |
+            // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
+
             // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
             if (!_sendedPacketDelivered[toId] )
             {
+                // Debug message
                 MessageBox.Show("HERE");
                 return false;
             }
-
 
             // Если указанный id не предусмотрен
             if (toId > _sendedPacketDelivered.Length)
@@ -112,6 +124,8 @@ namespace ChatClient
             MessageBox.Show("Sended message lenght "+messageBody.Length.ToString());
 
             // Пакет без учета сигнатуры и CRC для вычисления CRC
+            // | Получатель | Отправитель | Длинна данных |  Опции   |
+            // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
             byte[] packetWithOutHash = new byte[6];
 
             //Сигнатура header'а
@@ -119,22 +133,22 @@ namespace ChatClient
             outPacket[1] = 0x55;
 
             //Адрес получателя
-            outPacket[2] = toId;
+            packetWithOutHash[0] = toId;
 
             //Адрес отправителя
-            outPacket[3] = _clietnId;
+            packetWithOutHash[1] = _clietnId;
 
-            // Копирует тело сообщения в позицию после Header'а
+            // Копирует тело сообщения в позицию после Header'а 
             Array.Copy(messageBody,0,outPacket,10,messageBody.Length);
 
-            // Вставляет длинну сообщения тела сообщения в Header'а
+            // Вставляет длинну тела сообщения в Header'а, то есть в packetWithOutHash[2-3] 
             Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 2, 2);
 
             // Выставляет опции в Header
             packetWithOutHash[4] = option1;
             packetWithOutHash[5] = option2;
 
-            // Вставляет header без CRC в начало пакета 
+            // Вставляет header без CRC и сигнатуры в начало пакета после сигнатуры 
             Array.Copy(packetWithOutHash, 0, outPacket, 2, 6);
 
             // Вычисляет и вставляет CRC Header'а в пакет
@@ -152,6 +166,7 @@ namespace ChatClient
             // Отправляет пакет
             _comPort.Write(outPacket, 0, outPacket.Length);
             
+            // Если отправляемый пакет это acknowledge то не ждать отчета о его доставки 
             if (option1 != 0x06)
             {
                 _sendedPacketDelivered[toId] = false;
@@ -167,18 +182,20 @@ namespace ChatClient
         {
             while (_continue)
             {
-                if (Debug)
-                {
-                    MessageBox.Show("in loop");
-                    Debug = false;
-                }
+                // Структура пакета
+                // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   | 
+                // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт |
 
-                //Если найдена сигнатура начинается обработка пакета
+                //Если найдена сигнатура | 0xAA 0x55 | начинается обработка пакета
                 if (_comPort.BytesToRead >= 2 && _comPort.ReadByte() == 0xAA && _comPort.ReadByte() == 0x55)
                 {
-                    // Если количество входных байтов равно или более количества байтов в Header'е
+                    // | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |
+                    // |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | = 8 байт
+                    // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
                     if (_comPort.BytesToRead >= 8)
                     {
+                        // | Получатель | Отправитель | Длинна данных |  Опции   |
+                        // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
                         // Считывает header без CRC 
                         byte[] messageHeaderWithoutHash = new byte[6];
                         _comPort.Read(messageHeaderWithoutHash, 0, 6);
@@ -186,20 +203,16 @@ namespace ChatClient
                         // Сверка CRC и id
                         if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
                        {
-                            // Вынести проверку опции в отдельный метод
-
-                            // Если первый бит опций равен ACK 
-
+                            
                            MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
-
+                    // >>> Вынести проверку опций в отдельный метод <<<
+                           // Если первый бит опций равен ACK 
                             if (messageHeaderWithoutHash[4]==0x06)
                             {
-                                // То сообщение клиенту от которого поступило подверждение было доставлено
+                                // Отправить подверждение клиенту от которого поступил пакет 
                                 _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
                                 // Debug message
                                 MessageBox.Show("Сообщение доставлено!");
-                                //return;
-                                
                             }
 
                             else
@@ -213,6 +226,9 @@ namespace ChatClient
                                 _comPort.Read(messageBody, 0, lenght);
 
                                 // Обработка полученого пакета
+                                // Структура пакета данных текстового сообщения 
+                                // | Тип пакета | Контрольная сумма данных |   Данные   |
+                                // |   1 байт   |          2 байта         | 0 - x байт | 
                                 if (messageBody[0] == 0x54)
                                 {
                                     byte[] messageWithOutHash = new byte[messageBody.Length - 3];
@@ -231,11 +247,6 @@ namespace ChatClient
                                 }
   
                             }
-
-                           
-
-
-
 
                        }
                        else
