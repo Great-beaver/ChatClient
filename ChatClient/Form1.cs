@@ -21,7 +21,7 @@ namespace ChatClient
 
         private void Form1_Load(object sender, EventArgs e)
         {
-             comPort = new Ports("COM3",0);
+            
 
         }
 
@@ -33,8 +33,7 @@ namespace ChatClient
 
         private void button2_Click(object sender, EventArgs e)
         {
-            comPort.Debug = true;
-
+            comPort = new Ports(textBox1.Text, textBox2.Text, 0);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -11,33 +12,50 @@ namespace ChatClient
     class Ports
     {
         private bool _continue = false;
-        private SerialPort _comPort;
+        private SerialPort _comPortReader;
+        private SerialPort _comPortWriter;
         private Thread _readThread;
         private Thread _writeThread;
         private byte _clietnId;
         private byte[] _readBufferHeader = new byte[6];
         private Crc16 _crc16 = new Crc16();
         byte[] _reciveMessageLenght;
+        private Queue _outMessagesQueue;
 
         public bool Debug = false;
 
         // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
         private bool[] _sendedPacketDelivered = new bool[5];
         
-        public Ports(string comPortName, byte id)
+        public Ports(string readerPortName,string writerPortName, byte id)
         {
-            _comPort = new SerialPort();
-            _comPort.PortName = comPortName;
-            _comPort.BaudRate = 9600;
-            _comPort.Parity = Parity.None;
-            _comPort.DataBits = 8;
-            _comPort.StopBits = StopBits.One;
-            _comPort.Handshake = Handshake.None;
-            _comPort.ReadTimeout = 500;
-            _comPort.WriteTimeout = 500;
+            _comPortReader = new SerialPort();
+            _comPortReader.PortName = readerPortName;
+            _comPortReader.BaudRate = 9600;
+            _comPortReader.Parity = Parity.None;
+            _comPortReader.DataBits = 8;
+            _comPortReader.StopBits = StopBits.One;
+            _comPortReader.Handshake = Handshake.None;
+            _comPortReader.ReadTimeout = 500;
+            _comPortReader.WriteTimeout = 500;
+            _comPortReader.WriteBufferSize = 65000;
+            _comPortReader.ReadBufferSize = 65000;
 
-            _comPort.WriteBufferSize = 65000;
-            _comPort.ReadBufferSize = 65000;
+          //  _comPortReader.DataReceived += new SerialDataReceivedEventHandler(_comPortReader_DataReceived);
+
+           _comPortWriter = new SerialPort();
+           _comPortWriter.PortName = writerPortName;
+           _comPortWriter.BaudRate = 9600;
+           _comPortWriter.Parity = Parity.None;
+           _comPortWriter.DataBits = 8;
+           _comPortWriter.StopBits = StopBits.One;
+           _comPortWriter.Handshake = Handshake.None;
+           _comPortWriter.ReadTimeout = 500;
+           _comPortWriter.WriteTimeout = 500;
+           _comPortWriter.WriteBufferSize = 65000;
+           _comPortWriter.ReadBufferSize = 65000;
+
+           _outMessagesQueue = new Queue(100);
 
             // Пакет разрешается отправить только если значение равно true
             // При отправке пакета значение устанавливается в false
@@ -49,23 +67,44 @@ namespace ChatClient
             _sendedPacketDelivered[4] = true;
 
             // Особая уличная кодировка для правильной отправки байтов чьё значение больше 127-ми
-            _comPort.Encoding = Encoding.GetEncoding(28591);
+            _comPortReader.Encoding = Encoding.GetEncoding(28591);
+
+            _comPortWriter.Encoding = Encoding.GetEncoding(28591);
 
             _clietnId = id;
 
             _readThread = new Thread(Read);
-            _writeThread = new Thread(Sender);
-            _comPort.Open();
+            _writeThread = new Thread(Write);
+
+            _comPortReader.Open();
+            _comPortWriter.Open();
+
             _continue = true;
             _readThread.Start();
-            _writeThread.Start("dsa");
+            _writeThread.Start();
         }
 
-        public void Sender(object text)
+    //   void _comPortReader_DataReceived(object sender, SerialDataReceivedEventArgs e)
+    //   {
+    //      // MessageBox.Show("Да да, что то пришло");
+    //       Read();
+    //   }
+
+        public void Write()
         {
-       //     MessageBox.Show(text.ToString());
-        }
 
+            while (_continue)
+            {
+                if (_outMessagesQueue.Count > 0)
+                {
+                      lock (_outMessagesQueue)
+                      {
+                            byte[] outPacket = (byte[])_outMessagesQueue.Dequeue();
+                            _comPortWriter.Write(outPacket, 0, outPacket.Length); 
+                      }
+                }
+            }
+        }
 
         public void SendTextMessage(string message, byte toId)
         {
@@ -95,7 +134,6 @@ namespace ChatClient
 
         }
 
-
         public void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
         // Переводит строку в массив байтов 
@@ -103,7 +141,6 @@ namespace ChatClient
 
             SendPacket(messageBody, toId, option1, option2);
         }
-
 
         public bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
@@ -177,8 +214,12 @@ namespace ChatClient
            // 0 = start index in destination array
            // 3 = elements to copy
 
+
+            //Добавляем пакет в оячередь на отправку
+            _outMessagesQueue.Enqueue(outPacket);
+
             // Отправляет пакет
-            _comPort.Write(outPacket, 0, outPacket.Length);
+          //  _comPortWriter.Write(outPacket, 0, outPacket.Length);
             
             // Если отправляемый пакет это acknowledge то не ждать отчета о его доставки 
             if (option1 != 0x06)
@@ -199,14 +240,14 @@ namespace ChatClient
                 // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт |
 
                 //Если найдена сигнатура | 0xAA 0x55 | начинается обработка пакета
-                if (_comPort.BytesToRead >= 2 && _comPort.ReadByte() == 0xAA && _comPort.ReadByte() == 0x55)
+                if (_comPortReader.BytesToRead >= 2 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
                 {
                     MessageBox.Show("Сигнатура найдена");
 
                     // | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |
                     // |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | = 8 байт
                     // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
-                    if (_comPort.BytesToRead >= 8)
+                    if (_comPortReader.BytesToRead >= 8)
                     {
                         MessageBox.Show("Хэдер считан");
 
@@ -214,10 +255,10 @@ namespace ChatClient
                         // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
                         // Считывает header без CRC 
                         byte[] messageHeaderWithoutHash = new byte[6];
-                        _comPort.Read(messageHeaderWithoutHash, 0, 6);
+                        _comPortReader.Read(messageHeaderWithoutHash, 0, 6);
 
                         // Сверка CRC и id
-                        if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPort.ReadByte(), (byte)_comPort.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
+                        if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
                        {
                             
                            MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
@@ -239,7 +280,7 @@ namespace ChatClient
 
                                 // Считывает тело сообщения 
                                 byte[] messageBody = new byte[lenght];
-                                _comPort.Read(messageBody, 0, lenght);
+                                _comPortReader.Read(messageBody, 0, lenght);
 
                                 // Обработка полученого пакета
                                 // Структура пакета данных текстового сообщения 
