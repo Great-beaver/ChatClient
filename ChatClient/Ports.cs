@@ -17,10 +17,9 @@ namespace ChatClient
         private Thread _readThread;
         private Thread _writeThread;
         private byte _clietnId;
-        private byte[] _readBufferHeader = new byte[6];
         private Crc16 _crc16 = new Crc16();
-        byte[] _reciveMessageLenght;
         private Queue _outMessagesQueue;
+        private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
         public bool Debug = false;
 
@@ -41,6 +40,7 @@ namespace ChatClient
             _comPortReader.WriteBufferSize = 65000;
             _comPortReader.ReadBufferSize = 65000;
 
+          // Создает событие получения данных
           //  _comPortReader.DataReceived += new SerialDataReceivedEventHandler(_comPortReader_DataReceived);
 
            _comPortWriter = new SerialPort();
@@ -68,7 +68,6 @@ namespace ChatClient
 
             // Особая уличная кодировка для правильной отправки байтов чьё значение больше 127-ми
             _comPortReader.Encoding = Encoding.GetEncoding(28591);
-
             _comPortWriter.Encoding = Encoding.GetEncoding(28591);
 
             _clietnId = id;
@@ -84,15 +83,13 @@ namespace ChatClient
             _writeThread.Start();
         }
 
+    // Событие при получении данных
     //   void _comPortReader_DataReceived(object sender, SerialDataReceivedEventArgs e)
     //   {
-    //      // MessageBox.Show("Да да, что то пришло");
-    //       Read();
     //   }
 
         public void Write()
         {
-
             while (_continue)
             {
                 if (_outMessagesQueue.Count > 0)
@@ -100,9 +97,26 @@ namespace ChatClient
                       lock (_outMessagesQueue)
                       {
                             byte[] outPacket = (byte[])_outMessagesQueue.Dequeue();
-                            _comPortWriter.Write(outPacket, 0, outPacket.Length); 
+                            _answerEvent.Reset(); 
+                            _comPortWriter.Write(outPacket, 0, outPacket.Length);
+                          if (outPacket[6] != 0x06)
+                          {
+                              if (_answerEvent.WaitOne(3000, false))
+                              {
+                                  // Debug message
+                                  MessageBox.Show("Сообщение доставлено!");
+                                  _sendedPacketDelivered[0] = true;
+                              }
+                              else
+                              {
+                                  // Debug message
+                                  MessageBox.Show("Сообщение НЕ доставлено!");
+                                  _sendedPacketDelivered[0] = true;
+                              }
+                          }
                       }
                 }
+                Thread.Sleep(100);
             }
         }
 
@@ -118,7 +132,8 @@ namespace ChatClient
             // Массив байтов для отправки
             byte[] messagePacket = new byte[messageBody.Length+3];
 
-            MessageBox.Show("Длина тела отправленного сообщения = " + messageBody.Length);
+            // Debug message
+            // MessageBox.Show("Длина тела отправленного сообщения = " + messageBody.Length);
 
             // Задает тип пакета, 0x54 - текстовое сообщение
             messagePacket[0] = 0x54;
@@ -129,9 +144,7 @@ namespace ChatClient
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[3+]
             Array.Copy(messageBody, 0, messagePacket, 3, messageBody.Length);
 
-            SendPacket(messagePacket, toId);
-
-
+            AddPacketToQueue(messagePacket, toId);
         }
 
         public void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
@@ -139,7 +152,7 @@ namespace ChatClient
         // Переводит строку в массив байтов 
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
 
-            SendPacket(messageBody, toId, option1, option2);
+            AddPacketToQueue(messageBody, toId, option1, option2);
         }
 
         public bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
@@ -154,12 +167,79 @@ namespace ChatClient
 
             // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
             // Но если сообщение является подверждением доставки то оно будет отправлено
-           if (!_sendedPacketDelivered[toId] && option1 != 0x06)
-           {
-               // Debug message
-               MessageBox.Show("HERE");
-               return false;
-           }
+            if (!_sendedPacketDelivered[toId] && option1 != 0x06)
+            {
+                // Debug message
+                MessageBox.Show("HERE");
+                return false;
+            }
+
+            // Если указанный id не предусмотрен
+            if (toId > _sendedPacketDelivered.Length)
+            {
+                MessageBox.Show("Клиента с таким id не существует");
+                return false;
+            }
+
+            //Массив всего выходного пакета, Header + тело сообщения(Data)
+            byte[] outPacket = new byte[10 + messageBody.Length];
+
+            // Пакет без учета сигнатуры и CRC для вычисления CRC
+            // | Получатель | Отправитель | Длинна данных |  Опции   |
+            // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
+            byte[] packetWithOutHash = new byte[6];
+
+            //Сигнатура header'а
+            outPacket[0] = 0xAA;
+            outPacket[1] = 0x55;
+
+            //Адрес получателя
+            packetWithOutHash[0] = toId;
+
+            //Адрес отправителя
+            packetWithOutHash[1] = _clietnId;
+
+            // Копирует тело сообщения в позицию после Header'а 
+            Array.Copy(messageBody, 0, outPacket, 10, messageBody.Length);
+
+            // Вставляет длинну тела сообщения в Header'а, то есть в packetWithOutHash[2-3] 
+            Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 2, 2);
+
+            // Выставляет опции в Header
+            packetWithOutHash[4] = option1;
+            packetWithOutHash[5] = option2;
+
+            // Вставляет header без CRC и сигнатуры в начало пакета после сигнатуры 
+            Array.Copy(packetWithOutHash, 0, outPacket, 2, 6);
+
+            // Вычисляет и вставляет CRC Header'а в пакет
+            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash), 0, outPacket, 8, 2);
+
+            //Добавляем пакет в оячередь на отправку
+            _outMessagesQueue.Enqueue(outPacket);
+
+            // Отправляет пакет
+            //  _comPortWriter.Write(outPacket, 0, outPacket.Length);
+
+            // Если отправляемый пакет это acknowledge то не ждать отчета о его доставки 
+            if (option1 != 0x06)
+            {
+                _sendedPacketDelivered[toId] = false;
+            }
+            return true;
+        }
+
+
+        public bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
+        {
+            // Структура пакета
+            // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   |
+            // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт |
+            // | 0xAA 0x55 |  
+
+            // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   |
+            // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
+
 
             // Если указанный id не предусмотрен
             if (toId > _sendedPacketDelivered.Length)
@@ -170,9 +250,6 @@ namespace ChatClient
 
             //Массив всего выходного пакета, Header + тело сообщения(Data)
             byte[] outPacket = new byte[10+messageBody.Length];
-
-            // Debug message
-            MessageBox.Show("Sended message lenght "+messageBody.Length.ToString());
 
             // Пакет без учета сигнатуры и CRC для вычисления CRC
             // | Получатель | Отправитель | Длинна данных |  Опции   |
@@ -205,16 +282,6 @@ namespace ChatClient
             // Вычисляет и вставляет CRC Header'а в пакет
             Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,8,2);
 
-            // just hint to array copy
-
-           // Array.Copy(a, 1, b, 0, 3);
-           // a = source array
-           // 1 = start index in source array
-           // b = destination array
-           // 0 = start index in destination array
-           // 3 = elements to copy
-
-
             //Добавляем пакет в оячередь на отправку
             _outMessagesQueue.Enqueue(outPacket);
 
@@ -226,9 +293,7 @@ namespace ChatClient
             {
                 _sendedPacketDelivered[toId] = false;
             }
-            
             return true;
-            
         }
 
         private void Read()
@@ -242,14 +307,16 @@ namespace ChatClient
                 //Если найдена сигнатура | 0xAA 0x55 | начинается обработка пакета
                 if (_comPortReader.BytesToRead >= 2 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
                 {
-                    MessageBox.Show("Сигнатура найдена");
+                    // Debug message
+                    // MessageBox.Show("Сигнатура найдена");
 
                     // | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |
                     // |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | = 8 байт
                     // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
                     if (_comPortReader.BytesToRead >= 8)
                     {
-                        MessageBox.Show("Хэдер считан");
+                        // Debug message
+                        // MessageBox.Show("Хэдер считан");
 
                         // | Получатель | Отправитель | Длинна данных |  Опции   |
                         // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
@@ -260,16 +327,17 @@ namespace ChatClient
                         // Сверка CRC и id
                         if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
                        {
-                            
-                           MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
+                           // Debug message
+                           // MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
                     // >>> Вынести проверку опций в отдельный метод <<<
                            // Если первый бит опций равен ACK 
                             if (messageHeaderWithoutHash[4]==0x06)
                             {
                                 // Отправить подверждение клиенту от которого поступил пакет 
                                 _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
+                                _answerEvent.Set();
                                 // Debug message
-                                MessageBox.Show("Сообщение доставлено!");
+                              //  MessageBox.Show("Сообщение доставлено!");
                             }
 
                             else
@@ -293,7 +361,8 @@ namespace ChatClient
 
                                     if (_crc16.ComputeChecksum(messageWithOutHash) == BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
                                     {
-                                        MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
+                                        // Debug message
+                                        // MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
 
                                         // Debug message
                                         MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
@@ -303,9 +372,7 @@ namespace ChatClient
 
                                     }
                                 }
-  
                             }
-
                        }
                        else
                        {
@@ -314,9 +381,9 @@ namespace ChatClient
                        }
                          
                     }
-                    // Надо ли оно тут?!
-                    Thread.Sleep(5000);
                 }
+                // Надо ли оно тут?!
+                Thread.Sleep(100);
             }
 
         }
