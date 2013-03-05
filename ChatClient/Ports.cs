@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -20,8 +21,6 @@ namespace ChatClient
         private Crc16 _crc16 = new Crc16();
         private Queue _outMessagesQueue;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
-
-        public bool Debug = false;
 
         // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
         private bool[] _sendedPacketDelivered = new bool[5];
@@ -88,7 +87,7 @@ namespace ChatClient
     //   {
     //   }
 
-        public void Write()
+        private void Write()
         {
             while (_continue)
             {
@@ -132,19 +131,15 @@ namespace ChatClient
             // Переводит строку в массив байтов
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
 
+            // Архивирет сообщение если его длина более 1000 байт
             if (messageBody.Length>1000)
             {
-                MessageBox.Show("Before  " + messageBody.Length.ToString());
-                messageBody = Compressor.Zip(messageBody);
-                option2 = 0x43;
-                MessageBox.Show("Sended message lenght " + messageBody.Length.ToString());
+                messageBody = Compressor.Zip(messageBody); // Архивация
+                option2 = 0x43; // Выставляем байт опций означающий что сообщение заархивировано
             }
 
-            // Массив байтов для отправки
+            // Массив байтов для отправки 
             byte[] messagePacket = new byte[messageBody.Length+3];
-
-            // Debug message
-            // MessageBox.Show("Длина тела отправленного сообщения = " + messageBody.Length);
 
             // Задает тип пакета, 0x54 - текстовое сообщение
             messagePacket[0] = 0x54;
@@ -157,6 +152,53 @@ namespace ChatClient
 
             AddPacketToQueue(messagePacket, toId, option1, option2);
         }
+
+        public void SendFileTransferRequest(string filePath, byte toId)
+        {
+            // Структура пакета запроса на передачу файла
+            // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
+            // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
+
+            FileInfo file = new FileInfo(filePath);
+
+            MessageBox.Show(file.Length.ToString());
+
+            if (Encoding.UTF8.GetBytes(file.Name).Length>=1023)
+            {
+                MessageBox.Show("Слишком длинное имя файла");
+                return;
+            }
+
+            if (!(File.Exists(filePath)))
+            {
+                MessageBox.Show("Файла не существует");
+                return;
+            }
+
+            // Устанавливает длину конкретного пакета
+            byte[] packet = new byte[11 + Encoding.UTF8.GetBytes(file.Name).Length];
+
+            // Устанавливает длину пакета для вычисления контрольной суммы
+            byte[] packetWithOutHash = new byte[8 + Encoding.UTF8.GetBytes(file.Name).Length];
+
+            // Тип сообщения - запрос на передачу файла
+            packet[0] = 0x52;
+
+            // Вставляет длину файла в пакет для вычисления CRC
+            Array.Copy(BitConverter.GetBytes(file.Length), 0, packetWithOutHash, 0, 8);
+
+            //Вставляет имя файла в пакет для вычисления CRC
+            Array.Copy(Encoding.UTF8.GetBytes(file.Name), 0, packetWithOutHash, 8, Encoding.UTF8.GetBytes(file.Name).Length);
+
+            // Вычисляет и вставляет CRC в пакет
+            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash), 0, packet, 1, 2);
+
+            Array.Copy(packetWithOutHash,0,packet,3,packetWithOutHash.Length);
+
+            AddPacketToQueue(packet, toId);
+        }
+
+        //private void SendFIleTransferAnswer ()
 
         public void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
@@ -178,6 +220,7 @@ namespace ChatClient
 
             // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
             // Но если сообщение является подверждением доставки то оно будет отправлено
+ 
             if (!_sendedPacketDelivered[toId] && option1 != 0x06)
             {
                 // Debug message
@@ -240,8 +283,7 @@ namespace ChatClient
             return true;
         }
 
-
-        public bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
+        private bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
             // Структура пакета
             // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   |
@@ -250,7 +292,6 @@ namespace ChatClient
 
             // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   |
             // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
-
 
             // Если указанный id не предусмотрен
             if (toId > _sendedPacketDelivered.Length)
@@ -293,17 +334,9 @@ namespace ChatClient
             // Вычисляет и вставляет CRC Header'а в пакет
             Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,8,2);
 
-            //Добавляем пакет в оячередь на отправку
+            //Добавляем пакет в очередь на отправку
             _outMessagesQueue.Enqueue(outPacket);
 
-            // Отправляет пакет
-          //  _comPortWriter.Write(outPacket, 0, outPacket.Length);
-            
-            // Если отправляемый пакет это acknowledge то не ждать отчета о его доставки 
-            if (option1 != 0x06)
-            {
-                _sendedPacketDelivered[toId] = false;
-            }
             return true;
         }
 
@@ -375,24 +408,39 @@ namespace ChatClient
                                         // Debug message
                                         // MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
 
-                                        MessageBox.Show("message lenght before " + messageWithOutHash.Length.ToString());
-
+                                        // Проверяет необходимоли разархивировать сообщение
                                         if (messageHeaderWithoutHash[5] == 0x43)
                                         {
                                             messageWithOutHash = Compressor.Unzip(messageWithOutHash);
-                                            MessageBox.Show("message lenght after " + messageWithOutHash.Length.ToString());
-
                                         }
-                            
 
                                         // Debug message
                                         MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
 
                                         // Выслать подверждение получения пакета
                                         SendPacket("", messageHeaderWithoutHash[1], 0x06);
-
                                     }
                                 }
+
+                                if (messageBody[0] == 0x52)
+                                {
+                                    byte[] messageWithOutHash = new byte[messageBody.Length - 3];
+                                    Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                                    
+                                    
+                                    if (_crc16.ComputeChecksum(messageWithOutHash) == BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                                    {
+                                        MessageBox.Show("Совпал хеш по запросу");
+                                        SendPacket("", messageHeaderWithoutHash[1], 0x06);
+
+
+                                        MessageBox.Show("Размер файла = " + BitConverter.ToInt64(messageWithOutHash, 0).ToString() +'\n'+
+                                           "Имя файла = " + Encoding.UTF8.GetString(messageWithOutHash, 8, messageWithOutHash.Length - 8));
+                                    }
+                                }
+
+
+
                             }
                        }
                        else
@@ -408,7 +456,6 @@ namespace ChatClient
             }
 
         }
-
 
     }
 }
