@@ -126,8 +126,19 @@ namespace ChatClient
             // | Тип пакета | Контрольная сумма данных |   Данные   |
             // |   1 байт   |          2 байта         | 0 - x байт | 
 
+            byte option1 = 0x00;
+            byte option2 = 0x00;
+
             // Переводит строку в массив байтов
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
+
+            if (messageBody.Length>1000)
+            {
+                MessageBox.Show("Before  " + messageBody.Length.ToString());
+                messageBody = Compressor.Zip(messageBody);
+                option2 = 0x43;
+                MessageBox.Show("Sended message lenght " + messageBody.Length.ToString());
+            }
 
             // Массив байтов для отправки
             byte[] messagePacket = new byte[messageBody.Length+3];
@@ -144,7 +155,7 @@ namespace ChatClient
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[3+]
             Array.Copy(messageBody, 0, messagePacket, 3, messageBody.Length);
 
-            AddPacketToQueue(messagePacket, toId);
+            AddPacketToQueue(messagePacket, toId, option1, option2);
         }
 
         public void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
@@ -363,6 +374,16 @@ namespace ChatClient
                                     {
                                         // Debug message
                                         // MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
+
+                                        MessageBox.Show("message lenght before " + messageWithOutHash.Length.ToString());
+
+                                        if (messageHeaderWithoutHash[5] == 0x43)
+                                        {
+                                            messageWithOutHash = Compressor.Unzip(messageWithOutHash);
+                                            MessageBox.Show("message lenght after " + messageWithOutHash.Length.ToString());
+
+                                        }
+                            
 
                                         // Debug message
                                         MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
