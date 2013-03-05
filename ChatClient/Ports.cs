@@ -200,7 +200,7 @@ namespace ChatClient
 
         //private void SendFIleTransferAnswer ()
 
-        public void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
+        private void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
         // Переводит строку в массив байтов 
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
@@ -208,7 +208,7 @@ namespace ChatClient
             AddPacketToQueue(messageBody, toId, option1, option2);
         }
 
-        public bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
+        private bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
             // Структура пакета
             // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   |
@@ -221,12 +221,12 @@ namespace ChatClient
             // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
             // Но если сообщение является подверждением доставки то оно будет отправлено
  
-            if (!_sendedPacketDelivered[toId] && option1 != 0x06)
-            {
-                // Debug message
-                MessageBox.Show("HERE");
-                return false;
-            }
+       //  if (!_sendedPacketDelivered[toId] && option1 != 0x06)
+       //  {
+       //      // Debug message
+       //      MessageBox.Show("HERE");
+       //      return false;
+       //  }
 
             // Если указанный id не предусмотрен
             if (toId > _sendedPacketDelivered.Length)
@@ -384,8 +384,17 @@ namespace ChatClient
                               //  MessageBox.Show("Сообщение доставлено!");
                             }
 
-                            else
+                            if (messageHeaderWithoutHash[4] == 0x41)
                             {
+                                // Debug message
+                                  MessageBox.Show("Запрос одобрен!!");
+
+                                  // Выслать подверждение получения пакета
+                                  SendPacket("", messageHeaderWithoutHash[1], 0x06);
+
+                            }
+
+                            
                                 // Получает значение длинны тела сообщения
                                 ushort lenght =
                                BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
@@ -394,54 +403,65 @@ namespace ChatClient
                                 byte[] messageBody = new byte[lenght];
                                 _comPortReader.Read(messageBody, 0, lenght);
 
-                                // Обработка полученого пакета
-                                // Структура пакета данных текстового сообщения 
-                                // | Тип пакета | Контрольная сумма данных |   Данные   |
-                                // |   1 байт   |          2 байта         | 0 - x байт | 
-                                if (messageBody[0] == 0x54)
-                                {
-                                    byte[] messageWithOutHash = new byte[messageBody.Length - 3];
-                                    Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                           if (messageBody.Length > 0)
+                           {
+                               // Обработка полученого пакета
+                               // Структура пакета данных текстового сообщения 
+                               // | Тип пакета | Контрольная сумма данных |   Данные   |
+                               // |   1 байт   |          2 байта         | 0 - x байт | 
+                               if (messageBody[0] == 0x54)
+                               {
+                                   byte[] messageWithOutHash = new byte[messageBody.Length - 3];
+                                   Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
-                                    if (_crc16.ComputeChecksum(messageWithOutHash) == BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
-                                    {
-                                        // Debug message
-                                        // MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
+                                   if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                                       BitConverter.ToUInt16(new byte[] {messageBody[1], messageBody[2]}, 0))
+                                   {
+                                       // Debug message
+                                       // MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
 
-                                        // Проверяет необходимоли разархивировать сообщение
-                                        if (messageHeaderWithoutHash[5] == 0x43)
-                                        {
-                                            messageWithOutHash = Compressor.Unzip(messageWithOutHash);
-                                        }
+                                       // Проверяет необходимоли разархивировать сообщение
+                                       if (messageHeaderWithoutHash[5] == 0x43)
+                                       {
+                                           messageWithOutHash = Compressor.Unzip(messageWithOutHash);
+                                       }
 
-                                        // Debug message
-                                        MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
+                                       // Debug message
+                                       MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
 
-                                        // Выслать подверждение получения пакета
-                                        SendPacket("", messageHeaderWithoutHash[1], 0x06);
-                                    }
-                                }
+                                       // Выслать подверждение получения пакета
+                                       SendPacket("", messageHeaderWithoutHash[1], 0x06);
+                                   }
+                               }
 
-                                if (messageBody[0] == 0x52)
-                                {
-                                    byte[] messageWithOutHash = new byte[messageBody.Length - 3];
-                                    Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
-                                    
-                                    
-                                    if (_crc16.ComputeChecksum(messageWithOutHash) == BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
-                                    {
-                                        MessageBox.Show("Совпал хеш по запросу");
-                                        SendPacket("", messageHeaderWithoutHash[1], 0x06);
+                               if (messageBody[0] == 0x52)
+                               {
+                                   byte[] messageWithOutHash = new byte[messageBody.Length - 3];
+                                   Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
 
-                                        MessageBox.Show("Размер файла = " + BitConverter.ToInt64(messageWithOutHash, 0).ToString() +'\n'+
-                                           "Имя файла = " + Encoding.UTF8.GetString(messageWithOutHash, 8, messageWithOutHash.Length - 8));
-                                    }
-                                }
+                                   if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                                       BitConverter.ToUInt16(new byte[] {messageBody[1], messageBody[2]}, 0))
+                                   {
+                                       MessageBox.Show("Совпал хеш по запросу");
+                                       // Выслать подверждение получения пакета
+                                       SendPacket("", messageHeaderWithoutHash[1], 0x06);
+
+                                       //Высылает разрешение на отправку файла
+                                       SendPacket("", messageHeaderWithoutHash[1], 0x41);
 
 
+                                       MessageBox.Show("Размер файла = " +
+                                                       BitConverter.ToInt64(messageWithOutHash, 0).ToString() + '\n' +
+                                                       "Имя файла = " +
+                                                       Encoding.UTF8.GetString(messageWithOutHash, 8,
+                                                                               messageWithOutHash.Length - 8));
+                                   }
+                               }
 
-                            }
+                           }
+
+
                        }
                        else
                        {
