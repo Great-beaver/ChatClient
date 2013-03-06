@@ -22,6 +22,8 @@ namespace ChatClient
         private Queue _outMessagesQueue;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
+        private ushort _lastMessageCrc=0;
+
         // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
         private bool[] _sendedPacketDelivered = new bool[5];
         
@@ -96,8 +98,19 @@ namespace ChatClient
                       lock (_outMessagesQueue)
                       {
                             byte[] outPacket = (byte[])_outMessagesQueue.Dequeue();
-                            _answerEvent.Reset(); 
-                            _comPortWriter.Write(outPacket, 0, outPacket.Length);
+                            _answerEvent.Reset();
+
+
+                          // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
+                          byte[] data= new byte[outPacket.Length-10];
+
+                           Array.Copy(outPacket,10,data,0,data.Length);
+
+                          _lastMessageCrc = _crc16.ComputeChecksum(data);
+                         //
+                          
+                          _comPortWriter.Write(outPacket, 0, outPacket.Length);
+
                           if (outPacket[6] != 0x06)
                           {
                               if (_answerEvent.WaitOne(3000, false))
@@ -371,11 +384,22 @@ namespace ChatClient
                         // Сверка CRC и id
                         if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
                        {
+
+                           // Получает значение длинны тела сообщения
+                           ushort lenght =
+                          BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
+
+                           // Считывает тело сообщения 
+                           byte[] messageBody = new byte[lenght];
+                           _comPortReader.Read(messageBody, 0, lenght);
+
                            // Debug message
                            // MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
                     // >>> Вынести проверку опций в отдельный метод <<<
                            // Если первый бит опций равен ACK 
-                            if (messageHeaderWithoutHash[4]==0x06)
+
+
+                           if (messageHeaderWithoutHash[4] == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(messageBody,0))
                             {
                                 // Отправить подверждение клиенту от которого поступил пакет 
                                 _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
@@ -394,14 +418,7 @@ namespace ChatClient
 
                             }
 
-                            
-                                // Получает значение длинны тела сообщения
-                                ushort lenght =
-                               BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
-
-                                // Считывает тело сообщения 
-                                byte[] messageBody = new byte[lenght];
-                                _comPortReader.Read(messageBody, 0, lenght);
+                                
 
                            if (messageBody.Length > 0)
                            {
@@ -430,7 +447,17 @@ namespace ChatClient
                                        MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
 
                                        // Выслать подверждение получения пакета
-                                       SendPacket("", messageHeaderWithoutHash[1], 0x06);
+                                     //  SendPacket("", messageHeaderWithoutHash[1], 0x06);
+
+                                       // BitConverter.GetBytes(((short)messageBody)
+
+
+
+
+
+
+                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
+                                       
                                    }
                                }
 
