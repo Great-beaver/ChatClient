@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace ChatClient
 {
-    class Ports
+    class ClientPort
     {
         private bool _continue = false;
         private SerialPort _comPortReader;
@@ -27,7 +27,7 @@ namespace ChatClient
         // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
         private bool[] _sendedPacketDelivered = new bool[5];
         
-        public Ports(string readerPortName,string writerPortName, byte id)
+        public ClientPort(string readerPortName,string writerPortName, byte id)
         {
             _comPortReader = new SerialPort();
             _comPortReader.PortName = readerPortName;

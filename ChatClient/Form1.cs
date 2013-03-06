@@ -12,7 +12,7 @@ namespace ChatClient
 
     public partial class Form1 : Form
     {
-        private Ports comPort;
+        private ClientPort comPort;
 
         public Form1()
         {
@@ -44,7 +44,7 @@ namespace ChatClient
 
         private void button2_Click(object sender, EventArgs e)
         {
-            comPort = new Ports(textBox1.Text, textBox2.Text, 0);
+            comPort = new ClientPort(textBox1.Text, textBox2.Text, 0);
         }
     }
 }
