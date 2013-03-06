@@ -21,12 +21,18 @@ namespace ChatClient
         private Crc16 _crc16 = new Crc16();
         private Queue _outMessagesQueue;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
+        private FileInfo _fileToTransfer;
 
         private ushort _lastMessageCrc=0;
 
         // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
         private bool[] _sendedPacketDelivered = new bool[5];
-        
+
+        // Событие при получении данных
+        //   void _comPortReader_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        //   {
+        //   }
+
         public ClientPort(string readerPortName,string writerPortName, byte id)
         {
             _comPortReader = new SerialPort();
@@ -83,11 +89,6 @@ namespace ChatClient
             _readThread.Start();
             _writeThread.Start();
         }
-
-    // Событие при получении данных
-    //   void _comPortReader_DataReceived(object sender, SerialDataReceivedEventArgs e)
-    //   {
-    //   }
 
         private void Write()
         {
@@ -172,11 +173,11 @@ namespace ChatClient
             // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
             // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
 
-            FileInfo file = new FileInfo(filePath);
+            _fileToTransfer = new FileInfo(filePath);
 
-            MessageBox.Show(file.Length.ToString());
+            MessageBox.Show(_fileToTransfer.Length.ToString());
 
-            if (Encoding.UTF8.GetBytes(file.Name).Length>=1023)
+            if (Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length >= 1023)
             {
                 MessageBox.Show("Слишком длинное имя файла");
                 return;
@@ -189,19 +190,19 @@ namespace ChatClient
             }
 
             // Устанавливает длину конкретного пакета
-            byte[] packet = new byte[11 + Encoding.UTF8.GetBytes(file.Name).Length];
+            byte[] packet = new byte[11 + Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length];
 
             // Устанавливает длину пакета для вычисления контрольной суммы
-            byte[] packetWithOutHash = new byte[8 + Encoding.UTF8.GetBytes(file.Name).Length];
+            byte[] packetWithOutHash = new byte[8 + Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length];
 
             // Тип сообщения - запрос на передачу файла
             packet[0] = 0x52;
 
             // Вставляет длину файла в пакет для вычисления CRC
-            Array.Copy(BitConverter.GetBytes(file.Length), 0, packetWithOutHash, 0, 8);
+            Array.Copy(BitConverter.GetBytes(_fileToTransfer.Length), 0, packetWithOutHash, 0, 8);
 
             //Вставляет имя файла в пакет для вычисления CRC
-            Array.Copy(Encoding.UTF8.GetBytes(file.Name), 0, packetWithOutHash, 8, Encoding.UTF8.GetBytes(file.Name).Length);
+            Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packetWithOutHash, 8, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
 
             // Вычисляет и вставляет CRC в пакет
             Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash), 0, packet, 1, 2);
@@ -211,7 +212,37 @@ namespace ChatClient
             AddPacketToQueue(packet, toId);
         }
 
-        //private void SendFIleTransferAnswer ()
+        private void SendFilePacket (byte[] packet,byte toId, bool lastPacketInChain = false)
+        {
+            byte option1 = 0x00;
+            byte option2 = 0x00;
+
+            byte[] messageBody = Compressor.Zip(packet); // Архивация
+            
+            // Массив байтов для отправки 
+            byte[] messagePacket = new byte[messageBody.Length + 4];
+            
+            // Задает тип пакета, 0x46 - файл
+            messagePacket[0] = 0x46;
+
+            // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
+            Array.Copy(_crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
+
+            // Указавает последний ли это пакет в последовательности 
+            if (lastPacketInChain)
+            {
+                messagePacket[3] = 0x4C;
+            }
+            else
+            {
+                messagePacket[3] = 0x00;    
+            }
+
+            // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[4+]
+            Array.Copy(messageBody, 0, messagePacket, 4, messageBody.Length);
+
+            AddPacketToQueue(messagePacket, toId, option1, option2);
+        }
 
         private void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
@@ -384,7 +415,6 @@ namespace ChatClient
                         // Сверка CRC и id
                         if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
                        {
-
                            // Получает значение длинны тела сообщения
                            ushort lenght =
                           BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
@@ -393,33 +423,27 @@ namespace ChatClient
                            byte[] messageBody = new byte[lenght];
                            _comPortReader.Read(messageBody, 0, lenght);
 
-                           // Debug message
-                           // MessageBox.Show("Первый бит опций равен" + Convert.ToString(messageHeaderWithoutHash[4], 16));
-                    // >>> Вынести проверку опций в отдельный метод <<<
-                           // Если первый бит опций равен ACK 
+                   
+                            // >>> Вынести проверку опций в отдельный метод <<<
 
-
+                           // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
                            if (messageHeaderWithoutHash[4] == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(messageBody,0))
                             {
                                 // Отправить подверждение клиенту от которого поступил пакет 
                                 _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
                                 _answerEvent.Set();
-                                // Debug message
-                              //  MessageBox.Show("Сообщение доставлено!");
                             }
 
+                            // Если получено разрешение на передачу файлов
                             if (messageHeaderWithoutHash[4] == 0x41)
                             {
                                 // Debug message
                                   MessageBox.Show("Запрос одобрен!!");
 
                                   // Выслать подверждение получения пакета
-                                  SendPacket("", messageHeaderWithoutHash[1], 0x06);
-
+                                  SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
                             }
-
                                 
-
                            if (messageBody.Length > 0)
                            {
                                // Обработка полученого пакета
@@ -447,20 +471,12 @@ namespace ChatClient
                                        MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
 
                                        // Выслать подверждение получения пакета
-                                     //  SendPacket("", messageHeaderWithoutHash[1], 0x06);
-
-                                       // BitConverter.GetBytes(((short)messageBody)
-
-
-
-
-
-
-                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
-                                       
+                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);           
                                    }
                                }
 
+
+                               // Обработка пакета запроса на передачу файла
                                if (messageBody[0] == 0x52)
                                {
                                    byte[] messageWithOutHash = new byte[messageBody.Length - 3];
@@ -472,7 +488,7 @@ namespace ChatClient
                                    {
                                        MessageBox.Show("Совпал хеш по запросу");
                                        // Выслать подверждение получения пакета
-                                       SendPacket("", messageHeaderWithoutHash[1], 0x06);
+                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
 
                                        //Высылает разрешение на отправку файла
                                        SendPacket("", messageHeaderWithoutHash[1], 0x41);
@@ -503,6 +519,45 @@ namespace ChatClient
             }
 
         }
+
+        public void CreateFile (string _fileName) //, byte[] _ByteArray)
+        {
+            string md = Environment.GetFolderPath(Environment.SpecialFolder.Personal);//путь к Документам
+            if (Directory.Exists(md + "\\ChatRecivedFiles") == false)
+            {
+                Directory.CreateDirectory(md + "\\ChatRecivedFiles");
+            }
+
+            if ((File.Exists(_fileName)))
+            {
+                MessageBox.Show("Такой файл уже существует");
+                return;
+            }
+
+            try
+            {
+
+                // Open file for reading
+                System.IO.FileStream _fileStream = new System.IO.FileStream(_fileName, System.IO.FileMode.Create);
+
+                // Writes a block of bytes to this stream using data from a byte array.
+                //_FileStream.Write(_ByteArray, 0, _ByteArray.Length);
+
+                // close file stream
+                _fileStream.Close();
+
+                //return true;
+            }
+            catch (Exception _Exception)
+            {
+                // Error
+                MessageBox.Show("Exception caught in process: {0}", _Exception.ToString());
+            }
+
+            // error occured, return false
+            //return false;
+        }
+
 
     }
 }

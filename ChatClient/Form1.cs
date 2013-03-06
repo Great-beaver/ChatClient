@@ -27,7 +27,7 @@ namespace ChatClient
 
         private void button1_Click(object sender, EventArgs e)
         {
-            comPort.SendTextMessage(richTextBox1.Text, 0);
+          //  comPort.SendTextMessage(richTextBox1.Text, 0);
 
        //   OpenFileDialog od = new OpenFileDialog();
        //  
@@ -36,10 +36,9 @@ namespace ChatClient
        //       MessageBox.Show(od.FileName);
        //       comPort.SendFileTransferRequest(od.FileName, 0);
        //   }
-
-
-
             
+            comPort.CreateFile("TESTFILE.txt");
+
         }
 
         private void button2_Click(object sender, EventArgs e)
