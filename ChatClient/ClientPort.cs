@@ -493,6 +493,10 @@ namespace ChatClient
                                        //Высылает разрешение на отправку файла
                                        SendPacket("", messageHeaderWithoutHash[1], 0x41);
 
+                                       // Создает файл если его еще нет
+                                       CreateFile(Encoding.UTF8.GetString(messageWithOutHash, 8,
+                                                                               messageWithOutHash.Length - 8));
+
 
                                        MessageBox.Show("Размер файла = " +
                                                        BitConverter.ToInt64(messageWithOutHash, 0).ToString() + '\n' +
@@ -520,42 +524,34 @@ namespace ChatClient
 
         }
 
-        public void CreateFile (string _fileName) //, byte[] _ByteArray)
+        public bool CreateFile (string _fileName) 
         {
-            string md = Environment.GetFolderPath(Environment.SpecialFolder.Personal);//путь к Документам
-            if (Directory.Exists(md + "\\ChatRecivedFiles") == false)
+            // Создает папку в "Мои документы" если ее нет
+            string md = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + "\\ChatRecivedFiles\\";
+            if (Directory.Exists(md ) == false)
             {
-                Directory.CreateDirectory(md + "\\ChatRecivedFiles");
+                Directory.CreateDirectory(md);
             }
 
-            if ((File.Exists(_fileName)))
+            // Создает файл если его нет
+            if ((File.Exists(md+_fileName)))
             {
                 MessageBox.Show("Такой файл уже существует");
-                return;
+                return false;
             }
 
             try
             {
-
-                // Open file for reading
-                System.IO.FileStream _fileStream = new System.IO.FileStream(_fileName, System.IO.FileMode.Create);
-
-                // Writes a block of bytes to this stream using data from a byte array.
-                //_FileStream.Write(_ByteArray, 0, _ByteArray.Length);
-
-                // close file stream
-                _fileStream.Close();
-
-                //return true;
+                System.IO.FileStream fs = System.IO.File.Create(md + _fileName);
+                fs.Close();
             }
             catch (Exception _Exception)
             {
-                // Error
                 MessageBox.Show("Exception caught in process: {0}", _Exception.ToString());
+                return false;
             }
 
-            // error occured, return false
-            //return false;
+            return false;
         }
 
 

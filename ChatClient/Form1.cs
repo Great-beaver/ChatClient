@@ -29,15 +29,15 @@ namespace ChatClient
         {
           //  comPort.SendTextMessage(richTextBox1.Text, 0);
 
-       //   OpenFileDialog od = new OpenFileDialog();
-       //  
-       //   if (od.ShowDialog() == DialogResult.OK)
-       //   {
-       //       MessageBox.Show(od.FileName);
-       //       comPort.SendFileTransferRequest(od.FileName, 0);
-       //   }
+          OpenFileDialog od = new OpenFileDialog();
+         
+          if (od.ShowDialog() == DialogResult.OK)
+          {
+              MessageBox.Show(od.FileName);
+              comPort.SendFileTransferRequest(od.FileName, 0);
+          }
             
-            comPort.CreateFile("TESTFILE.txt");
+          //  comPort.CreateFile("TESTFILE.txt");
 
         }
 
