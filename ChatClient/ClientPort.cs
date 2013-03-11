@@ -91,7 +91,7 @@ namespace ChatClient
            
             _readThread = new Thread(Read);
             _writeThread = new Thread(Write);
-            _fileSenderThread = new Thread(FileSender);
+            
 
             _comPortReader.Open();
             _comPortWriter.Open();
@@ -111,11 +111,11 @@ namespace ChatClient
             long totalCountOfPackets = _fileToTransfer.Length / buffer.Length;
 
             // Если длина файла не кратна 1024 количество пакетов больше на один 
-            if (_fileToTransfer.Length % buffer.Length != 0)
-            {
-                totalCountOfPackets++;
-            }
-
+         // if (_fileToTransfer.Length % buffer.Length != 0)
+         // {
+         //     totalCountOfPackets++;
+         // }
+         //
             // Количество уже отправленных пакетов
             long countOfSendedPackets = 0;
 
@@ -544,6 +544,7 @@ namespace ChatClient
                                   MessageBox.Show("Запрос одобрен!!");
 
                                 // Начать отправку файла
+                                  _fileSenderThread = new Thread(FileSender);
                                   _fileSenderThread.Start(messageHeaderWithoutHash[1]);
 
                                   // Выслать подверждение получения пакета
