@@ -345,87 +345,12 @@ namespace ChatClient
         return false;
     }
 
-        private void SendPacket(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
+        private void AddPacketToQueue(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
         {
         // Переводит строку в массив байтов 
             byte[] messageBody = Encoding.UTF8.GetBytes(message);
 
             AddPacketToQueue(messageBody, toId, option1, option2);
-        }
-
-        private bool SendPacket(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
-        {
-            // Структура пакета
-            // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   |
-            // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт |
-            // | 0xAA 0x55 |  
-
-            // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   |
-            // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
-
-            // Если ожидается доставка предыдущего пакета то сообщение не будет отправлено
-            // Но если сообщение является подверждением доставки то оно будет отправлено
- 
-       //  if (!_sendedPacketDelivered[toId] && option1 != 0x06)
-       //  {
-       //      // Debug message
-       //      MessageBox.Show("HERE");
-       //      return false;
-       //  }
-
-            // Если указанный id не предусмотрен
-            if (toId > _sendedPacketDelivered.Length)
-            {
-                MessageBox.Show("Клиента с таким id не существует");
-                return false;
-            }
-
-            //Массив всего выходного пакета, Header + тело сообщения(Data)
-            byte[] outPacket = new byte[10 + messageBody.Length];
-
-            // Пакет без учета сигнатуры и CRC для вычисления CRC
-            // | Получатель | Отправитель | Длинна данных |  Опции   |
-            // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
-            byte[] packetWithOutHash = new byte[6];
-
-            //Сигнатура header'а
-            outPacket[0] = 0xAA;
-            outPacket[1] = 0x55;
-
-            //Адрес получателя
-            packetWithOutHash[0] = toId;
-
-            //Адрес отправителя
-            packetWithOutHash[1] = _clietnId;
-
-            // Копирует тело сообщения в позицию после Header'а 
-            Array.Copy(messageBody, 0, outPacket, 10, messageBody.Length);
-
-            // Вставляет длинну тела сообщения в Header'а, то есть в packetWithOutHash[2-3] 
-            Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 2, 2);
-
-            // Выставляет опции в Header
-            packetWithOutHash[4] = option1;
-            packetWithOutHash[5] = option2;
-
-            // Вставляет header без CRC и сигнатуры в начало пакета после сигнатуры 
-            Array.Copy(packetWithOutHash, 0, outPacket, 2, 6);
-
-            // Вычисляет и вставляет CRC Header'а в пакет
-            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash), 0, outPacket, 8, 2);
-
-            //Добавляем пакет в оячередь на отправку
-            _outMessagesQueue.Enqueue(outPacket);
-
-            // Отправляет пакет
-            //  _comPortWriter.Write(outPacket, 0, outPacket.Length);
-
-            // Если отправляемый пакет это acknowledge то не ждать отчета о его доставки 
-            if (option1 != 0x06)
-            {
-                _sendedPacketDelivered[toId] = false;
-            }
-            return true;
         }
 
         private bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00)
@@ -548,7 +473,7 @@ namespace ChatClient
                                   _fileSenderThread.Start(messageHeaderWithoutHash[1]);
 
                                   // Выслать подверждение получения пакета
-                                  SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
+                                  AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
                             }
                                 
                            if (messageBody.Length > 0)
@@ -578,7 +503,7 @@ namespace ChatClient
                                        MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
 
                                        // Выслать подверждение получения пакета
-                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);           
+                                       AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);           
                                    }
                                }
 
@@ -599,10 +524,10 @@ namespace ChatClient
                                        MessageBox.Show("Совпал хеш по запросу");
 
                                        // Выслать подверждение получения пакета
-                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
+                                       AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
 
                                        //Высылает разрешение на отправку файла  
-                                       SendPacket("", messageHeaderWithoutHash[1], 0x41);
+                                       AddPacketToQueue("", messageHeaderWithoutHash[1], 0x41);
 
                                        _receivingFileName  = Encoding.UTF8.GetString(messageWithOutHash, 8,
                                                                                  messageWithOutHash.Length - 8);
@@ -633,7 +558,7 @@ namespace ChatClient
                                        MessageBox.Show("Совпал хеш в пакете файла");
 
                                        // Выслать подверждение получения пакета
-                                       SendPacket(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
+                                       AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
 
                                        messageWithOutHash = Compressor.Unzip(messageWithOutHash); // Разархивировать
 
@@ -649,10 +574,6 @@ namespace ChatClient
 
                                    }
                                }
-
-
-
-
 
                            }
 
