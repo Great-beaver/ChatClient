@@ -24,6 +24,9 @@ namespace ChatClient
         private int _outMessageQueueSize = 100;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
+        // Служит для подсчета полученных или отправленых пакетов файла.
+        private byte countOfFilePackets = 0;
+
         // Данные о файле для передачи
         private FileInfo _fileToTransfer;
 
@@ -104,6 +107,7 @@ namespace ChatClient
 
         private void FileSender(object toId)
         {
+            Boolean finish = false;
             var stream = File.OpenRead(_fileToTransfer.FullName);
             var buffer = new byte[1024];
 
@@ -127,7 +131,12 @@ namespace ChatClient
                 // Получает значение сколько байт считано из файла и считывает данные в буфер
                 var size = stream.Read(buffer, 0, buffer.Length);
                 // Если считано 0 байт значит файл закончился
-                if (size == 0)
+             //  if (size == 0)
+             //  {
+             //      break;
+             //  }
+
+                if (finish)
                 {
                     break;
                 }
@@ -140,18 +149,19 @@ namespace ChatClient
                         // Если эот не последний пакет то отправляем весь буфер
                         if (countOfSendedPackets < totalCountOfPackets)
                         {
-                            SendFilePacket(buffer, (byte) toId);
+                            SendFilePacket(buffer, (byte) toId,countOfFilePackets);
                         }
                         else 
-                        {  // ПРОБЛЕМА ГДЕ ТО ТУТ !!!  ВЕРОЯТНО ЭТОТ КОД НИКОГДА НЕ ДОСТИАГЕТСЯ BUG
+                        { 
                             // Иначе отправляет только столько байт сколько было считано и этот пакет считается последним 
                             byte[] lastPacket = new byte[size];
                             Array.Copy(buffer, 0, lastPacket, 0, lastPacket.Length);
-                            SendFilePacket(lastPacket, (byte)toId,true);  
-                            
+                            SendFilePacket(lastPacket, (byte)toId, countOfFilePackets,true);
+                            finish = true;
+
                         }
                         countOfSendedPackets++;
-
+                        countOfFilePackets++;
                     break;
                     }
                         else
@@ -284,11 +294,11 @@ namespace ChatClient
             AddPacketToQueue(packet, toId);
         }
 
-        private void SendFilePacket (byte[] packet,byte toId, bool lastPacketInChain = false)
+        private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
         {
             // Структура пакета файла
-            // | Тип пакета | Контрольная сумма пакета |  Последний пакет |  Данные  |
-            // |   1 байт   |          2 байта         |       1 байт     |  0 - ... |
+            // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
+            // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
 
             byte option1 = 0x00;
             byte option2 = 0x00;
@@ -296,7 +306,7 @@ namespace ChatClient
             byte[] messageBody = Compressor.Zip(packet); // Архивация
             
             // Массив байтов для отправки 
-            byte[] messagePacket = new byte[messageBody.Length + 4];
+            byte[] messagePacket = new byte[messageBody.Length + 5];
             
             // Задает тип пакета, 0x46 - файл
             messagePacket[0] = 0x46;
@@ -314,8 +324,11 @@ namespace ChatClient
                 messagePacket[3] = 0x00;    
             }
 
+            messagePacket[4] = packetNUmber;
+
+
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[4+]
-            Array.Copy(messageBody, 0, messagePacket, 4, messageBody.Length);
+            Array.Copy(messageBody, 0, messagePacket, 5, messageBody.Length);
 
             AddPacketToQueue(messagePacket, toId, option1, option2);
         }
@@ -412,6 +425,7 @@ namespace ChatClient
 
         private void Read()
         {
+
             while (_continue)
             {
                 // Структура пакета
@@ -456,6 +470,7 @@ namespace ChatClient
                            // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
                            if (messageHeaderWithoutHash[4] == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(messageBody,0))
                             {
+
                                 // Установить что последнее сообщение было доставлено
                                 _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
                                 _answerEvent.Set();
@@ -469,14 +484,15 @@ namespace ChatClient
                                   MessageBox.Show("Запрос одобрен!!");
 
                                 // Начать отправку файла
+                                  countOfFilePackets = 0;
                                   _fileSenderThread = new Thread(FileSender);
                                   _fileSenderThread.Start(messageHeaderWithoutHash[1]);
-
+                                  
                                   // Выслать подверждение получения пакета
                                   AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
                             }
                                 
-                           if (messageBody.Length > 0)
+                           if (messageBody.Length > 2)
                            {
                                // Обработка пакета текстового сообщения 
                                // Структура пакета текстового сообщения 
@@ -529,6 +545,9 @@ namespace ChatClient
                                        //Высылает разрешение на отправку файла  
                                        AddPacketToQueue("", messageHeaderWithoutHash[1], 0x41);
 
+                                       //Обнулить счетчик пакетов файла
+                                       countOfFilePackets = 0;
+
                                        _receivingFileName  = Encoding.UTF8.GetString(messageWithOutHash, 8,
                                                                                  messageWithOutHash.Length - 8);
                                        _receivingFileSize = BitConverter.ToInt64(messageWithOutHash, 0);
@@ -544,25 +563,31 @@ namespace ChatClient
 
                                // Обработка пакета файла
                                // Структура пакета файла
-                               // | Тип пакета | Контрольная сумма пакета |  Последний пакет |  Данные  |
-                               // |   1 байт   |          2 байта         |       1 байт     |  0 - ... |
-                               if (messageBody[0] == 0x46)
+                               // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
+                               // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
+
+                               if (messageBody[0] == 0x46 && messageBody.Length>4)
                                {
-                                   byte[] messageWithOutHash = new byte[messageBody.Length - 4];
-                                   Array.Copy(messageBody, 4, messageWithOutHash, 0, messageWithOutHash.Length);
+                                   byte[] messageWithOutHash = new byte[messageBody.Length - 5];
+                                   Array.Copy(messageBody, 5, messageWithOutHash, 0, messageWithOutHash.Length);
 
 
                                    if (_crc16.ComputeChecksum(messageWithOutHash) ==
-                                       BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                                       BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0) && (countOfFilePackets == messageBody[4]))
                                    {
-                                       MessageBox.Show("Совпал хеш в пакете файла");
+                                       MessageBox.Show("Совпал хеш и номер пакета в пакете файла");
 
                                        // Выслать подверждение получения пакета
                                        AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
 
-                                       messageWithOutHash = Compressor.Unzip(messageWithOutHash); // Разархивировать
+                                       // Разархивация данных
+                                       messageWithOutHash = Compressor.Unzip(messageWithOutHash); 
 
+                                       // Запись данных в файл
                                        ByteArrayToFile(_receivingFileFullName, messageWithOutHash);
+
+                                       // Инкрементирует число принятых пакетов
+                                       countOfFilePackets++;
 
                                        // Если пакет последний в цепочке
                                        if (messageBody[3] == 0x4C)
