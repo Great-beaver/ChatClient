@@ -24,13 +24,16 @@ namespace ChatClient
         private int _outMessageQueueSize = 100;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
-        private bool _workWithFileNow = false;
+        // Определяет выполняются ли cейчас операции с файлами
+        private static bool _workWithFileNow = false;
 
         // Служит для подсчета полученных или отправленых пакетов файла.
         private byte _countOfFilePackets = 0;
 
         // Данные о файле для передачи
         private FileInfo _fileToTransfer;
+        private bool _allowSendingFile = false;
+       
 
         // Данные о файле для приема
         private string _receivingFileName = "";
@@ -125,7 +128,6 @@ namespace ChatClient
             // Количество уже отправленных пакетов
             long countOfSendedPackets = 0;
 
-
            // long lastPacketSize = _fileToTransfer.Length % buffer.Length;
  
             while (true)
@@ -161,9 +163,8 @@ namespace ChatClient
                             byte[] lastPacket = new byte[size];
                             Array.Copy(buffer, 0, lastPacket, 0, lastPacket.Length);
                             SendFilePacket(lastPacket, (byte)toId, _countOfFilePackets,true);
+                            _workWithFileNow = false;
                             finish = true;
-                            
-
                         }
                         
                     break;
@@ -188,6 +189,8 @@ namespace ChatClient
                       {
                             byte[] outPacket = (byte[])_outMessagesQueue.Dequeue();
                             _answerEvent.Reset();
+                          //Debug message 
+                           // MessageBox.Show("Сообщений в очереди = " + _outMessagesQueue.Count.ToString());
 
                           // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
                           byte[] data= new byte[outPacket.Length-10];
@@ -271,6 +274,8 @@ namespace ChatClient
             // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
 
             _fileToTransfer = new FileInfo(filePath);
+
+            _allowSendingFile = true;
 
             MessageBox.Show(_fileToTransfer.Length.ToString());
 
@@ -435,6 +440,9 @@ namespace ChatClient
             //Добавляем пакет в очередь на отправку
             _outMessagesQueue.Enqueue(outPacket);
 
+            // Debug message
+         //   MessageBox.Show("В Очередь добавляется пакет! Пакето в очереди = " + _outMessagesQueue.Count.ToString());
+
             return true;
         }
 
@@ -493,16 +501,21 @@ namespace ChatClient
 
                             // Обработка пакета разрешения на передачу файла
                             // Если получено разрешение на передачу файлов
-                            if (messageHeaderWithoutHash[4] == 0x41 && !_workWithFileNow)
+                            if (messageHeaderWithoutHash[4] == 0x41)
                             {
-                                // Debug message
-                                  MessageBox.Show("Запрос одобрен!!");
+                                if ( _allowSendingFile)
+                                {
+                                    // Debug message
+                                    MessageBox.Show("Запрос одобрен!!");
 
-                                // Начать отправку файла
-                                  _countOfFilePackets = 0;
-                                  _fileSenderThread = new Thread(FileSender);
-                                  _fileSenderThread.Start(messageHeaderWithoutHash[1]);
-                                  
+                                    // Начать отправку файла
+                                    _allowSendingFile = false;
+                                    _workWithFileNow = true;
+                                    _countOfFilePackets = 0;
+                                    _fileSenderThread = new Thread(FileSender);
+                                    _fileSenderThread.Start(messageHeaderWithoutHash[1]);
+                                }
+                                
                                   // Выслать подверждение получения пакета
                                   AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
                             }
@@ -556,6 +569,7 @@ namespace ChatClient
 
                                        // Выслать подверждение получения пакета
                                        AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
+                                      
                                        if (!_workWithFileNow)
                                        {
                                            _workWithFileNow = true;
