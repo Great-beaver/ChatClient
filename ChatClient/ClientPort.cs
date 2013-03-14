@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
+
 namespace ChatClient
 {
     class ClientPort
@@ -23,6 +24,9 @@ namespace ChatClient
         private Queue _outMessagesQueue;
         private int _outMessageQueueSize = 100;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
+
+        // Определяет сколько времение в мс потоки будут находится в состоянии сна
+        private int _sleepTime = 1;
 
         // Определяет выполняются ли cейчас операции с файлами
         private static bool _workWithFileNow = false;
@@ -55,7 +59,7 @@ namespace ChatClient
         {
             _comPortReader = new SerialPort();
             _comPortReader.PortName = readerPortName;
-            _comPortReader.BaudRate = 9600;
+            _comPortReader.BaudRate = 115200;
             _comPortReader.Parity = Parity.None;
             _comPortReader.DataBits = 8;
             _comPortReader.StopBits = StopBits.One;
@@ -70,7 +74,7 @@ namespace ChatClient
 
            _comPortWriter = new SerialPort();
            _comPortWriter.PortName = writerPortName;
-           _comPortWriter.BaudRate = 9600;
+           _comPortWriter.BaudRate = 115200;
            _comPortWriter.Parity = Parity.None;
            _comPortWriter.DataBits = 8;
            _comPortWriter.StopBits = StopBits.One;
@@ -114,32 +118,21 @@ namespace ChatClient
         {
             Boolean finish = false;
             var stream = File.OpenRead(_fileToTransfer.FullName);
-            var buffer = new byte[1024];
+            // TO DO: Разобратся с длинной пакета, допустима ли такая длинна пакета?
+            var buffer = new byte[1024*50];
 
             // Количество пакетов в файле
             long totalCountOfPackets = _fileToTransfer.Length / buffer.Length;
 
-            // Если длина файла не кратна 1024 количество пакетов больше на один 
-         // if (_fileToTransfer.Length % buffer.Length != 0)
-         // {
-         //     totalCountOfPackets++;
-         // }
-         //
             // Количество уже отправленных пакетов
             long countOfSendedPackets = 0;
-
-           // long lastPacketSize = _fileToTransfer.Length % buffer.Length;
  
             while (true)
             {
                 // Получает значение сколько байт считано из файла и считывает данные в буфер
                 var size = stream.Read(buffer, 0, buffer.Length);
-                // Если считано 0 байт значит файл закончился
-             //  if (size == 0)
-             //  {
-             //      break;
-             //  }
 
+                // Завершает цикл если установлен соотвествующий флаг
                 if (finish)
                 {
                     break;
@@ -171,11 +164,11 @@ namespace ChatClient
                     }
                         else
                             {
-                                Thread.Sleep(10); 
+                                Thread.Sleep(_sleepTime); 
                             }
                     
                 }
-                Thread.Sleep(10);
+                Thread.Sleep(_sleepTime);
             }
         }
 
@@ -183,14 +176,14 @@ namespace ChatClient
         { 
             while (_continue)
             {
+                // Определяет есть ли пакеты в очереди
                 if (_outMessagesQueue.Count > 0)
                 {
+                    // Блокировка очередни на время извлечения пакета
                       lock (_outMessagesQueue)
                       {
                             byte[] outPacket = (byte[])_outMessagesQueue.Dequeue();
                             _answerEvent.Reset();
-                          //Debug message 
-                           // MessageBox.Show("Сообщений в очереди = " + _outMessagesQueue.Count.ToString());
 
                           // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
                           byte[] data= new byte[outPacket.Length-10];
@@ -209,19 +202,25 @@ namespace ChatClient
                               {
                                   if (_answerEvent.WaitOne(3000, false))
                                   {
-                                      // Debug message
-                                      MessageBox.Show("Сообщение доставлено!");
+                                         #if DEBUG
+                                         // Debug message
+                                         MessageBox.Show("Сообщение доставлено!");
+                                         #endif
                                       break;
                                   }
                                   else
                                   {
                                       if (++attempts > 3)
                                       {
-                                          MessageBox.Show("Сообщение НЕ доставлено!");
+                                            #if DEBUG
+                                            MessageBox.Show("Сообщение НЕ доставлено!");
+                                            #endif
                                           break;
                                       }
-                                      // Debug message
-                                      MessageBox.Show("Переотправка сообщения попытка № " + attempts);
+                                            #if DEBUG
+                                            // Debug message
+                                            MessageBox.Show("Переотправка сообщения попытка № " + attempts);
+                                            #endif
                                       _comPortWriter.Write(outPacket, 0, outPacket.Length);
                                       
                                   }
@@ -229,7 +228,7 @@ namespace ChatClient
                           }
                       }
                 }
-                Thread.Sleep(100);
+                Thread.Sleep(_sleepTime);
             }
         }
 
@@ -353,28 +352,28 @@ namespace ChatClient
             AddPacketToQueue(messagePacket, toId, option1, option2);
         }
 
-        private bool ByteArrayToFile(string _FileName, byte[] _ByteArray)
+        private bool ByteArrayToFile(string fileName, byte[] byteArray)
     {
         try
         {
-            // Open file for reading
-            FileStream _FileStream = new FileStream(_FileName, FileMode.Append, FileAccess.Write);
+            // Открывает файл в режими для записи в конец файла
+            FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);
 
-            // Writes a block of bytes to this stream using data from a byte array.
-            _FileStream.Write(_ByteArray, 0, _ByteArray.Length);
+            // Записывает блок байтов в поток и следовательно в файл
+            _FileStream.Write(byteArray, 0, byteArray.Length);
 
-            // close file stream
+            // Закрывает поток
             _FileStream.Close();
 
             return true;
         }
         catch (Exception _Exception)
         {
-            // Error
+            // Ошибка
             Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
         }
 
-    // error occured, return false
+    // В случае ошибки возвращает false
         return false;
     }
 
@@ -440,9 +439,6 @@ namespace ChatClient
             //Добавляем пакет в очередь на отправку
             _outMessagesQueue.Enqueue(outPacket);
 
-            // Debug message
-         //   MessageBox.Show("В Очередь добавляется пакет! Пакето в очереди = " + _outMessagesQueue.Count.ToString());
-
             return true;
         }
 
@@ -458,201 +454,194 @@ namespace ChatClient
                 //Если найдена сигнатура | 0xAA 0x55 | начинается обработка пакета
                 if (_comPortReader.BytesToRead >= 2 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
                 {
-                    // Debug message
-                    // MessageBox.Show("Сигнатура найдена");
-
                     // | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |
                     // |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | = 8 байт
                     // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
                     if (_comPortReader.BytesToRead >= 8)
                     {
-                        // Debug message
-                        // MessageBox.Show("Хэдер считан");
-
                         // | Получатель | Отправитель | Длинна данных |  Опции   |
                         // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
                         // Считывает header без CRC 
                         byte[] messageHeaderWithoutHash = new byte[6];
                         _comPortReader.Read(messageHeaderWithoutHash, 0, 6);
 
-                        // Сверка CRC и id
-                        if (_crc16.ComputeChecksum(messageHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && messageHeaderWithoutHash[0]==_clietnId )
-                       {
-                           // Получает значение длинны тела сообщения
-                           ushort lenght =
-                          BitConverter.ToUInt16(new byte[] { messageHeaderWithoutHash[2], messageHeaderWithoutHash[3] }, 0);
-
-                           // Считывает тело сообщения 
-                           byte[] messageBody = new byte[lenght];
-                           _comPortReader.Read(messageBody, 0, lenght);
-
-                   
-                            // >>> Вынести проверку опций в отдельный метод <<<
-
-                           // Обработка пакета подверждения доставки сообщения
-                           // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
-                           if (messageHeaderWithoutHash[4] == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(messageBody,0))
-                            {
-
-                                // Установить что последнее сообщение было доставлено
-                                _sendedPacketDelivered[messageHeaderWithoutHash[1]] = true;
-                                _answerEvent.Set();
-                            }
-
-                            // Обработка пакета разрешения на передачу файла
-                            // Если получено разрешение на передачу файлов
-                            if (messageHeaderWithoutHash[4] == 0x41)
-                            {
-                                if ( _allowSendingFile)
-                                {
-                                    // Debug message
-                                    MessageBox.Show("Запрос одобрен!!");
-
-                                    // Начать отправку файла
-                                    _allowSendingFile = false;
-                                    _workWithFileNow = true;
-                                    _countOfFilePackets = 0;
-                                    _fileSenderThread = new Thread(FileSender);
-                                    _fileSenderThread.Start(messageHeaderWithoutHash[1]);
-                                }
-                                
-                                  // Выслать подверждение получения пакета
-                                  AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
-                            }
-                                
-                           if (messageBody.Length > 2)
-                           {
-                               // Обработка пакета текстового сообщения 
-                               // Структура пакета текстового сообщения 
-                               // | Тип пакета | Контрольная сумма данных |   Данные   |
-                               // |   1 байт   |          2 байта         | 0 - x байт | 
-                               if (messageBody[0] == 0x54)
-                               {
-                                   byte[] messageWithOutHash = new byte[messageBody.Length - 3];
-                                   Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
-
-                                   if (_crc16.ComputeChecksum(messageWithOutHash) ==
-                                       BitConverter.ToUInt16(new byte[] {messageBody[1], messageBody[2]}, 0))
-                                   {
-                                       // Debug message
-                                       // MessageBox.Show("OKAY SECOND HASH IS MATCHED!");
-
-                                       // Проверяет необходимоли разархивировать сообщение
-                                       if (messageHeaderWithoutHash[5] == 0x43)
-                                       {
-                                           messageWithOutHash = Compressor.Unzip(messageWithOutHash);
-                                       }
-
-                                       // Debug message
-                                       MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
-
-                                       // Выслать подверждение получения пакета
-                                       AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);           
-                                   }
-                               }
-
-
-                               // Обработка пакета запроса на передачу файла
-                               // Структура пакета запроса на передачу файла
-                               // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
-                               // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
-                               if (messageBody[0] == 0x52)
-                               {
-                                   byte[] messageWithOutHash = new byte[messageBody.Length - 3];
-                                   Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
-
-
-                                   if (_crc16.ComputeChecksum(messageWithOutHash) ==
-                                       BitConverter.ToUInt16(new byte[] {messageBody[1], messageBody[2]}, 0))
-                                   {
-                                       MessageBox.Show("Совпал хеш по запросу");
-
-                                       // Выслать подверждение получения пакета
-                                       AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
-                                      
-                                       if (!_workWithFileNow)
-                                       {
-                                           _workWithFileNow = true;
-
-                                           //Высылает разрешение на отправку файла  
-                                           AddPacketToQueue("", messageHeaderWithoutHash[1], 0x41);
-
-                                           //Обнулить счетчик пакетов файла
-                                           _countOfFilePackets = 0;
-
-                                           _receivingFileName = Encoding.UTF8.GetString(messageWithOutHash, 8,
-                                                                                        messageWithOutHash.Length - 8);
-                                           _receivingFileSize = BitConverter.ToInt64(messageWithOutHash, 0);
-
-                                           // Создает файл если его еще нет
-                                           CreateFile(_receivingFileName);
-
-                                           MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
-                                                           "Имя файла = " + _receivingFileName);
-                                       }
-
-                                   }
-                               }
-
-                               // Обработка пакета файла
-                               // Структура пакета файла
-                               // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
-                               // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
-
-                               if (messageBody[0] == 0x46 && messageBody.Length>4)
-                               {
-                                   byte[] messageWithOutHash = new byte[messageBody.Length - 5];
-                                   Array.Copy(messageBody, 5, messageWithOutHash, 0, messageWithOutHash.Length);
-
-
-                                   if (_crc16.ComputeChecksum(messageWithOutHash) ==
-                                       BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0) && (_countOfFilePackets == messageBody[4]))
-                                   {
-                                       MessageBox.Show("Совпал хеш и номер пакета в пакете файла");
-
-                                       // Выслать подверждение получения пакета
-                                       AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), messageHeaderWithoutHash[1], 0x06);
-
-                                       // Разархивация данных
-                                       messageWithOutHash = Compressor.Unzip(messageWithOutHash); 
-
-                                       // Запись данных в файл
-                                       ByteArrayToFile(_receivingFileFullName, messageWithOutHash);
-
-                                       // Инкрементирует число принятых пакетов
-                                       _countOfFilePackets++;
-
-                                       // Если пакет последний в цепочке
-                                       if (messageBody[3] == 0x4C)
-                                       {
-                                           MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets );
-                                           _workWithFileNow = false;
-                                       }
-
-
-
-                                   }
-                               }
-
-                           }
-
-
-                       }
-                       else
-                       {
-                          // Debug message
-                          MessageBox.Show("Hash or ID NOT matches!"); 
-                       }
+                        //Функция разбора пакета
+                        ParsePacket(messageHeaderWithoutHash);
                          
-                    }
+                    } 
                 }
-                // Надо ли оно тут?!  Надо, но вопрос сколько именно.
-                Thread.Sleep(100);
+                // Если данных нет, ожидать в течении _sleepTime
+                Thread.Sleep(_sleepTime);
             }
 
         }
 
-        public bool CreateFile (string _fileName) 
+        private void ParsePacket(byte[] packetHeaderWithoutHash)
+        {
+
+            // Сверка CRC и id
+            if (_crc16.ComputeChecksum(packetHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && packetHeaderWithoutHash[0] == _clietnId)
+            {
+                // Получает значение длинны тела сообщения
+                ushort lenght =
+               BitConverter.ToUInt16(new byte[] { packetHeaderWithoutHash[2], packetHeaderWithoutHash[3] }, 0);
+
+                // Считывает тело сообщения 
+                byte[] messageBody = new byte[lenght];
+                _comPortReader.Read(messageBody, 0, lenght);
+
+
+                // >>> Вынести проверку опций в отдельный метод <<<
+
+                // Обработка пакета подверждения доставки сообщения
+                // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
+                if (packetHeaderWithoutHash[4] == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(messageBody, 0))
+                {
+
+                    // Установить что последнее сообщение было доставлено
+                    _sendedPacketDelivered[packetHeaderWithoutHash[1]] = true;
+                    _answerEvent.Set();
+                }
+
+                // Обработка пакета разрешения на передачу файла
+                // Если получено разрешение на передачу файлов
+                if (packetHeaderWithoutHash[4] == 0x41)
+                {
+                    if (_allowSendingFile)
+                    {
+#if DEBUG
+                                    // Debug message
+                                    MessageBox.Show("Запрос одобрен!!");
+#endif
+                        // Начать отправку файла
+                        _allowSendingFile = false;
+                        _workWithFileNow = true;
+                        _countOfFilePackets = 0;
+                        _fileSenderThread = new Thread(FileSender);
+                        _fileSenderThread.Start(packetHeaderWithoutHash[1]);
+                    }
+
+                    // Выслать подверждение получения пакета
+                    AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+                }
+
+                if (messageBody.Length > 2)
+                {
+                    // Обработка пакета текстового сообщения 
+                    // Структура пакета текстового сообщения 
+                    // | Тип пакета | Контрольная сумма данных |   Данные   |
+                    // |   1 байт   |          2 байта         | 0 - x байт | 
+                    if (messageBody[0] == 0x54)
+                    {
+                        byte[] messageWithOutHash = new byte[messageBody.Length - 3];
+                        Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+
+                        if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                        {
+                            // Проверяет необходимоли разархивировать сообщение
+                            if (packetHeaderWithoutHash[5] == 0x43)
+                            {
+                                messageWithOutHash = Compressor.Unzip(messageWithOutHash);
+                            }
+
+                            // Debug message
+                            MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
+
+                            // Выслать подверждение получения пакета
+                            AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+                        }
+                    }
+
+
+                    // Обработка пакета запроса на передачу файла
+                    // Структура пакета запроса на передачу файла
+                    // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
+                    // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
+                    if (messageBody[0] == 0x52)
+                    {
+                        byte[] messageWithOutHash = new byte[messageBody.Length - 3];
+                        Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+
+
+                        if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                        {
+                            // Выслать подверждение получения пакета
+                            AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+
+                            if (!_workWithFileNow)
+                            {
+                                _workWithFileNow = true;
+
+                                //Высылает разрешение на отправку файла  
+                                AddPacketToQueue("", packetHeaderWithoutHash[1], 0x41);
+
+                                //Обнулить счетчик пакетов файла
+                                _countOfFilePackets = 0;
+
+                                _receivingFileName = Encoding.UTF8.GetString(messageWithOutHash, 8,
+                                                                             messageWithOutHash.Length - 8);
+                                _receivingFileSize = BitConverter.ToInt64(messageWithOutHash, 0);
+
+                                // Создает файл если его еще нет
+                                CreateFile(_receivingFileName);
+#if DEBUG
+MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
+                "Имя файла = " + _receivingFileName);
+#endif
+                            }
+
+                        }
+                    }
+
+                    // Обработка пакета файла
+                    // Структура пакета файла
+                    // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
+                    // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
+
+                    if (messageBody[0] == 0x46 && messageBody.Length > 4)
+                    {
+                        byte[] messageWithOutHash = new byte[messageBody.Length - 5];
+                        Array.Copy(messageBody, 5, messageWithOutHash, 0, messageWithOutHash.Length);
+
+
+                        if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0) && (_countOfFilePackets == messageBody[4]))
+                        {
+                            // Выслать подверждение получения пакета
+                            AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+
+                            // Разархивация данных
+                            messageWithOutHash = Compressor.Unzip(messageWithOutHash);
+
+                            // Запись данных в файл
+                            ByteArrayToFile(_receivingFileFullName, messageWithOutHash);
+
+                            // Инкрементирует число принятых пакетов
+                            _countOfFilePackets++;
+
+                            // Если пакет последний в цепочке
+                            if (messageBody[3] == 0x4C)
+                            {
+                                MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
+                                _workWithFileNow = false;
+                            }
+                        }
+                    }
+
+                }
+
+
+            }
+            else
+            {
+                // Debug message
+                MessageBox.Show("Hash or ID NOT matches!");
+            }
+        }
+
+        public bool CreateFile (string fileName) 
         {
             // Создает папку в "Мои документы" если ее нет
             string md = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + "\\ChatRecivedFiles\\";
@@ -661,17 +650,25 @@ namespace ChatClient
                 Directory.CreateDirectory(md);
             }
 
-            // Создает файл если его нет
-            if ((File.Exists(md+_fileName)))
+            // Проверяет наличие файла
+            if ((File.Exists(md+fileName)))
             {
-                MessageBox.Show("Такой файл уже существует");
-                return false;
+                // Если файл существует то предлагает его перезаписать
+                DialogResult dialogResult = MessageBox.Show("Файл " + fileName  + " уже существует, перезаписать его?", "Перезаписать файл?", MessageBoxButtons.YesNo);
+
+                // В случае отказа прекращает фанкцию
+                if (dialogResult == DialogResult.No)
+                {
+
+                    // TO DO: Добавить код отмены приема файла
+                    return false;
+                }               
             }
 
             try
             {
-                FileStream fs = File.Create(md + _fileName);
-                _receivingFileFullName = md + _fileName;
+                FileStream fs = File.Create(md + fileName);
+                _receivingFileFullName = md + fileName;
                 fs.Close();
             }
             catch (Exception _Exception)

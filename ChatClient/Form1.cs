@@ -27,25 +27,23 @@ namespace ChatClient
 
         private void button1_Click(object sender, EventArgs e)
         {
-           // comPort.SendTextMessage(richTextBox1.Text, 0);
-
-          OpenFileDialog od = new OpenFileDialog();
-         
-          if (od.ShowDialog() == DialogResult.OK)
-          {
-              MessageBox.Show(od.FileName);
-              comPort.SendFileTransferRequest(od.FileName, 0);
-          }
-            
-          //  comPort.CreateFile("TESTFILE.txt");
-
-
-
+           comPort.SendTextMessage(richTextBox1.Text, 0);
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             comPort = new ClientPort(textBox1.Text, textBox2.Text, 0);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog od = new OpenFileDialog();
+
+            if (od.ShowDialog() == DialogResult.OK)
+            {
+                MessageBox.Show(od.FileName);
+                comPort.SendFileTransferRequest(od.FileName, 0);
+            }
         }
     }
 }
