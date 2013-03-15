@@ -27,12 +27,14 @@ namespace ChatClient
 
         private void button1_Click(object sender, EventArgs e)
         {
-           comPort.SendTextMessage(richTextBox1.Text, 0);
+           comPort.SendTextMessage(richTextBox2.Text, 0);
+           
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             comPort = new ClientPort(textBox1.Text, textBox2.Text, 0);
+            timer1.Enabled = true;
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -44,6 +46,16 @@ namespace ChatClient
                 MessageBox.Show(od.FileName);
                 comPort.SendFileTransferRequest(od.FileName, 0);
             }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (comPort.InputMessageQueue.Count > 0)
+            {
+                richTextBox1.AppendText(comPort.InputMessageQueue.Dequeue().ToString()+'\n');
+                
+            }
+
         }
     }
 }

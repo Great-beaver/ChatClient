@@ -22,7 +22,9 @@ namespace ChatClient
         private byte _clietnId;
         private Crc16 _crc16 = new Crc16();
         private Queue _outMessagesQueue;
-        private int _outMessageQueueSize = 100;
+        private int _outMessageQueueSize = 200;
+        public Queue InputMessageQueue;
+        public int InputMessageQueueSize = 100;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
@@ -85,6 +87,8 @@ namespace ChatClient
            _comPortWriter.ReadBufferSize = 65000;
 
            _outMessagesQueue = new Queue(_outMessageQueueSize);
+           
+            InputMessageQueue = new Queue(InputMessageQueueSize);
 
             // Пакет разрешается отправить только если значение равно true
             // При отправке пакета значение устанавливается в false
@@ -141,7 +145,7 @@ namespace ChatClient
                 while (true)
                 {
                     // Если буфер почти заполнен то поток ожидает 10 мс и повторяет проверку
-                    if (_outMessagesQueue.Count < _outMessageQueueSize - 10)
+                    if (QueueCount(_outMessagesQueue)< _outMessageQueueSize - 80)
                     {
                         // Если эот не последний пакет то отправляем весь буфер
                         if (countOfSendedPackets < totalCountOfPackets)
@@ -173,17 +177,19 @@ namespace ChatClient
         }
 
         private void Write()
-        { 
+        {
+            byte[] outPacket;
             while (_continue)
             {
                 // Определяет есть ли пакеты в очереди
-                if (_outMessagesQueue.Count > 0)
+                if (QueueCount(_outMessagesQueue) > 0)
                 {
                     // Блокировка очередни на время извлечения пакета
-                      lock (_outMessagesQueue)
-                      {
-                            byte[] outPacket = (byte[])_outMessagesQueue.Dequeue();
-                            _answerEvent.Reset();
+                    lock (_outMessagesQueue)
+                    {
+                        outPacket = (byte[]) _outMessagesQueue.Dequeue();
+                    }
+                    _answerEvent.Reset();
 
                           // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
                           byte[] data= new byte[outPacket.Length-10];
@@ -202,31 +208,36 @@ namespace ChatClient
                               {
                                   if (_answerEvent.WaitOne(3000, false))
                                   {
-                                         #if DEBUG
+                                    
                                          // Debug message
-                                         MessageBox.Show("Сообщение доставлено!");
-                                         #endif
+                                        // MessageBox.Show("Сообщение доставлено!");
+                                      if (PacketType(outPacket)=="Text")
+                                      {
+                                          InputMessageQueue.Enqueue("Сообщение доставлено!");  
+                                      }
                                       break;
                                   }
                                   else
                                   {
                                       if (++attempts > 3)
                                       {
-                                            #if DEBUG
-                                            MessageBox.Show("Сообщение НЕ доставлено!");
-                                            #endif
+
+                                            //MessageBox.Show("Сообщение НЕ доставлено!");
+
+                                          InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
                                           break;
+
                                       }
-                                            #if DEBUG
+
                                             // Debug message
                                             MessageBox.Show("Переотправка сообщения попытка № " + attempts);
-                                            #endif
+
                                       _comPortWriter.Write(outPacket, 0, outPacket.Length);
                                       
                                   }
                               }
                           }
-                      }
+                      
                 }
                 Thread.Sleep(_sleepTime);
             }
@@ -437,7 +448,11 @@ namespace ChatClient
             Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,8,2);
 
             //Добавляем пакет в очередь на отправку
-            _outMessagesQueue.Enqueue(outPacket);
+            lock (_outMessagesQueue)
+            {
+                _outMessagesQueue.Enqueue(outPacket); 
+            }
+            
 
             return true;
         }
@@ -525,6 +540,7 @@ namespace ChatClient
                     AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
                 }
 
+                // Защита от случая если в пакете меньше данных чем необходимо для обработки
                 if (messageBody.Length > 2)
                 {
                     // Обработка пакета текстового сообщения 
@@ -546,10 +562,20 @@ namespace ChatClient
                             }
 
                             // Debug message
-                            MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
+                            //MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
+                            lock (InputMessageQueue)
+                            {
+                                InputMessageQueue.Enqueue(Encoding.UTF8.GetString(messageWithOutHash)); 
+                            }
+                            
 
                             // Выслать подверждение получения пакета
                             AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+                        }
+                        else
+                        {
+                            //Debug message
+                            MessageBox.Show("Ткстовый пакет: хеш не совпал");
                         }
                     }
 
@@ -628,6 +654,21 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                                 _workWithFileNow = false;
                             }
                         }
+                        else
+                        {
+                            //Debug messages
+                            if (_crc16.ComputeChecksum(messageWithOutHash) !=
+                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                            {
+                                MessageBox.Show("Пакет файла: не совпал хеш");
+                            }
+                           
+                            if (_countOfFilePackets != messageBody[4])
+                            {
+                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + messageBody[4] + "сохраненый номер " + _countOfFilePackets);
+                            }
+
+                        }
                     }
 
                 }
@@ -680,7 +721,30 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
             return false;
         }
 
+        private string PacketType(byte[] packet)
+        {
+            if (packet.Length<11)
+            {
+                return "Error";
+            }
 
+            if (packet[10] == 0x54)
+            {
+                return "Text";
+            }
+
+            return "Unknown";
+
+        }
+
+        private int QueueCount (Queue queue)
+        {
+            lock (queue)
+            {
+                return queue.Count;
+            }
+            
+        }
 
 
     }
