@@ -20,7 +20,6 @@ namespace ChatClient
         private Thread _writeThread;
         private Thread _fileSenderThread;
         private byte _clietnId;
-        private Crc16 _crc16 = new Crc16();
         private Queue _outMessagesQueue;
         private int _outMessageQueueSize = 200;
         public Queue InputMessageQueue;
@@ -196,7 +195,7 @@ namespace ChatClient
 
                            Array.Copy(outPacket,10,data,0,data.Length);
 
-                          _lastMessageCrc = _crc16.ComputeChecksum(data);
+                          _lastMessageCrc = Crc16.ComputeChecksum(data);
 
                           lock (_comPortWriter)
                           {
@@ -276,7 +275,7 @@ namespace ChatClient
             messagePacket[0] = 0x54;
 
             // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
-            Array.Copy(_crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
+            Array.Copy(Crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
 
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[3+]
             Array.Copy(messageBody, 0, messagePacket, 3, messageBody.Length);
@@ -324,7 +323,7 @@ namespace ChatClient
             Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packetWithOutHash, 8, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
 
             // Вычисляет и вставляет CRC в пакет
-            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash), 0, packet, 1, 2);
+            Array.Copy(Crc16.ComputeChecksumBytes(packetWithOutHash), 0, packet, 1, 2);
 
             Array.Copy(packetWithOutHash,0,packet,3,packetWithOutHash.Length);
 
@@ -349,7 +348,7 @@ namespace ChatClient
             messagePacket[0] = 0x46;
 
             // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
-            Array.Copy(_crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
+            Array.Copy(Crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
 
             // Указавает последний ли это пакет в последовательности 
             if (lastPacketInChain)
@@ -442,7 +441,7 @@ namespace ChatClient
             Array.Copy(messageBody,0,outPacket,10,messageBody.Length);
 
             // Вставляет длинну тела сообщения в Header'а, то есть в packetWithOutHash[2-3] 
-            Array.Copy(BitConverter.GetBytes(((short)messageBody.Length)), 0, packetWithOutHash, 2, 2);
+            Array.Copy(BitConverter.GetBytes(((ushort)messageBody.Length)), 0, packetWithOutHash, 2, 2);
 
             // Выставляет опции в Header
             packetWithOutHash[4] = option1;
@@ -452,7 +451,7 @@ namespace ChatClient
             Array.Copy(packetWithOutHash, 0, outPacket, 2, 6);
 
             // Вычисляет и вставляет CRC Header'а в пакет
-            Array.Copy(_crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,8,2);
+            Array.Copy(Crc16.ComputeChecksumBytes(packetWithOutHash),0,outPacket,8,2);
 
             if (sendPacketImmediately)
             {
@@ -479,7 +478,7 @@ namespace ChatClient
 
             while (_continue)
             {
-                // Структура пакета
+                // Структура заголовка пакета
                 // | Сигнатура | Получатель | Отправитель | Длинна данных |  Опции   | Контрольная сумма |   Данные   | 
                 // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт |
 
@@ -512,7 +511,7 @@ namespace ChatClient
         {
 
             // Сверка CRC и id
-            if (_crc16.ComputeChecksum(packetHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && packetHeaderWithoutHash[0] == _clietnId)
+            if (Crc16.ComputeChecksum(packetHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && packetHeaderWithoutHash[0] == _clietnId)
             {
                 // Получает значение длинны тела сообщения
                 ushort lenght =
@@ -554,7 +553,7 @@ namespace ChatClient
                     }
 
                     // Выслать подверждение получения пакета
-                    AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
                 }
 
                 // Защита от случая если в пакете меньше данных чем необходимо для обработки
@@ -569,7 +568,7 @@ namespace ChatClient
                         byte[] messageWithOutHash = new byte[messageBody.Length - 3];
                         Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
-                        if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                        if (Crc16.ComputeChecksum(messageWithOutHash) ==
                             BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
                         {
                             // Проверяет необходимоли разархивировать сообщение
@@ -587,7 +586,7 @@ namespace ChatClient
                             
 
                             // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06,0x00,true);
+                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06,0x00,true);
                         }
                         else
                         {
@@ -607,11 +606,11 @@ namespace ChatClient
                         Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
 
-                        if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                        if (Crc16.ComputeChecksum(messageWithOutHash) ==
                             BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
                         {
                             // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06, 0x00, true);
+                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06, 0x00, true);
 
                             if (!_workWithFileNow)
                             {
@@ -649,11 +648,11 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                         Array.Copy(messageBody, 5, messageWithOutHash, 0, messageWithOutHash.Length);
 
 
-                        if (_crc16.ComputeChecksum(messageWithOutHash) ==
+                        if (Crc16.ComputeChecksum(messageWithOutHash) ==
                             BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0) && (_countOfFilePackets == messageBody[4]))
                         {
                             // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(_crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
+                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06);
 
                             // Разархивация данных
                             messageWithOutHash = Compressor.Unzip(messageWithOutHash);
@@ -674,7 +673,7 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                         else
                         {
                             //Debug messages
-                            if (_crc16.ComputeChecksum(messageWithOutHash) !=
+                            if (Crc16.ComputeChecksum(messageWithOutHash) !=
                             BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
                             {
                                 MessageBox.Show("Пакет файла: не совпал хеш");

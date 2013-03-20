@@ -5,12 +5,12 @@ using System.Text;
 
 namespace ChatClient
 {
-    public class Crc16
+    public static class Crc16
     {
         const ushort polynomial = 0xA001;
-        ushort[] table = new ushort[256];
+        static ushort[] table = new ushort[256];
 
-        public ushort ComputeChecksum(byte[] bytes)
+        public static ushort ComputeChecksum(byte[] bytes)
         {
             ushort crc = 0;
             for (int i = 0; i < bytes.Length; ++i)
@@ -19,15 +19,15 @@ namespace ChatClient
                 crc = (ushort)((crc >> 8) ^ table[index]);
             }
             return crc;
-        } 
+        }
 
-        public byte[] ComputeChecksumBytes(byte[] bytes)
+        public static byte[] ComputeChecksumBytes(byte[] bytes)
         {
             ushort crc = ComputeChecksum(bytes);
             return BitConverter.GetBytes(crc);
         }
 
-        public Crc16()
+         static Crc16()
         {
             ushort value;
             ushort temp;
