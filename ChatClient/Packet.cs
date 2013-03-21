@@ -9,14 +9,15 @@ namespace ChatClient
         // |  2 байта  |   1 байт   |   1 байт    |    2 байта    | 2 байта  |      2 байта      | 0 - x байт | 
         // | 0xAA 0x55 |
 
-        public byte[] Signature;
-        public byte Recipient;
-        public byte Sender;
-        public ushort DataLenght;
-        public byte Option1;
-        public byte Option2;
-        public ushort Crc;
-        public byte[] Data;
+        public readonly byte[] Signature;
+        public readonly byte Recipient;
+        public readonly byte Sender;
+        public readonly ushort DataLenght;
+        public readonly byte Option1;
+        public readonly byte Option2;
+        public readonly ushort Crc;
+        public readonly byte[] ByteData;
+        public readonly object Data;
 
         // Массив в котором собирается завершенный пакет
         private byte[] _packet;
@@ -36,11 +37,36 @@ namespace ChatClient
             Option1 = option1;
             Option2 = option2;
 
-            // TO DO: лучше принимать структуру PacketData
-            Data = new byte[data.Length];
+            // Значение по умолчанию
+            Data = "Error";
+
+            // | Тип пакета |   Данные   |
+            // |   1 байт   | 0 - x байт | 
+            if (data[0] == 0x54 && data.Length >= 1)
+            {
+                    Data = new TextData(data);
+            }
+
+            // | Тип пакета |  Длина файла   | Имя файла |
+            // |   1 байт   |     8 байт     |  0 - 1024 |
+            if (data[0] == 0x52 && data.Length >= 9)
+            {
+                Data = new FileRequest(data);
+            }
+
+            // | Тип пакета | Последний пакет | Номер пакета |  Данные  |
+            // |   1 байт   |      1 байт     |    1 байт    |  0 - ... |
+            if (data[0] == 0x46 && data.Length >= 3)
+            {
+                Data = new FileData(data);
+            }
+
+
+
+            ByteData = new byte[data.Length];
 
             // Копирует данные
-            Array.Copy(data, 0, Data, 0, data.Length);
+            Array.Copy(data, 0, ByteData, 0, data.Length);
 
             // TO DO: Вычислять CRC учитывая данные пакета и header, убрать отдельное вычисление CRC данных
 
@@ -53,12 +79,14 @@ namespace ChatClient
             Array.Copy(BitConverter.GetBytes(DataLenght),0,_packetForCrc,2,2);
             _packetForCrc[4] = Option1;
             _packetForCrc[5] = Option2;
-            Array.Copy(Data,0,_packetForCrc,6,DataLenght);
+            Array.Copy(ByteData, 0, _packetForCrc, 6, DataLenght);
 
             Crc = Crc16.ComputeChecksum(_packetForCrc);
 
             // Массив для отправки
             _packet = new byte[10 + data.Length];
+
+            
         }
 
         public byte[] ToByte()
@@ -82,7 +110,7 @@ namespace ChatClient
             Array.Copy(BitConverter.GetBytes(Crc),0,_packet,8,2);
 
 
-            Array.Copy(Data,0,_packet,10,Data.Length);
+            Array.Copy(ByteData, 0, _packet, 10, ByteData.Length);
             return _packet;
         }
 
