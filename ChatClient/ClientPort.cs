@@ -479,14 +479,46 @@ namespace ChatClient
                     // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
                     if (_comPortReader.BytesToRead >= 8)
                     {
+                        // Данный блок кода не используется
                         // | Получатель | Отправитель | Длинна данных |  Опции   |
                         // |   1 байт   |   1 байт    |    2 байта    | 2 байта  | = 6 байт
                         // Считывает header без CRC 
-                        byte[] messageHeaderWithoutHash = new byte[6];
-                        _comPortReader.Read(messageHeaderWithoutHash, 0, 6);
+                        //byte[] messageHeaderWithoutHash = new byte[6];
+                        //_comPortReader.Read(messageHeaderWithoutHash, 0, 6);
 
-                        //Функция разбора пакета
-                        ParsePacket(messageHeaderWithoutHash);
+
+
+
+                        // Считывание данных для создания пакета
+                        // Здесь важен строгий порядок считывания байтов, точно как в пакете.
+
+                        byte recipient = (byte)_comPortReader.ReadByte();
+                        byte sender = (byte)_comPortReader.ReadByte();
+                        ushort dataLenght = BitConverter.ToUInt16(
+                                new byte[] {(byte) _comPortReader.ReadByte(), (byte) _comPortReader.ReadByte()}, 0);
+                        byte option1 = (byte)_comPortReader.ReadByte();
+                        byte option2 = (byte)_comPortReader.ReadByte();
+                        ushort crc = BitConverter.ToUInt16(
+                                new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+
+                        byte[] data = new byte[dataLenght];
+                        _comPortReader.Read(data, 0, dataLenght);
+
+
+
+                        Packet packet = new Packet(recipient, sender, option1, option2, data);
+
+                        if (packet.Crc == crc && packet.Recipient == _clietnId)
+                        {
+                            //Функция разбора пакета
+                            ParsePacket(packet);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Hash or ID NOT matches!");    
+                        }
+                        
+                        
                          
                     } 
                 }
@@ -496,36 +528,26 @@ namespace ChatClient
 
         }
 
-        private void ParsePacket(byte[] packetHeaderWithoutHash)
+        private void ParsePacket(Packet packet)
         {
 
-            // Сверка CRC и id
-            if (Crc16.ComputeChecksum(packetHeaderWithoutHash) == BitConverter.ToUInt16(new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0) && packetHeaderWithoutHash[0] == _clietnId)
-            {
-                // Получает значение длинны тела сообщения
-                ushort lenght =
-               BitConverter.ToUInt16(new byte[] { packetHeaderWithoutHash[2], packetHeaderWithoutHash[3] }, 0);
-
-                // Считывает тело сообщения 
-                byte[] messageBody = new byte[lenght];
-                _comPortReader.Read(messageBody, 0, lenght);
 
 
                 // >>> Вынести проверку опций в отдельный метод <<<
 
                 // Обработка пакета подверждения доставки сообщения
                 // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
-                if (packetHeaderWithoutHash[4] == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(messageBody, 0))
+                if (packet.Option1 == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(packet.Data, 0))
                 {
 
                     // Установить что последнее сообщение было доставлено
-                    _sendedPacketDelivered[packetHeaderWithoutHash[1]] = true;
+                    _sendedPacketDelivered[packet.Sender] = true;
                     _answerEvent.Set();
                 }
 
                 // Обработка пакета разрешения на передачу файла
                 // Если получено разрешение на передачу файлов
-                if (packetHeaderWithoutHash[4] == 0x41)
+                if (packet.Option1 == 0x41)
                 {
                     if (_allowSendingFile)
                     {
@@ -538,30 +560,30 @@ namespace ChatClient
                         _workWithFileNow = true;
                         _countOfFilePackets = 0;
                         _fileSenderThread = new Thread(FileSender);
-                        _fileSenderThread.Start(packetHeaderWithoutHash[1]);
+                        _fileSenderThread.Start(packet.Sender);
                     }
 
                     // Выслать подверждение получения пакета
-                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06, 0x00, true);
+                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
                 }
 
                 // Защита от случая если в пакете меньше данных чем необходимо для обработки
-                if (messageBody.Length > 2)
+                if (packet.DataLenght > 2)
                 {
                     // Обработка пакета текстового сообщения 
                     // Структура пакета текстового сообщения 
                     // | Тип пакета | Контрольная сумма данных |   Данные   |
                     // |   1 байт   |          2 байта         | 0 - x байт | 
-                    if (messageBody[0] == 0x54)
+                    if (packet.Data[0] == 0x54)
                     {
-                        byte[] messageWithOutHash = new byte[messageBody.Length - 3];
-                        Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                        byte[] messageWithOutHash = new byte[packet.DataLenght - 3];
+                        Array.Copy(packet.Data, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
                         if (Crc16.ComputeChecksum(messageWithOutHash) ==
-                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                            BitConverter.ToUInt16(new byte[] { packet.Data[1], packet.Data[2] }, 0))
                         {
                             // Проверяет необходимоли разархивировать сообщение
-                            if (packetHeaderWithoutHash[5] == 0x43)
+                            if (packet.Option2 == 0x43)
                             {
                                 messageWithOutHash = Compressor.Unzip(messageWithOutHash);
                             }
@@ -575,7 +597,7 @@ namespace ChatClient
                             
 
                             // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06,0x00,true);
+                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
                         }
                         else
                         {
@@ -589,24 +611,24 @@ namespace ChatClient
                     // Структура пакета запроса на передачу файла
                     // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
                     // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
-                    if (messageBody[0] == 0x52)
+                    if (packet.Data[0] == 0x52)
                     {
-                        byte[] messageWithOutHash = new byte[messageBody.Length - 3];
-                        Array.Copy(messageBody, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                        byte[] messageWithOutHash = new byte[packet.DataLenght - 3];
+                        Array.Copy(packet.Data, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
 
                         if (Crc16.ComputeChecksum(messageWithOutHash) ==
-                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                            BitConverter.ToUInt16(new byte[] { packet.Data[1], packet.Data[2] }, 0))
                         {
                             // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06, 0x00, true);
+                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
 
                             if (!_workWithFileNow)
                             {
                                 _workWithFileNow = true;
 
                                 //Высылает разрешение на отправку файла  
-                                AddPacketToQueue("", packetHeaderWithoutHash[1], 0x41);
+                                AddPacketToQueue("", packet.Sender, 0x41);
 
                                 //Обнулить счетчик пакетов файла
                                 _countOfFilePackets = 0;
@@ -631,17 +653,17 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                     // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
                     // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
 
-                    if (messageBody[0] == 0x46 && messageBody.Length > 4)
+                    if (packet.Data[0] == 0x46 && packet.Data.Length > 4)
                     {
-                        byte[] messageWithOutHash = new byte[messageBody.Length - 5];
-                        Array.Copy(messageBody, 5, messageWithOutHash, 0, messageWithOutHash.Length);
+                        byte[] messageWithOutHash = new byte[packet.DataLenght - 5];
+                        Array.Copy(packet.Data, 5, messageWithOutHash, 0, messageWithOutHash.Length);
 
 
                         if (Crc16.ComputeChecksum(messageWithOutHash) ==
-                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0) && (_countOfFilePackets == messageBody[4]))
+                            BitConverter.ToUInt16(new byte[] { packet.Data[1], packet.Data[2] }, 0) && (_countOfFilePackets == packet.Data[4]))
                         {
                             // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(messageBody)), packetHeaderWithoutHash[1], 0x06 ,0x00, true);
+                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
 
                             // Разархивация данных
                             messageWithOutHash = Compressor.Unzip(messageWithOutHash);
@@ -653,7 +675,7 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                             _countOfFilePackets++;
 
                             // Если пакет последний в цепочке
-                            if (messageBody[3] == 0x4C)
+                            if (packet.Data[3] == 0x4C)
                             {
                                 MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
                                 _workWithFileNow = false;
@@ -663,14 +685,14 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                         {
                             //Debug messages
                             if (Crc16.ComputeChecksum(messageWithOutHash) !=
-                            BitConverter.ToUInt16(new byte[] { messageBody[1], messageBody[2] }, 0))
+                            BitConverter.ToUInt16(new byte[] { packet.Data[1], packet.Data[2] }, 0))
                             {
                                 MessageBox.Show("Пакет файла: не совпал хеш");
                             }
-                           
-                            if (_countOfFilePackets != messageBody[4])
+
+                            if (_countOfFilePackets != packet.Data[4])
                             {
-                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + messageBody[4] + "сохраненый номер " + _countOfFilePackets);
+                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.Data[4] + "сохраненый номер " + _countOfFilePackets);
                             }
 
                         }
@@ -679,12 +701,7 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                 }
 
 
-            }
-            else
-            {
-                // Debug message
-                MessageBox.Show("Hash or ID NOT matches!");
-            }
+
         }
 
         public bool CreateFile (string fileName) 
