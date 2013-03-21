@@ -269,8 +269,8 @@ namespace ChatClient
         public void SendTextMessage(string message, byte toId)
         {
             // Структура пакета данных текстового сообщения 
-            // | Тип пакета | Контрольная сумма данных |   Данные   |
-            // |   1 байт   |          2 байта         | 0 - x байт | 
+            // | Тип пакета |   Данные   |
+            // |   1 байт   | 0 - x байт | 
 
             byte option1 = 0x00;
             byte option2 = 0x00;
@@ -286,16 +286,13 @@ namespace ChatClient
             }
 
             // Массив байтов для отправки 
-            byte[] messagePacket = new byte[messageBody.Length+3];
+            byte[] messagePacket = new byte[messageBody.Length+1];
 
             // Задает тип пакета, 0x54 - текстовое сообщение
             messagePacket[0] = 0x54;
 
-            // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
-            Array.Copy(Crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
-
-            // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[3+]
-            Array.Copy(messageBody, 0, messagePacket, 3, messageBody.Length);
+            // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[1+]
+            Array.Copy(messageBody, 0, messagePacket, 1, messageBody.Length);
 
             AddPacketToQueue(messagePacket, toId, option1, option2);
         }
@@ -303,15 +300,15 @@ namespace ChatClient
         public void SendFileTransferRequest(string filePath, byte toId)
         {
             // Структура пакета запроса на передачу файла
-            // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
-            // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
+            // | Тип пакета |   Длина файла   | Имя файла |
+            // |   1 байт   |      8 байт     |  0 - 1024 |
 
             _fileToTransfer = new FileInfo(filePath);
 
             _allowSendingFile = true;
-
+#if DEBUG
             MessageBox.Show(_fileToTransfer.Length.ToString());
-
+#endif
             if (Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length >= 1023)
             {
                 MessageBox.Show("Слишком длинное имя файла");
@@ -325,24 +322,17 @@ namespace ChatClient
             }
 
             // Устанавливает длину конкретного пакета
-            byte[] packet = new byte[11 + Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length];
+            byte[] packet = new byte[9 + Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length];
 
-            // Устанавливает длину пакета для вычисления контрольной суммы
-            byte[] packetWithOutHash = new byte[8 + Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length];
 
             // Тип сообщения - запрос на передачу файла
             packet[0] = 0x52;
 
-            // Вставляет длину файла в пакет для вычисления CRC
-            Array.Copy(BitConverter.GetBytes(_fileToTransfer.Length), 0, packetWithOutHash, 0, 8);
+            // Вставляет длину файла в пакет
+            Array.Copy(BitConverter.GetBytes(_fileToTransfer.Length), 0, packet, 1, 8);
 
-            //Вставляет имя файла в пакет для вычисления CRC
-            Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packetWithOutHash, 8, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
-
-            // Вычисляет и вставляет CRC в пакет
-            Array.Copy(Crc16.ComputeChecksumBytes(packetWithOutHash), 0, packet, 1, 2);
-
-            Array.Copy(packetWithOutHash,0,packet,3,packetWithOutHash.Length);
+            //Вставляет имя файла в пакет
+            Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packet, 9, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
 
             AddPacketToQueue(packet, toId);
         }
@@ -350,8 +340,8 @@ namespace ChatClient
         private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
         {
             // Структура пакета файла
-            // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
-            // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
+            // | Тип пакета | Последний пакет | Номер пакета |  Данные  |
+            // |   1 байт   |      1 байт     |    1 байт    |  0 - ... |
 
             byte option1 = 0x00;
             byte option2 = 0x00;
@@ -359,31 +349,31 @@ namespace ChatClient
             byte[] messageBody = Compressor.Zip(packet); // Архивация
             
             // Массив байтов для отправки 
-            byte[] messagePacket = new byte[messageBody.Length + 5];
+            byte[] Packet = new byte[messageBody.Length + 3];
             
             // Задает тип пакета, 0x46 - файл
-            messagePacket[0] = 0x46;
+            Packet[0] = 0x46;
 
             // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
-            Array.Copy(Crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
+         //   Array.Copy(Crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
 
             // Указавает последний ли это пакет в последовательности 
             if (lastPacketInChain)
             {
-                messagePacket[3] = 0x4C;
+                Packet[1] = 0x4C;
             }
             else
             {
-                messagePacket[3] = 0x00;    
+                Packet[1] = 0x00;    
             }
 
-            messagePacket[4] = packetNUmber;
+            Packet[2] = packetNUmber;
 
 
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[4+]
-            Array.Copy(messageBody, 0, messagePacket, 5, messageBody.Length);
+            Array.Copy(messageBody, 0, Packet, 3, messageBody.Length);
 
-            AddPacketToQueue(messagePacket, toId, option1, option2);
+            AddPacketToQueue(Packet, toId, option1, option2);
         }
 
         private bool ByteArrayToFile(string fileName, byte[] byteArray)
@@ -545,12 +535,12 @@ namespace ChatClient
                 {
                     // Обработка пакета текстового сообщения 
                     // Структура пакета текстового сообщения 
-                    // | Тип пакета | Контрольная сумма данных |   Данные   |
-                    // |   1 байт   |          2 байта         | 0 - x байт | 
+                    // | Тип пакета |   Данные   |
+                    // |   1 байт   | 0 - x байт | 
                     if (packet.Data[0] == 0x54)
                     {
-                        byte[] messageWithOutHash = new byte[packet.DataLenght - 3];
-                        Array.Copy(packet.Data, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                        byte[] messageWithOutHash = new byte[packet.DataLenght - 1];
+                        Array.Copy(packet.Data, 1, messageWithOutHash, 0, messageWithOutHash.Length);
 
                             // Проверяет необходимоли разархивировать сообщение
                             if (packet.Option2 == 0x43)
@@ -564,22 +554,18 @@ namespace ChatClient
                             {
                                 InputMessageQueue.Enqueue(Encoding.UTF8.GetString(messageWithOutHash)); 
                             }
-                            
-
                             // Выслать подверждение получения пакета
                             AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
-
                     }
-
 
                     // Обработка пакета запроса на передачу файла
                     // Структура пакета запроса на передачу файла
-                    // | Тип пакета | Контрольная сумма пакета |   Длина файла   | Имя файла |
-                    // |   1 байт   |          2 байта         |      8 байт     |  0 - 1024 |
+                    // | Тип пакета |  Длина файла   | Имя файла |
+                    // |   1 байт   |     8 байт     |  0 - 1024 |
                     if (packet.Data[0] == 0x52)
                     {
-                        byte[] messageWithOutHash = new byte[packet.DataLenght - 3];
-                        Array.Copy(packet.Data, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                        byte[] messageWithOutHash = new byte[packet.DataLenght - 1];
+                        Array.Copy(packet.Data, 1, messageWithOutHash, 0, messageWithOutHash.Length);
 
                             // Выслать подверждение получения пакета
                             AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
@@ -606,20 +592,19 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
 #endif
                             }
 
-                        
                     }
 
                     // Обработка пакета файла
                     // Структура пакета файла
-                    // | Тип пакета | Контрольная сумма пакета | Последний пакет | Номер пакета |  Данные  |
-                    // |   1 байт   |          2 байта         |      1 байт     |    1 байт    |  0 - ... |
+                    // | Тип пакета | Последний пакет | Номер пакета |  Данные  |
+                    // |   1 байт   |      1 байт     |    1 байт    |  0 - ... |
 
                     if (packet.Data[0] == 0x46 && packet.Data.Length > 4)
                     {
-                        byte[] messageWithOutHash = new byte[packet.DataLenght - 5];
-                        Array.Copy(packet.Data, 5, messageWithOutHash, 0, messageWithOutHash.Length);
+                        byte[] messageWithOutHash = new byte[packet.DataLenght - 3];
+                        Array.Copy(packet.Data, 3, messageWithOutHash, 0, messageWithOutHash.Length);
 
-                        if (_countOfFilePackets == packet.Data[4])
+                        if (_countOfFilePackets == packet.Data[2])
                         {
                             // Выслать подверждение получения пакета
                             AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.Data)), packet.Sender, 0x06, 0x00, true);
@@ -634,7 +619,7 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                             _countOfFilePackets++;
 
                             // Если пакет последний в цепочке
-                            if (packet.Data[3] == 0x4C)
+                            if (packet.Data[1] == 0x4C)
                             {
                                 MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
                                 _workWithFileNow = false;
@@ -642,7 +627,7 @@ MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '
                         }
                         else
                         {
-                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.Data[4] + "сохраненый номер " + _countOfFilePackets);
+                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.Data[2] + "сохраненый номер " + _countOfFilePackets);
                         }
                     }
                 }

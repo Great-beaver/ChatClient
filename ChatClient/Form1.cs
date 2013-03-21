@@ -52,7 +52,7 @@ namespace ChatClient
         {
             if (comPort.InputMessageQueue.Count > 0)
             {
-                richTextBox1.AppendText(comPort.InputMessageQueue.Dequeue().ToString()+'\n');
+                richTextBox1.AppendText(comPort.InputMessageQueue.Dequeue().ToString() + '\n');
                 
             }
 
