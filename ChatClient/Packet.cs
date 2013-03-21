@@ -28,7 +28,7 @@ namespace ChatClient
         {
             Signature = new byte[2];
             Signature[0] = 0xAA;
-            Signature[0] = 0x55;
+            Signature[1] = 0x55;
 
             Recipient = recipient;
             Sender = sender;
@@ -42,17 +42,18 @@ namespace ChatClient
             // Копирует данные
             Array.Copy(data, 0, Data, 0, data.Length);
 
-            // TO DO: Вычислять CRC учитывая данные пакета, и убрать отдельное вычисление CRC данных
+            // TO DO: Вычислять CRC учитывая данные пакета и header, убрать отдельное вычисление CRC данных
 
-            // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   |
+            // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   | + Данные
             // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
 
-            _packetForCrc = new byte[6];
+            _packetForCrc = new byte[6 + DataLenght];
             _packetForCrc[0] = Recipient;
             _packetForCrc[1] = Sender;
             Array.Copy(BitConverter.GetBytes(DataLenght),0,_packetForCrc,2,2);
             _packetForCrc[4] = Option1;
             _packetForCrc[5] = Option2;
+            Array.Copy(Data,0,_packetForCrc,6,DataLenght);
 
             Crc = Crc16.ComputeChecksum(_packetForCrc);
 
