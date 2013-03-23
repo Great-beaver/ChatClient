@@ -92,8 +92,6 @@ namespace ChatClient
 
             InputMessageQueue = new Queue(InputMessageQueueSize);
 
-            
-
             // Пакет разрешается отправить только если значение равно true
             // При отправке пакета значение устанавливается в false
             // Пакет должен стать true после получения подтверждения о доставке или отмены доставки
@@ -166,15 +164,13 @@ namespace ChatClient
                             SendFilePacket(lastPacket, (byte)toId, _countOfFilePackets,true);
                             _workWithFileNow = false;
                             finish = true;
-                        }
-                        
+                        } 
                     break;
                     }
                         else
                             {
                                 Thread.Sleep(_sleepTime); 
                             }
-                    
                 }
                 Thread.Sleep(_sleepTime);
             }
@@ -195,7 +191,6 @@ namespace ChatClient
                     {
                         outPacket = (byte[]) _outMessagesQueue.Dequeue();
                     }
-
                 }
                 else
                 {
@@ -206,15 +201,12 @@ namespace ChatClient
                         {
                             outPacket = (byte[])_outFilePackets.Dequeue();
                         }
-
                     }
                     else
                     {
                         continue;
                     }
                 }
-                    
-
                 _answerEvent.Reset();
 
                           // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
@@ -257,11 +249,7 @@ namespace ChatClient
                                                 _comPortWriter.Write(outPacket, 0, outPacket.Length);
                                             }
                                   }
-                              }
-                          
-                      
-                
-                
+                              }    
             }
         }
 
@@ -353,9 +341,6 @@ namespace ChatClient
             // Задает тип пакета, 0x46 - файл
             Packet[0] = 0x46;
 
-            // Вычисляет и вставляет CRC Header'а в пакет, то есть в  messagePacket[1-2]
-         //   Array.Copy(Crc16.ComputeChecksumBytes(messageBody), 0, messagePacket, 1, 2);
-
             // Указавает последний ли это пакет в последовательности 
             if (lastPacketInChain)
             {
@@ -368,57 +353,18 @@ namespace ChatClient
 
             Packet[2] = packetNUmber;
 
-
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[4+]
             Array.Copy(messageBody, 0, Packet, 3, messageBody.Length);
 
             AddPacketToQueue(Packet, toId, option1, option2);
         }
 
-        private bool ByteArrayToFile(string fileName, byte[] byteArray)
-    {
-        try
-        {
-            // Открывает файл в режими для записи в конец файла
-            FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);
-
-            // Записывает блок байтов в поток и следовательно в файл
-            _FileStream.Write(byteArray, 0, byteArray.Length);
-
-            // Закрывает поток
-            _FileStream.Close();
-
-            return true;
-        }
-        catch (Exception _Exception)
-        {
-            // Ошибка
-            Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
-        }
-
-    // В случае ошибки возвращает false
-        return false;
-    }
-
-     //  private void AddPacketToQueue(string message, byte toId, byte option1 = 0x00, byte option2 = 0x00)
-     //  {
-     //  // Переводит строку в массив байтов 
-     //      byte[] messageBody = Encoding.UTF8.GetBytes(message);
-     //
-     //      AddPacketToQueue(messageBody, toId, option1, option2);
-     //  }
-
         private bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
-            // WTF!?
-            // Если указанный id не предусмотрен
-            if (toId > _sendedPacketDelivered.Length)
-            {
-                MessageBox.Show("Клиента с таким id не существует");
-                return false;
-            }
-
             Packet packet = new Packet(toId,_clietnId,option1,option2,messageBody);
+
+            // TO DO: Поправить логику условий
+            // Валидация данных
 
             if (sendPacketImmediately)
             {
@@ -429,7 +375,7 @@ namespace ChatClient
                 return true;
             }
 
-            if (PacketType(packet.ToByte())=="File")
+            if (packet.Data.Type == "FileData")
             {
                 lock (_outFilePackets)
                 {
@@ -438,15 +384,11 @@ namespace ChatClient
                 return true;
             }
 
-          
-
                 //Добавляем пакет в очередь на отправку
                 lock (_outMessagesQueue)
                 {
                     _outMessagesQueue.Enqueue(packet.ToByte());
                 }
-            
-
 
             return true;
         }
@@ -482,7 +424,6 @@ namespace ChatClient
                         {
                             //Функция разбора пакета
                             ParsePacket(packet);
-        
                         }
                         else
                         {
@@ -501,7 +442,7 @@ namespace ChatClient
 
                 // Обработка пакета подверждения доставки сообщения
                 // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
-                if (packet.Option1 == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
+                if (packet.Option1String == "ACK" && _lastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
                 {
                     // Установить что последнее сообщение было доставлено
                     _sendedPacketDelivered[packet.Sender] = true;
@@ -511,7 +452,7 @@ namespace ChatClient
 
                 // Обработка пакета разрешения на передачу файла
                 // Если получено разрешение на передачу файлов
-                if (packet.Option1 == 0x41)
+                if (packet.Option1String == "FileTransferAllowed")
                 {
                     if (_allowSendingFile)
                     {
@@ -533,87 +474,93 @@ namespace ChatClient
                 }
 
 
+
+                switch (packet.Data.Type)
+            {
+
                 // Обработка пакета текстового сообщения 
-                if (packet.Data.Type == "Text")
-                {
-
-
-                    // Определяет необходимость разархивирования
-                    if (packet.Option2 == 0x43)
+                case "Text" : 
                     {
-                        packet.Data.Content = Compressor.Unzip(packet.Data.Content);
-                    }
+                        // Определяет необходимость разархивирования
+                        if (packet.Option2String == "Compressed")
+                        {
+                            packet.Data.Content = Compressor.Unzip(packet.Data.Content);
+                        }
 
-                    lock (InputMessageQueue)
-                    {
-                        InputMessageQueue.Enqueue(Encoding.UTF8.GetString(packet.Data.Content));
+                        lock (InputMessageQueue)
+                        {
+                            InputMessageQueue.Enqueue(Encoding.UTF8.GetString(packet.Data.Content));
+                        }
+                        // Выслать подверждение получения пакета
+                        AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
                     }
-                    // Выслать подверждение получения пакета
-                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
-                }
+                    break;
 
                 // Обработка пакета запроса на передачу файла
-                if (packet.Data.Type == "FileRequest")
-                {
-                    // Выслать подверждение получения пакета
-                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
-
-                    if (!_workWithFileNow)
-                    {
-                        _workWithFileNow = true;
-
-                        //Высылает разрешение на отправку файла  
-                        AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
-
-                        //Обнулить счетчик пакетов файла
-                        _countOfFilePackets = 0;
-
-                        _receivingFileName = packet.Data.FileName;
-                        _receivingFileSize = packet.Data.FileLenght;
-
-                        // Создает файл если его еще нет
-                        CreateFile(_receivingFileName);
-#if DEBUG
-                        MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
-                                        "Имя файла = " + _receivingFileName);
-#endif
-                    }
-                }
-
-                // Обработка пакета файла
-                if (packet.Data.Type == "FileData")
-                {
-
-                    if (_countOfFilePackets == packet.Data.PacketNumber)
+                case "FileRequest":
                     {
                         // Выслать подверждение получения пакета
                         AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
 
-                        // Разархивация данных
-                        packet.Data.Content = Compressor.Unzip(packet.Data.Content);
-
-                        // Запись данных в файл
-                        ByteArrayToFile(_receivingFileFullName, packet.Data.Content);
-
-                        // Инкрементирует число принятых пакетов
-                        _countOfFilePackets++;
-
-                        // Если пакет последний в цепочке
-                        if (packet.ByteData[1] == 0x4C)
+                        if (!_workWithFileNow)
                         {
+                            _workWithFileNow = true;
+
+                            //Высылает разрешение на отправку файла  
+                            AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
+
+                            //Обнулить счетчик пакетов файла
+                            _countOfFilePackets = 0;
+
+                            _receivingFileName = packet.Data.FileName;
+                            _receivingFileSize = packet.Data.FileLenght;
+
+                            // Создает файл если его еще нет
+                            CreateFile(_receivingFileName);
 #if DEBUG
-                            MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
+                            MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
+                                            "Имя файла = " + _receivingFileName);
 #endif
-                            _workWithFileNow = false;
                         }
                     }
-                    else
-                    {
+                        break;
+
+                    // Обработка пакета файла
+                    case "FileData" :
+                        {
+
+                            if (_countOfFilePackets == packet.Data.PacketNumber)
+                            {
+                                // Выслать подверждение получения пакета
+                                AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+
+                                // Разархивация данных
+                                packet.Data.Content = Compressor.Unzip(packet.Data.Content);
+
+                                // Запись данных в файл
+                                ByteArrayToFile(_receivingFileFullName, packet.Data.Content);
+
+                                // Инкрементирует число принятых пакетов
+                                _countOfFilePackets++;
+
+                                // Если пакет последний в цепочке
+                                if (packet.Data.LastPacket == 0x4C)
+                                {
 #if DEBUG
-                        MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + _countOfFilePackets);
+                                    MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
 #endif
-                    }
-                }
+                                    _workWithFileNow = false;
+                                }
+                            }
+                            else
+                            {
+#if DEBUG
+                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + _countOfFilePackets);
+#endif
+                            }
+                        }
+                        break;
+            }
         }
 
         public bool CreateFile (string fileName) 
@@ -634,7 +581,6 @@ namespace ChatClient
                 // В случае отказа прекращает фанкцию
                 if (dialogResult == DialogResult.No)
                 {
-
                     // TO DO: Добавить код отмены приема файла
                     return false;
                 }               
@@ -652,6 +598,33 @@ namespace ChatClient
                 return false;
             }
 
+            return false;
+        }
+
+        // TO DO: Вынести нижеследующие метода из файла и сделать статичными
+
+        private bool ByteArrayToFile(string fileName, byte[] byteArray)
+        {
+            try
+            {
+                // Открывает файл в режими для записи в конец файла
+                FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);
+
+                // Записывает блок байтов в поток и следовательно в файл
+                _FileStream.Write(byteArray, 0, byteArray.Length);
+
+                // Закрывает поток
+                _FileStream.Close();
+
+                return true;
+            }
+            catch (Exception _Exception)
+            {
+                // Ошибка
+                Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+            }
+
+            // В случае ошибки возвращает false
             return false;
         }
 

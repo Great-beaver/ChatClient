@@ -15,8 +15,10 @@ namespace ChatClient.Main.Packet
         public readonly byte Recipient;
         public readonly byte Sender;
         public readonly ushort DataLenght;
-        public readonly byte Option1;
-        public readonly byte Option2;
+        public readonly byte Option1Byte;
+        public readonly byte Option2Byte;
+        public readonly string Option1String;
+        public readonly string Option2String;
         public readonly ushort Crc;
         public readonly byte[] ByteData;
         public readonly IData Data;
@@ -38,8 +40,36 @@ namespace ChatClient.Main.Packet
             Recipient = recipient;
             Sender = sender;
             DataLenght = (ushort) data.Length;
-            Option1 = option1;
-            Option2 = option2;
+            Option1Byte = option1;
+            Option2Byte = option2;
+
+            Option1String = option1.ToString();
+            Option2String = option2.ToString();
+
+            switch (option1)
+            {
+                case 0x06:
+                    {
+                        Option1String = "ACK";
+                    }
+                    break;
+
+                case 0x41:
+                    {
+                        Option1String = "FileTransferAllowed";
+                    }
+                    break;
+            }
+
+            switch (option2)
+            {
+                case 0x43:
+                    {
+                        Option2String = "Compressed";
+                    }
+                    break;
+
+            }
 
             // Значение по умолчанию
             Data = new DataError(data);
@@ -78,8 +108,8 @@ namespace ChatClient.Main.Packet
             _packetForCrc[0] = Recipient;
             _packetForCrc[1] = Sender;
             Array.Copy(BitConverter.GetBytes(DataLenght),0,_packetForCrc,2,2);
-            _packetForCrc[4] = Option1;
-            _packetForCrc[5] = Option2;
+            _packetForCrc[4] = Option1Byte;
+            _packetForCrc[5] = Option2Byte;
             Array.Copy(ByteData, 0, _packetForCrc, 6, DataLenght);
 
             Crc = Crc16.ComputeChecksum(_packetForCrc);
@@ -102,8 +132,8 @@ namespace ChatClient.Main.Packet
             Array.Copy(BitConverter.GetBytes(DataLenght), 0, _packet, 4, 2);
 
             // Опции
-            _packet[6] = Option1;
-            _packet[7] = Option2;
+            _packet[6] = Option1Byte;
+            _packet[7] = Option2Byte;
 
             //Crc
             Array.Copy(BitConverter.GetBytes(Crc),0,_packet,8,2);
