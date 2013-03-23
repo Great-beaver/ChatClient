@@ -59,6 +59,12 @@ namespace ChatClient.Main.Packet
                         Option1String = "FileTransferAllowed";
                     }
                     break;
+
+                case 0x18:
+                    {
+                        Option1String = "FileTransferDenied";
+                    }
+                    break;
             }
 
             switch (option2)

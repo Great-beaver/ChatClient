@@ -473,9 +473,20 @@ namespace ChatClient
                     return;
                 }
 
+                if (packet.Option1String == "FileTransferDenied")
+            {
+#if DEBUG
+                // Debug message
+                MessageBox.Show("В передаче файла отказано");
+#endif
+                // Выслать подверждение получения пакета
+                AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                return;
+            }
 
 
-                switch (packet.Data.Type)
+
+            switch (packet.Data.Type)
             {
 
                 // Обработка пакета текстового сообщения 
@@ -504,24 +515,50 @@ namespace ChatClient
 
                         if (!_workWithFileNow)
                         {
-                            _workWithFileNow = true;
+                            // Сообщения о том надо ли принимать файл
+                            DialogResult dialogResult = MessageBox.Show("Прниять файл " + packet.Data.FileName + 
+                                "от клиента № " + packet.Sender + " размером " + packet.Data.FileLenght/1024/1024 + "МБ?",
+                                "Передача файла", MessageBoxButtons.YesNo);
 
-                            //Высылает разрешение на отправку файла  
-                            AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
+                            
+                            if (dialogResult == DialogResult.Yes)
+                            {
+                                _workWithFileNow = true;
 
-                            //Обнулить счетчик пакетов файла
-                            _countOfFilePackets = 0;
+                                //Высылает разрешение на отправку файла  
+                                AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
 
-                            _receivingFileName = packet.Data.FileName;
-                            _receivingFileSize = packet.Data.FileLenght;
+                                //Обнулить счетчик пакетов файла
+                                _countOfFilePackets = 0;
 
-                            // Создает файл если его еще нет
-                            CreateFile(_receivingFileName);
+                                _receivingFileName = packet.Data.FileName;
+                                _receivingFileSize = packet.Data.FileLenght;
+
+                                // Создает файл если его еще нет
+                                CreateFile(_receivingFileName);
 #if DEBUG
-                            MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
-                                            "Имя файла = " + _receivingFileName);
+                                MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
+                                                "Имя файла = " + _receivingFileName);
 #endif
+                            }
+                            else
+                            {
+                                _workWithFileNow = false;
+                                //Отказ отправки файла
+                                AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x18);
+                                
+                            }                            
                         }
+                        else
+                        {
+#if DEBUG
+                            MessageBox.Show("Клиенту № " + packet.Sender + " Было отказано в передачи файла "
+                                + packet.Data.FileName + " размером " + packet.Data.FileLenght / 1024 / 1024
+                                + "МБ, так как в данный момент уже осуществляется прием другого файла ");
+#endif                                                                      
+                        }
+
+
                     }
                         break;
 
