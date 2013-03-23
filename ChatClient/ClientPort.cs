@@ -498,7 +498,7 @@ namespace ChatClient
         private void ParsePacket(Packet packet)
         {
                 // >>> Вынести проверку опций в отдельный метод <<<
-            
+
                 // Обработка пакета подверждения доставки сообщения
                 // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
                 if (packet.Option1 == 0x06 && _lastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))

@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Text;
 
 namespace ChatClient
 {
-    public struct FileRequest
+    public struct FileRequest : IData
     {
-        public readonly string Type;
-        public readonly byte[] Content;
-        public readonly long FileLenght;
+        public string Type { get; private set; }
+        public byte[] Content { get; private set; }
+        public byte LastPacket { get; private set; }
+        public byte PacketNumber { get; private set; }
+        public long FileLenght { get; private set; }
+        public string FileName { get; private set; }
 
-        public FileRequest(byte[] data)
+        public FileRequest(byte[] data) : this()
         {
             // Структура пакета запроса на передачу файла
             // | Тип пакета |  Длина файла   | Имя файла |
@@ -21,10 +25,7 @@ namespace ChatClient
             // Длинна файла
             FileLenght = BitConverter.ToInt64(data, 1);
 
-            // Непосредствено контент
-            Content = new byte[data.Length - 9];
-            // Вставляет контент в массив
-            Array.Copy(data, 9, Content, 0, Content.Length);
+            FileName = Encoding.UTF8.GetString(data, 9,data.Length - 9);
         }
 
     }

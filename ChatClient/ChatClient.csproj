@@ -61,12 +61,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ByteOperation.cs" />
-    <Compile Include="Compressor.cs" />
-    <Compile Include="Crc16.cs" />
-    <Compile Include="FileData.cs" />
-    <Compile Include="FileRequest.cs" />
-    <Compile Include="TextData.cs" />
+    <Compile Include="DataError.cs" />
+    <Compile Include="DataTypes\IData.cs" />
+    <Compile Include="Helpers\Compressor.cs" />
+    <Compile Include="Helpers\Crc16.cs" />
+    <Compile Include="DataTypes\FileData.cs" />
+    <Compile Include="DataTypes\FileRequest.cs" />
+    <Compile Include="DataTypes\TextData.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
