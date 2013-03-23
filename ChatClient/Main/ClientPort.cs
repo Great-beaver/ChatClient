@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-
+using ChatClient.Main.Packet;
 
 namespace ChatClient
 {
@@ -532,106 +532,86 @@ namespace ChatClient
                     return;
                 }
 
-                // Защита от случая если в пакете меньше данных чем необходимо для обработки
-                if (packet.DataLenght >=2)
+
+                // Обработка пакета текстового сообщения 
+                if (packet.Data.Type == "Text")
                 {
-                    // Обработка пакета текстового сообщения 
-                    // Структура пакета текстового сообщения 
-                    // | Тип пакета |   Данные   |
-                    // |   1 байт   | 0 - x байт | 
-                    if (packet.ByteData[0] == 0x54)
+
+
+                    // Определяет необходимость разархивирования
+                    if (packet.Option2 == 0x43)
                     {
-                        byte[] messageWithOutHash = new byte[packet.DataLenght - 1];
-                        Array.Copy(packet.ByteData, 1, messageWithOutHash, 0, messageWithOutHash.Length);
-
-                            // Проверяет необходимоли разархивировать сообщение
-                            if (packet.Option2 == 0x43)
-                            {
-                                messageWithOutHash = Compressor.Unzip(messageWithOutHash);
-                            }
-
-                            // Debug message
-                            //MessageBox.Show(Encoding.UTF8.GetString(messageWithOutHash));
-                            lock (InputMessageQueue)
-                            {
-                                InputMessageQueue.Enqueue(Encoding.UTF8.GetString(messageWithOutHash)); 
-                            }
-                            // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                        packet.Data.Content = Compressor.Unzip(packet.Data.Content);
                     }
 
-                    // Обработка пакета запроса на передачу файла
-                    // Структура пакета запроса на передачу файла
-                    // | Тип пакета |  Длина файла   | Имя файла |
-                    // |   1 байт   |     8 байт     |  0 - 1024 |
-                    // |    0x52    |
-                    if (packet.ByteData[0] == 0x52)
+                    lock (InputMessageQueue)
                     {
-                        byte[] messageWithOutHash = new byte[packet.DataLenght - 1];
-                        Array.Copy(packet.ByteData, 1, messageWithOutHash, 0, messageWithOutHash.Length);
+                        InputMessageQueue.Enqueue(Encoding.UTF8.GetString(packet.Data.Content));
+                    }
+                    // Выслать подверждение получения пакета
+                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                }
 
-                            // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                // Обработка пакета запроса на передачу файла
+                if (packet.Data.Type == "FileRequest")
+                {
+                    // Выслать подверждение получения пакета
+                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
 
-                            if (!_workWithFileNow)
-                            {
-                                _workWithFileNow = true;
+                    if (!_workWithFileNow)
+                    {
+                        _workWithFileNow = true;
 
-                                //Высылает разрешение на отправку файла  
-                                AddPacketToQueue(new byte[] {0x00}, packet.Sender, 0x41);
+                        //Высылает разрешение на отправку файла  
+                        AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
 
-                                //Обнулить счетчик пакетов файла
-                                _countOfFilePackets = 0;
+                        //Обнулить счетчик пакетов файла
+                        _countOfFilePackets = 0;
 
-                                _receivingFileName = Encoding.UTF8.GetString(messageWithOutHash, 8,
-                                                                             messageWithOutHash.Length - 8);
-                                _receivingFileSize = BitConverter.ToInt64(messageWithOutHash, 0);
+                        _receivingFileName = packet.Data.FileName;
+                        _receivingFileSize = packet.Data.FileLenght;
 
-                                // Создает файл если его еще нет
-                                CreateFile(_receivingFileName);
+                        // Создает файл если его еще нет
+                        CreateFile(_receivingFileName);
 #if DEBUG
-MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
-                "Имя файла = " + _receivingFileName);
+                        MessageBox.Show("Размер файла = " + _receivingFileSize.ToString() + '\n' +
+                                        "Имя файла = " + _receivingFileName);
 #endif
-                            }
-
                     }
+                }
 
-                    // Обработка пакета файла
-                    // Структура пакета файла
-                    // | Тип пакета | Последний пакет | Номер пакета |  Данные  |
-                    // |   1 байт   |      1 байт     |    1 байт    |  0 - ... |
-                    // |    0x46    |
-                    if (packet.ByteData[0] == 0x46 && packet.ByteData.Length > 4)
+                // Обработка пакета файла
+                if (packet.Data.Type == "FileData")
+                {
+
+                    if (_countOfFilePackets == packet.Data.PacketNumber)
                     {
-                        byte[] messageWithOutHash = new byte[packet.DataLenght - 3];
-                        Array.Copy(packet.ByteData, 3, messageWithOutHash, 0, messageWithOutHash.Length);
+                        // Выслать подверждение получения пакета
+                        AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
 
-                        if (_countOfFilePackets == packet.ByteData[2])
+                        // Разархивация данных
+                        packet.Data.Content = Compressor.Unzip(packet.Data.Content);
+
+                        // Запись данных в файл
+                        ByteArrayToFile(_receivingFileFullName, packet.Data.Content);
+
+                        // Инкрементирует число принятых пакетов
+                        _countOfFilePackets++;
+
+                        // Если пакет последний в цепочке
+                        if (packet.ByteData[1] == 0x4C)
                         {
-                            // Выслать подверждение получения пакета
-                            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
-
-                            // Разархивация данных
-                            messageWithOutHash = Compressor.Unzip(messageWithOutHash);
-
-                            // Запись данных в файл
-                            ByteArrayToFile(_receivingFileFullName, messageWithOutHash);
-
-                            // Инкрементирует число принятых пакетов
-                            _countOfFilePackets++;
-
-                            // Если пакет последний в цепочке
-                            if (packet.ByteData[1] == 0x4C)
-                            {
-                                MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
-                                _workWithFileNow = false;
-                            }
+#if DEBUG
+                            MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
+#endif
+                            _workWithFileNow = false;
                         }
-                        else
-                        {
-                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + _countOfFilePackets);
-                        }
+                    }
+                    else
+                    {
+#if DEBUG
+                        MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + _countOfFilePackets);
+#endif
                     }
                 }
         }

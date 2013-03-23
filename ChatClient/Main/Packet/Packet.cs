@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Windows.Forms;
+using ChatClient.Main.Packet.DataTypes;
 
-namespace ChatClient
+namespace ChatClient.Main.Packet
 {
     public struct Packet
     {
@@ -27,6 +29,8 @@ namespace ChatClient
 
         public Packet(byte recipient, byte sender,byte option1, byte option2,byte[] data)
         {
+            //TO DO: Валидация входных данных
+
             Signature = new byte[2];
             Signature[0] = 0xAA;
             Signature[1] = 0x55;
@@ -45,6 +49,7 @@ namespace ChatClient
             if (data[0] == 0x54 && data.Length >= 1)
             {
                     Data = new TextData(data);
+
             }
 
             // | Тип пакета |  Длина файла   | Имя файла |

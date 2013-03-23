@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Text;
 
-namespace ChatClient
+namespace ChatClient.Main.Packet.DataTypes
 {
     public struct FileRequest : IData
     {
         public string Type { get; private set; }
-        public byte[] Content { get; private set; }
+        public byte[] Content { get;  set; }
         public byte LastPacket { get; private set; }
         public byte PacketNumber { get; private set; }
         public long FileLenght { get; private set; }
@@ -26,6 +26,9 @@ namespace ChatClient
             FileLenght = BitConverter.ToInt64(data, 1);
 
             FileName = Encoding.UTF8.GetString(data, 9,data.Length - 9);
+
+            // Добавлено чтобы избежать значения null  
+            Content = new byte[] {0x00};
         }
 
     }

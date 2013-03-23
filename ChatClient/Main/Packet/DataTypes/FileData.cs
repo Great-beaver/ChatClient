@@ -1,12 +1,12 @@
 ﻿using System;
 
-namespace ChatClient
+namespace ChatClient.Main.Packet.DataTypes
 {
     public struct FileData : IData
 
 {
     public string Type { get; private set; }
-    public byte[] Content { get; private set; }
+    public byte[] Content { get;  set; }
     public byte LastPacket { get; private set; }
     public byte PacketNumber { get; private set; }
     public long FileLenght { get; private set; }
@@ -32,6 +32,9 @@ namespace ChatClient
         Content = new byte[data.Length - 3];
         // Вставляет контент в массив
         Array.Copy(data, 3, Content, 0, Content.Length);
+
+        // Добавлено чтобы избежать значения null    
+        FileName = "";
 
     }
 }

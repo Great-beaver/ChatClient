@@ -61,21 +61,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataError.cs" />
-    <Compile Include="DataTypes\IData.cs" />
+    <Compile Include="Main\Packet\DataTypes\DataError.cs" />
+    <Compile Include="Main\Packet\DataTypes\IData.cs" />
     <Compile Include="Helpers\Compressor.cs" />
     <Compile Include="Helpers\Crc16.cs" />
-    <Compile Include="DataTypes\FileData.cs" />
-    <Compile Include="DataTypes\FileRequest.cs" />
-    <Compile Include="DataTypes\TextData.cs" />
+    <Compile Include="Main\Packet\DataTypes\FileData.cs" />
+    <Compile Include="Main\Packet\DataTypes\FileRequest.cs" />
+    <Compile Include="Main\Packet\DataTypes\TextData.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="ClientPort.cs" />
-    <Compile Include="Packet.cs" />
+    <Compile Include="Main\ClientPort.cs" />
+    <Compile Include="Main\Packet\Packet.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Form1.resx">
