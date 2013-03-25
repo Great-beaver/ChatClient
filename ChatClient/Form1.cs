@@ -57,5 +57,15 @@ namespace ChatClient
             }
 
         }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            comPort.CancelSendingFile();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            comPort.CancelRecivingFile();
+        }
     }
 }

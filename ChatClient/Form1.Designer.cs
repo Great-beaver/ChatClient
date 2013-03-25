@@ -37,6 +37,8 @@
             this.button3 = new System.Windows.Forms.Button();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.button4 = new System.Windows.Forms.Button();
+            this.button5 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -106,11 +108,33 @@
             this.timer1.Interval = 10;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(260, 218);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(95, 23);
+            this.button4.TabIndex = 7;
+            this.button4.Text = "Cancel s file";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
+            // 
+            // button5
+            // 
+            this.button5.Location = new System.Drawing.Point(260, 247);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(95, 23);
+            this.button5.TabIndex = 8;
+            this.button5.Text = "Cancel r file";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(356, 429);
+            this.Controls.Add(this.button5);
+            this.Controls.Add(this.button4);
             this.Controls.Add(this.richTextBox2);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.textBox2);
@@ -136,6 +160,8 @@
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button button5;
     }
 }
 

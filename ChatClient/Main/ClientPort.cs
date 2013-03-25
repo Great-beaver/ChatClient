@@ -22,25 +22,36 @@ namespace ChatClient
         private byte _clietnId;
         private Queue _outMessagesQueue;
         private int _outMessageQueueSize = 200;
-        private Queue _outFilePackets;
-        private int _outFilePacketsSize = 200;
+        private Queue _outFilePacketsQueue;
+        private int _outFilePacketsQueueSize = 200;
         public Queue InputMessageQueue;
         public int InputMessageQueueSize = 100;
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
+        // Определяет выполняются ли cейчас операции с файлами
+        // private static bool _workWithFileNow = false;
+
+        // TO DO: Сделать поля взаимо исключаемыми
+
+        // Отражает состояние принимается ли или передается ли файл
+        private bool _isRecivingFile = false;
+        private bool _isSendingFile = false;
+
+        
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
         private int _sleepTime = 1;
-
-        // Определяет выполняются ли cейчас операции с файлами
-        private static bool _workWithFileNow = false;
-
+      
         // Служит для подсчета полученных или отправленых пакетов файла.
         private byte _countOfFilePackets = 0;
 
         // Данные о файле для передачи
         private FileInfo _fileToTransfer;
+        // Получатель файла
+        private byte _fileRecipient;
+        
+        // Разрешает передачу файла при приему разрешения на передачу. Устанавливается если был отправлен запрос на передачу файла
         private bool _allowSendingFile = false;
-       
+
         // Данные о файле для приема
         private string _receivingFileName = "";
         private long _receivingFileSize = 0;
@@ -88,7 +99,7 @@ namespace ChatClient
 
            _outMessagesQueue = new Queue(_outMessageQueueSize);
 
-           _outFilePackets = new Queue(_outFilePacketsSize);
+           _outFilePacketsQueue = new Queue(_outFilePacketsQueueSize);
 
             InputMessageQueue = new Queue(InputMessageQueueSize);
 
@@ -133,7 +144,7 @@ namespace ChatClient
             // Количество уже отправленных пакетов
             long countOfSendedPackets = 0;
  
-            while (true)
+            while (true && _isSendingFile)
             {
                 // Получает значение сколько байт считано из файла и считывает данные в буфер
                 var size = stream.Read(buffer, 0, buffer.Length);
@@ -147,7 +158,7 @@ namespace ChatClient
                 while (true)
                 {
                     // Если буфер почти заполнен то поток ожидает 10 мс и повторяет проверку
-                    if (QueueCount(_outFilePackets) < _outFilePacketsSize)
+                    if (QueueCount(_outFilePacketsQueue) < _outFilePacketsQueueSize)
                     {
                         // Если эот не последний пакет то отправляем весь буфер
                         if (countOfSendedPackets < totalCountOfPackets)
@@ -162,7 +173,8 @@ namespace ChatClient
                             byte[] lastPacket = new byte[size];
                             Array.Copy(buffer, 0, lastPacket, 0, lastPacket.Length);
                             SendFilePacket(lastPacket, (byte)toId, _countOfFilePackets,true);
-                            _workWithFileNow = false;
+                            //_workWithFileNow = false;
+                            _isSendingFile = false;
                             finish = true;
                         } 
                     break;
@@ -174,6 +186,10 @@ namespace ChatClient
                 }
                 Thread.Sleep(_sleepTime);
             }
+
+#if DEBUG
+            MessageBox.Show("Поток отправки файла завершен");
+#endif
         }
 
         private void Write()
@@ -194,12 +210,13 @@ namespace ChatClient
                 }
                 else
                 {
-                    if (QueueCount(_outFilePackets) > 0)
+                    // Определяет есть ли пакеты файлов в очереди и разрешена передача файла 
+                    if (QueueCount(_outFilePacketsQueue) > 0 && _isSendingFile)
                     {
                         // Блокировка очередни на время извлечения пакета
-                        lock (_outFilePackets)
+                        lock (_outFilePacketsQueue)
                         {
-                            outPacket = (byte[])_outFilePackets.Dequeue();
+                            outPacket = (byte[])_outFilePacketsQueue.Dequeue();
                         }
                     }
                     else
@@ -286,6 +303,8 @@ namespace ChatClient
 
         public void SendFileTransferRequest(string filePath, byte toId)
         {
+            // TO DO: Отправлять запрос только если не идет работа с файлом
+
             // Структура пакета запроса на передачу файла
             // | Тип пакета |   Длина файла   | Имя файла |
             // |   1 байт   |      8 байт     |  0 - 1024 |
@@ -377,9 +396,9 @@ namespace ChatClient
 
             if (packet.Data.Type == "FileData")
             {
-                lock (_outFilePackets)
+                lock (_outFilePacketsQueue)
                 {
-                    _outFilePackets.Enqueue(packet.ToByte());
+                    _outFilePacketsQueue.Enqueue(packet.ToByte());
                 }
                 return true;
             }
@@ -436,6 +455,17 @@ namespace ChatClient
             }
         }
 
+        private void SendFileTransferCancel(byte toId)
+        {
+            AddPacketToQueue(new byte[] { 0x00 }, toId, 0x18);
+
+        }
+
+        private void SendAcknowledge(Packet packet)
+        {
+            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+        }
+
         private void ParsePacket(Packet packet)
         {
                 // >>> Вынести проверку опций в отдельный метод <<<
@@ -461,30 +491,67 @@ namespace ChatClient
                                     MessageBox.Show("Запрос одобрен!!");
 #endif
                         // Начать отправку файла
+                        
+                        // Запрещает отправлять файла на последующие запросы до завершения передачи
                         _allowSendingFile = false;
-                        _workWithFileNow = true;
+                       //_workWithFileNow = true;
+                        // Устанавливает что идет передача файла
+                        _isSendingFile = true;
+                        // Обнуляет счетчик пакетов
                         _countOfFilePackets = 0;
+                        // Устанавливает кому будет передаваться файл
+                        _fileRecipient = packet.Sender;
+                        // Запускает поток для упаковки файла в пакеты и добавления их в очередь
                         _fileSenderThread = new Thread(FileSender);
                         _fileSenderThread.Start(packet.Sender);
                     }
 
                     // Выслать подверждение получения пакета
-                    AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                    
+                   SendAcknowledge(packet);
+                    return;
+                }
+            
+            // Если получен пакет отмены или отказа передачи файла
+            if (packet.Option1String == "FileTransferDenied")
+            {
+                // Если принимался файл
+                if (_isRecivingFile)
+                {
+#if DEBUG
+                    // Debug message
+                    MessageBox.Show("Отправитель отменил передачу файла");
+#endif
+                    CancelRecivingFile();
+                    // Выслать подверждение получения пакета
+                    SendAcknowledge(packet);
                     return;
                 }
 
-                if (packet.Option1String == "FileTransferDenied")
-            {
+
+                if (_isSendingFile)
+                {
 #if DEBUG
-                // Debug message
-                MessageBox.Show("В передаче файла отказано");
+                    // Debug message
+                    MessageBox.Show("Получатель отменил передачу");
 #endif
+                    CancelSendingFile();
+                    // Выслать подверждение получения пакета
+                    SendAcknowledge(packet);
+                    return;
+                }
+                else
+                {
+#if DEBUG
+                    // Debug message
+                    MessageBox.Show("В передаче файла отказано");
+#endif        
+                }
+            
                 // Выслать подверждение получения пакета
-                AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+               SendAcknowledge(packet);
                 return;
             }
-
-
 
             switch (packet.Data.Type)
             {
@@ -511,9 +578,11 @@ namespace ChatClient
                 case "FileRequest":
                     {
                         // Выслать подверждение получения пакета
-                        AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                       SendAcknowledge(packet);
 
-                        if (!_workWithFileNow)
+                        //if (!_workWithFileNow)
+                        // Если не принимается и не передается файл
+                        if (!_isSendingFile && !_isRecivingFile)
                         {
                             // Сообщения о том надо ли принимать файл
                             DialogResult dialogResult = MessageBox.Show("Прниять файл " + packet.Data.FileName + 
@@ -523,7 +592,7 @@ namespace ChatClient
                             
                             if (dialogResult == DialogResult.Yes)
                             {
-                                _workWithFileNow = true;
+                                _isRecivingFile = true;
 
                                 //Высылает разрешение на отправку файла  
                                 AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
@@ -543,9 +612,10 @@ namespace ChatClient
                             }
                             else
                             {
-                                _workWithFileNow = false;
+                                _isRecivingFile = false;
+
                                 //Отказ отправки файла
-                                AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x18);
+                                SendFileTransferCancel(packet.Sender);
                                 
                             }                            
                         }
@@ -565,11 +635,11 @@ namespace ChatClient
                     // Обработка пакета файла
                     case "FileData" :
                         {
-
-                            if (_countOfFilePackets == packet.Data.PacketNumber)
+                            // Если совпал номер пакета и разрешено получение файлов и файл существует
+                            if (_countOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName))
                             {
                                 // Выслать подверждение получения пакета
-                                AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                               SendAcknowledge(packet);
 
                                 // Разархивация данных
                                 packet.Data.Content = Compressor.Unzip(packet.Data.Content);
@@ -586,7 +656,7 @@ namespace ChatClient
 #if DEBUG
                                     MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
 #endif
-                                    _workWithFileNow = false;
+                                    _isRecivingFile = false;
                                 }
                             }
                             else
@@ -638,21 +708,79 @@ namespace ChatClient
             return false;
         }
 
-        // TO DO: Вынести нижеследующие метода из файла и сделать статичными
+        public void CancelRecivingFile()
+        {
+            // Установить что файл больше не принимается
+            _isRecivingFile = false;
+            // Запрещает передавать файла до запроса на отправку
+            _allowSendingFile = false;
+            // Удаляет недопринятый файл
+            DeleteFile(_receivingFileFullName);
+            // Обнуляет счетчик
+            _countOfFilePackets = 0;
+            // Высылает уведемление о прекращении передачи файла
+            SendFileTransferCancel(_fileRecipient);
+        }
+
+        public void CancelSendingFile()
+        {
+            // Устанавливает что файл не передается
+            _isSendingFile = false;
+            // Запрещает передавать файла до запроса на отправку
+            _allowSendingFile = false;
+            // Отчищает очередь на отправку файла
+            _outFilePacketsQueue.Clear();
+            // Высылает уведемление о прекращении передачи файла
+            SendFileTransferCancel(_fileRecipient);
+            // Обнуляет счетчик
+            _countOfFilePackets = 0;
+        }
+
+        private bool DeleteFile(string file)
+        {
+            int attempts = 0;
+
+            while (attempts < 3)
+            {
+                if (File.Exists(file))
+                {
+                    try
+                    {
+                        lock (_receivingFileFullName)
+                        {
+                            File.Delete(file);
+                        }
+                        return true;
+                    }
+                    catch (Exception)
+                    {  
+                        throw;
+                    }
+                }
+                Thread.Sleep(1);
+                attempts++;
+            }
+
+            return false;
+        }
+
+        // TO DO: Вынести нижеследующие методы из файла и сделать статичными
 
         private bool ByteArrayToFile(string fileName, byte[] byteArray)
         {
             try
             {
-                // Открывает файл в режими для записи в конец файла
-                FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);
+                lock (_receivingFileFullName)
+                {
+                    // Открывает файл в режими для записи в конец файла
+                    FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);
 
-                // Записывает блок байтов в поток и следовательно в файл
-                _FileStream.Write(byteArray, 0, byteArray.Length);
+                    // Записывает блок байтов в поток и следовательно в файл
+                    _FileStream.Write(byteArray, 0, byteArray.Length);
 
-                // Закрывает поток
-                _FileStream.Close();
-
+                    // Закрывает поток
+                    _FileStream.Close();
+                }
                 return true;
             }
             catch (Exception _Exception)
@@ -696,5 +824,6 @@ namespace ChatClient
             }
             
         }
+
     }
 }
