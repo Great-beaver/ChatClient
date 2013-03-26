@@ -36,7 +36,6 @@ namespace ChatClient
         // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
         private bool _isSendingFile = false;
-
         
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
         private int _sleepTime = 1;
@@ -143,6 +142,12 @@ namespace ChatClient
 
             // Количество уже отправленных пакетов
             long countOfSendedPackets = 0;
+
+            // Отчищает очередь пакетов файла на передачу 
+            lock (_outFilePacketsQueue)
+            {
+                _outFilePacketsQueue.Clear();
+            }
  
             while (true && _isSendingFile)
             {
@@ -152,6 +157,9 @@ namespace ChatClient
                 // Завершает цикл если установлен соотвествующий флаг
                 if (finish)
                 {
+                    
+                        
+                    
                     break;
                 }
 
@@ -174,7 +182,10 @@ namespace ChatClient
                             Array.Copy(buffer, 0, lastPacket, 0, lastPacket.Length);
                             SendFilePacket(lastPacket, (byte)toId, _countOfFilePackets,true);
                             //_workWithFileNow = false;
-                            _isSendingFile = false;
+
+                            // TO DO: Убрать эту строку!
+                            // _isSendingFile = false;
+                            //
                             finish = true;
                         } 
                     break;
@@ -491,7 +502,13 @@ namespace ChatClient
                                     MessageBox.Show("Запрос одобрен!!");
 #endif
                         // Начать отправку файла
-                        
+
+                                    // Отчищает очередь пакетов файла на передачу 
+                                    lock (_outFilePacketsQueue)
+                                    {
+                                        _outFilePacketsQueue.Clear();
+                                    }
+
                         // Запрещает отправлять файла на последующие запросы до завершения передачи
                         _allowSendingFile = false;
                        //_workWithFileNow = true;
@@ -540,8 +557,10 @@ namespace ChatClient
                     SendAcknowledge(packet);
                     return;
                 }
-                else
+                
+                if (_allowSendingFile)
                 {
+                    _allowSendingFile = false;
 #if DEBUG
                     // Debug message
                     MessageBox.Show("В передаче файла отказано");
@@ -710,30 +729,37 @@ namespace ChatClient
 
         public void CancelRecivingFile()
         {
-            // Установить что файл больше не принимается
-            _isRecivingFile = false;
-            // Запрещает передавать файла до запроса на отправку
-            _allowSendingFile = false;
-            // Удаляет недопринятый файл
-            DeleteFile(_receivingFileFullName);
-            // Обнуляет счетчик
-            _countOfFilePackets = 0;
-            // Высылает уведемление о прекращении передачи файла
-            SendFileTransferCancel(_fileRecipient);
+            if (_isRecivingFile)
+            {
+                // Установить что файл больше не принимается
+                _isRecivingFile = false;
+                // Запрещает передавать файла до запроса на отправку
+                _allowSendingFile = false;
+                // Удаляет недопринятый файл
+                DeleteFile(_receivingFileFullName);
+                // Обнуляет счетчик
+                _countOfFilePackets = 0;
+                // Высылает уведемление о прекращении передачи файла
+                SendFileTransferCancel(_fileRecipient);
+            }
+            
         }
 
         public void CancelSendingFile()
         {
-            // Устанавливает что файл не передается
-            _isSendingFile = false;
-            // Запрещает передавать файла до запроса на отправку
-            _allowSendingFile = false;
-            // Отчищает очередь на отправку файла
-            _outFilePacketsQueue.Clear();
-            // Высылает уведемление о прекращении передачи файла
-            SendFileTransferCancel(_fileRecipient);
-            // Обнуляет счетчик
-            _countOfFilePackets = 0;
+            if (_isSendingFile)
+            {
+                // Устанавливает что файл не передается
+                _isSendingFile = false;
+                // Запрещает передавать файла до запроса на отправку
+                _allowSendingFile = false;
+                // Отчищает очередь на отправку файла
+                _outFilePacketsQueue.Clear();
+                // Высылает уведемление о прекращении передачи файла
+                SendFileTransferCancel(_fileRecipient);
+                // Обнуляет счетчик
+                _countOfFilePackets = 0;
+            }            
         }
 
         private bool DeleteFile(string file)
