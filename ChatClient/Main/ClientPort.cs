@@ -19,6 +19,7 @@ namespace ChatClient
         private Thread _readThread;
         private Thread _writeThread;
         private Thread _fileSenderThread;
+        private Thread _waitForFilePacketThread;
         private byte _clietnId;
         private Queue _outMessagesQueue;
         private int _outMessageQueueSize = 200;
@@ -26,12 +27,16 @@ namespace ChatClient
         private int _outFilePacketsQueueSize = 200;
         public Queue InputMessageQueue;
         public int InputMessageQueueSize = 100;
+        // Событие при получении Acknowledge
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
+
+        // Событие при получении пакета файла
+        private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
+        // Таймаут ожидания пакета файла в мс
+        private int _waitForFilePacketTimeout = 4000;
 
         // Определяет выполняются ли cейчас операции с файлами
         // private static bool _workWithFileNow = false;
-
-        // TO DO: Сделать поля взаимо исключаемыми
 
         // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
@@ -128,6 +133,36 @@ namespace ChatClient
 
             _readThread.Start();
             _writeThread.Start();
+        }
+
+        private void WaitForFilePacket()
+        {
+            // Пока стоит флаг приема файла
+            while (_isRecivingFile)
+            {
+                // Обнулить событие
+                _waitForFilePacketEvent.Reset();
+                // Если вышел таймаут получения пакета файла
+                if (_waitForFilePacketEvent.WaitOne(_waitForFilePacketTimeout, false))
+                {
+                    // Так как метод WaitOne не возвращает значение false, необходимо встваить пустой блок кода если сингнал получен
+                    // Возможно есть смысл вставить сюда continue
+                }
+                else
+                {
+                    // Проверка принимается ли еще файл так как за время таймаута ситуация могла изменится
+                    if (_isRecivingFile)
+                    {
+#if DEBUG
+                        MessageBox.Show("Все пропало, файла не будет.");
+#endif
+                        CancelRecivingFile();
+                    }
+
+                    break;
+                }
+                Thread.Sleep(_sleepTime);
+            }
         }
 
         private void FileSender(object toId)
@@ -555,7 +590,6 @@ namespace ChatClient
                     return;
                 }
 
-
                 if (_isSendingFile)
                 {
 #if DEBUG
@@ -593,9 +627,6 @@ namespace ChatClient
                 return;
             }
 
-
-
-
             switch (packet.Data.Type)
             {
 
@@ -632,19 +663,23 @@ namespace ChatClient
                                 "от клиента № " + packet.Sender + " размером " + packet.Data.FileLenght/1024/1024 + "МБ?",
                                 "Передача файла", MessageBoxButtons.YesNo);
 
-                            
                             if (dialogResult == DialogResult.Yes)
                             {
+                                // Выставляет флаг приема 
                                 _isRecivingFile = true;
 
                                 //Высылает разрешение на отправку файла  
                                 AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
-
+                                
                                 //Обнулить счетчик пакетов файла
                                 _countOfFilePackets = 0;
 
                                 _receivingFileName = packet.Data.FileName;
                                 _receivingFileSize = packet.Data.FileLenght;
+
+                                // Запускает поток ожидания пакетов файла
+                                _waitForFilePacketThread = new Thread(WaitForFilePacket);
+                                _waitForFilePacketThread.Start();
 
                                 // Создает файл если его еще нет
                                 CreateFile(_receivingFileName);
@@ -656,10 +691,8 @@ namespace ChatClient
                             else
                             {
                                 _isRecivingFile = false;
-
                                 //Отказ отправки файла
-                                SendFileTransferCancel(packet.Sender);
-                                
+                                SendFileTransferCancel(packet.Sender);  
                             }                            
                         }
                         else
@@ -670,8 +703,6 @@ namespace ChatClient
                                 + "МБ, так как в данный момент уже осуществляется прием другого файла ");
 #endif                                                                      
                         }
-
-
                     }
                         break;
 
@@ -681,6 +712,9 @@ namespace ChatClient
                             // Если совпал номер пакета и разрешено получение файлов и файл существует
                             if (_countOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName))
                             {
+                                // Устанавливает что пакет получен
+                                _waitForFilePacketEvent.Set();
+
                                 // Выслать подверждение получения пакета
                                SendAcknowledge(packet);
 
@@ -766,8 +800,7 @@ namespace ChatClient
                 _countOfFilePackets = 0;
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(_fileRecipient);
-            }
-            
+            }           
         }
 
         public void CancelSendingFile()
@@ -778,6 +811,8 @@ namespace ChatClient
                 _isSendingFile = false;
                 // Запрещает передавать файла до запроса на отправку
                 _allowSendingFile = false;
+                // Ждет завершения потока что бы он не слал больше пакетов. Надо ли оно тут?
+                _fileSenderThread.Join(1000);
                 // Отчищает очередь на отправку файла
                 _outFilePacketsQueue.Clear();
                 // Высылает уведемление о прекращении передачи файла
@@ -821,6 +856,12 @@ namespace ChatClient
         {
             try
             {
+                if (!File.Exists(fileName))
+                {
+                    return false;
+                }
+
+
                 lock (_receivingFileFullName)
                 {
                     // Открывает файл в режими для записи в конец файла
