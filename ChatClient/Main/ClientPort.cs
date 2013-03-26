@@ -263,6 +263,11 @@ namespace ChatClient
                                   }
                                   else
                                   {
+                                      if (PacketType(outPacket)=="File" && !_isSendingFile)
+                                      {
+                                          break;
+                                      }
+
                                       if (++attempts > 3)
                                       {
                                           InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
@@ -477,6 +482,11 @@ namespace ChatClient
             AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
         }
 
+        private void SendFileTransferCompleted(byte toId)
+        {
+            AddPacketToQueue(new byte[] { 0x00 }, toId, 0x04);
+        }
+
         private void ParsePacket(Packet packet)
         {
                 // >>> Вынести проверку опций в отдельный метод <<<
@@ -568,9 +578,23 @@ namespace ChatClient
                 }
             
                 // Выслать подверждение получения пакета
-               SendAcknowledge(packet);
+                SendAcknowledge(packet);
                 return;
             }
+
+            if (packet.Option1String == "FileTransferCompleted")
+            {
+                _isSendingFile = false;
+#if DEBUG
+                // Debug message
+                MessageBox.Show("Файл доставлен");
+#endif      
+                SendAcknowledge(packet);
+                return;
+            }
+
+
+
 
             switch (packet.Data.Type)
             {
@@ -675,6 +699,7 @@ namespace ChatClient
 #if DEBUG
                                     MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
 #endif
+                                    SendFileTransferCompleted(packet.Sender);
                                     _isRecivingFile = false;
                                 }
                             }

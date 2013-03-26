@@ -65,6 +65,13 @@ namespace ChatClient.Main.Packet
                         Option1String = "FileTransferDenied";
                     }
                     break;
+
+                case 0x04:
+                    {
+                        Option1String = "FileTransferCompleted";
+                    }
+                    break;
+
             }
 
             switch (option2)
