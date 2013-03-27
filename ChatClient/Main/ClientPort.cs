@@ -59,8 +59,11 @@ namespace ChatClient
 
         // Данные о файле для приема
         private string _receivingFileName = "";
-        private long _receivingFileSize = 0;
+        // Имя учитывая путь к файлу
         private string _receivingFileFullName = "";
+        private long _receivingFileSize = 0;
+        // Отправитель файла
+        private byte _fileSender = 255;
 
         // Хранит CRC для последнего отправленого пакета, чтобы идентифицировать его при получении сообщения о доставке этого пакета
         private ushort _lastMessageCrc=0;
@@ -380,6 +383,10 @@ namespace ChatClient
             _fileToTransfer = new FileInfo(filePath);
 
             _allowSendingFile = true;
+
+            // Устанавливает кому будет передаваться файл
+            _fileRecipient = toId;
+
 #if DEBUG
             MessageBox.Show(_fileToTransfer.Length.ToString());
 #endif
@@ -575,7 +582,6 @@ namespace ChatClient
                         // Выслать подверждение получения пакета
                        SendAcknowledge(packet);
 
-                        //if (!_workWithFileNow)
                         // Если не принимается и не передается файл
                         if (!_isSendingFile && !_isRecivingFile)
                         {
@@ -588,20 +594,18 @@ namespace ChatClient
                             {
                                 // Выставляет флаг приема 
                                 _isRecivingFile = true;
-
                                 //Высылает разрешение на отправку файла  
-                                AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);
-                                
+                                AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);                                
                                 //Обнулить счетчик пакетов файла
                                 _countOfFilePackets = 0;
-
+                                // Сохраняет параметры файла
                                 _receivingFileName = packet.Data.FileName;
                                 _receivingFileSize = packet.Data.FileLenght;
-
+                                // Сохраняет id отправителя файла
+                                _fileSender = packet.Sender;
                                 // Запускает поток ожидания пакетов файла
                                 _waitForFilePacketThread = new Thread(WaitForFilePacket);
                                 _waitForFilePacketThread.Start();
-
                                 // Создает файл если его еще нет
                                 CreateFile(_receivingFileName);
 #if DEBUG
@@ -630,8 +634,8 @@ namespace ChatClient
                     // Обработка пакета файла
                     case "FileData" :
                         {
-                            // Если совпал номер пакета и разрешено получение файлов и файл существует
-                            if (_countOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName))
+                            // Если совпал номер пакета и разрешено получение файлов и файл существует и id отправителя совпал с id отправителя файла
+                            if (_countOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName) && packet.Sender == _fileSender)
                             {
                                 // Устанавливает что пакет получен
                                 _waitForFilePacketEvent.Set();
@@ -691,8 +695,8 @@ namespace ChatClient
                case "FileTransferAllowed":
                    {
                        // Обработка пакета разрешения на передачу файла
-                       // Если получено разрешение на передачу файлов
-                       if (_allowSendingFile)
+                       // Если получено разрешение на передачу файлов и отправитель пакета является тем кому был отправлен запрос на передачу
+                       if (_allowSendingFile && _fileRecipient == packet.Sender)
                        {
 #if DEBUG
                            // Debug message
@@ -708,13 +712,11 @@ namespace ChatClient
 
                            // Запрещает отправлять файла на последующие запросы до завершения передачи
                            _allowSendingFile = false;
-                           //_workWithFileNow = true;
                            // Устанавливает что идет передача файла
                            _isSendingFile = true;
                            // Обнуляет счетчик пакетов
                            _countOfFilePackets = 0;
-                           // Устанавливает кому будет передаваться файл
-                           _fileRecipient = packet.Sender;
+
                            // Запускает поток для упаковки файла в пакеты и добавления их в очередь
                            _fileSenderThread = new Thread(FileSender);
                            _fileSenderThread.Start(packet.Sender);
@@ -839,7 +841,7 @@ namespace ChatClient
                 // Обнуляет счетчик
                 _countOfFilePackets = 0;
                 // Высылает уведемление о прекращении передачи файла
-                SendFileTransferCancel(_fileRecipient);
+                SendFileTransferCancel(_fileSender);
             }           
         }
 

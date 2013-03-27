@@ -22,6 +22,7 @@ namespace ChatClient
         private void button1_Click(object sender, EventArgs e)
         {
             comPort.SendTextMessage(richTextBox2.Text, Convert.ToByte(textBox4.Text));
+            richTextBox2.Clear();
            
         }
 
