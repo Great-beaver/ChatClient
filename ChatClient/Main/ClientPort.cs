@@ -241,7 +241,8 @@ namespace ChatClient
 
         private void Write()
         {
-            byte[] outPacket = new byte[0];
+           // byte[] outPacket = new byte[0];
+            Packet outPacket;
             while (_continue)
             {
                 Thread.Sleep(_sleepTime);
@@ -252,7 +253,7 @@ namespace ChatClient
                     // Блокировка очередни на время извлечения пакета
                     lock (_outMessagesQueue)
                     {
-                        outPacket = (byte[]) _outMessagesQueue.Dequeue();
+                        outPacket = (Packet) _outMessagesQueue.Dequeue();
                     }
                 }
                 else
@@ -263,7 +264,7 @@ namespace ChatClient
                         // Блокировка очередни на время извлечения пакета
                         lock (_outFilePacketsQueue)
                         {
-                            outPacket = (byte[])_outFilePacketsQueue.Dequeue();
+                            outPacket = (Packet)_outFilePacketsQueue.Dequeue();
                         }
                     }
                     else
@@ -274,15 +275,15 @@ namespace ChatClient
                 _answerEvent.Reset();
 
                           // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
-                          byte[] data= new byte[outPacket.Length-10];
+                         // byte[] data= new byte[outPacket.Length-10];
 
-                           Array.Copy(outPacket,10,data,0,data.Length);
+                         //  Array.Copy(outPacket,10,data,0,data.Length);
 
-                          _lastMessageCrc = Crc16.ComputeChecksum(data);
+                          _lastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
 
                           lock (_comPortWriter)
                           {
-                                _comPortWriter.Write(outPacket, 0, outPacket.Length);
+                              _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
                           }
                     
                               byte attempts = 0;
@@ -291,7 +292,7 @@ namespace ChatClient
                               {
                                   if (_answerEvent.WaitOne(3000, false))
                                   {
-                                      if (PacketType(outPacket)=="Text")
+                                      if (outPacket.Data.Type=="Text")
                                       {
                                           InputMessageQueue.Enqueue("Сообщение доставлено!");  
                                       }
@@ -299,14 +300,14 @@ namespace ChatClient
                                   }
                                   else
                                   {
-                                      if (PacketType(outPacket)=="File" && !_isSendingFile)
+                                      if (outPacket.Data.Type == "FileData" && !_isSendingFile)
                                       {
                                           break;
                                       }
 
                                       if (++attempts > 3)
                                       {
-                                          if (PacketType(outPacket) == "File")
+                                          if (outPacket.Data.Type == "FileData")
                                           {
                                               CancelSendingFile();
 #if DEBUG
@@ -322,7 +323,7 @@ namespace ChatClient
 
                                             lock (_comPortWriter)
                                             {
-                                                _comPortWriter.Write(outPacket, 0, outPacket.Length);
+                                                _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
                                             }
                                   }
                               }    
@@ -457,7 +458,8 @@ namespace ChatClient
             {
                 lock (_outFilePacketsQueue)
                 {
-                    _outFilePacketsQueue.Enqueue(packet.ToByte());
+                    // _outFilePacketsQueue.Enqueue(packet.ToByte());
+                    _outFilePacketsQueue.Enqueue(packet);
                 }
                 return true;
             }
@@ -465,7 +467,8 @@ namespace ChatClient
                 //Добавляем пакет в очередь на отправку
                 lock (_outMessagesQueue)
                 {
-                    _outMessagesQueue.Enqueue(packet.ToByte());
+                    // _outMessagesQueue.Enqueue(packet.ToByte());
+                     _outMessagesQueue.Enqueue(packet);
                 }
 
             return true;
@@ -532,7 +535,6 @@ namespace ChatClient
 
         private void ParsePacket(Packet packet)
         {
-
             // Функция вовращает true если найдена опция и дальнейший разбор данных не требуется.
                 if (ParseOptions(packet))
                 {
@@ -541,7 +543,6 @@ namespace ChatClient
 
             switch (packet.Data.Type)
             {
-
                 // Обработка пакета текстового сообщения 
                 case "Text" : 
                     {
