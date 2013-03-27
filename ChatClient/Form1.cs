@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace ChatClient
@@ -27,13 +21,13 @@ namespace ChatClient
 
         private void button1_Click(object sender, EventArgs e)
         {
-           comPort.SendTextMessage(richTextBox2.Text, 0);
+            comPort.SendTextMessage(richTextBox2.Text, Convert.ToByte(textBox4.Text));
            
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            comPort = new ClientPort(textBox1.Text, textBox2.Text, 0);
+            comPort = new ClientPort(textBox1.Text, textBox2.Text, Convert.ToByte(textBox3.Text));
             timer1.Enabled = true;
         }
 
@@ -44,18 +38,19 @@ namespace ChatClient
             if (od.ShowDialog() == DialogResult.OK)
             {
                 MessageBox.Show(od.FileName);
-                comPort.SendFileTransferRequest(od.FileName, 0);
+                comPort.SendFileTransferRequest(od.FileName, Convert.ToByte(textBox4.Text));
             }
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            if (comPort.InputMessageQueue.Count > 0)
+            lock (comPort.InputMessageQueue)
             {
-                richTextBox1.AppendText(comPort.InputMessageQueue.Dequeue().ToString() + '\n');
-                
-            }
-
+                if (comPort.InputMessageQueue.Count > 0)
+                {
+                    richTextBox1.AppendText(comPort.InputMessageQueue.Dequeue().ToString() + '\n');
+                }
+            }           
         }
 
         private void button4_Click(object sender, EventArgs e)

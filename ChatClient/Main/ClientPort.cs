@@ -294,7 +294,10 @@ namespace ChatClient
                                   {
                                       if (outPacket.Data.Type=="Text")
                                       {
-                                          InputMessageQueue.Enqueue("Сообщение доставлено!");  
+                                          lock (InputMessageQueue)
+                                          {
+                                              InputMessageQueue.Enqueue("Сообщение доставлено!");
+                                          }
                                       }
                                       break;
                                   }
@@ -314,7 +317,12 @@ namespace ChatClient
                                               MessageBox.Show("Получатель не доступен доставка отменена");
 #endif
                                           }
-                                          InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
+                                          lock (InputMessageQueue)
+                                          {
+                                              InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
+                                          }
+                                          
+
                                           break;
                                       }
 
