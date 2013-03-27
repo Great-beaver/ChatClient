@@ -27,13 +27,14 @@ namespace ChatClient
         private int _outFilePacketsQueueSize = 200;
         public Queue InputMessageQueue;
         public int InputMessageQueueSize = 100;
+
         // Событие при получении Acknowledge
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
         // Событие при получении пакета файла
         private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
         // Таймаут ожидания пакета файла в мс
-        private int _waitForFilePacketTimeout = 4000;
+        private int _waitForFilePacketTimeout = 10000;
 
         // Определяет выполняются ли cейчас операции с файлами
         // private static bool _workWithFileNow = false;
@@ -305,6 +306,13 @@ namespace ChatClient
 
                                       if (++attempts > 3)
                                       {
+                                          if (PacketType(outPacket) == "File")
+                                          {
+                                              CancelSendingFile();
+#if DEBUG
+                                              MessageBox.Show("Получатель не доступен доставка отменена");
+#endif
+                                          }
                                           InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
                                           break;
                                       }
@@ -524,108 +532,12 @@ namespace ChatClient
 
         private void ParsePacket(Packet packet)
         {
-                // >>> Вынести проверку опций в отдельный метод <<<
 
-                // Обработка пакета подверждения доставки сообщения
-                // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
-                if (packet.Option1String == "ACK" && _lastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
+            // Функция вовращает true если найдена опция и дальнейший разбор данных не требуется.
+                if (ParseOptions(packet))
                 {
-                    // Установить что последнее сообщение было доставлено
-                    _sendedPacketDelivered[packet.Sender] = true;
-                    _answerEvent.Set();
-                   return;
-                }
-
-                // Обработка пакета разрешения на передачу файла
-                // Если получено разрешение на передачу файлов
-                if (packet.Option1String == "FileTransferAllowed")
-                {
-                    if (_allowSendingFile)
-                    {
-#if DEBUG
-                                    // Debug message
-                                    MessageBox.Show("Запрос одобрен!!");
-#endif
-                        // Начать отправку файла
-
-                                    // Отчищает очередь пакетов файла на передачу 
-                                    lock (_outFilePacketsQueue)
-                                    {
-                                        _outFilePacketsQueue.Clear();
-                                    }
-
-                        // Запрещает отправлять файла на последующие запросы до завершения передачи
-                        _allowSendingFile = false;
-                       //_workWithFileNow = true;
-                        // Устанавливает что идет передача файла
-                        _isSendingFile = true;
-                        // Обнуляет счетчик пакетов
-                        _countOfFilePackets = 0;
-                        // Устанавливает кому будет передаваться файл
-                        _fileRecipient = packet.Sender;
-                        // Запускает поток для упаковки файла в пакеты и добавления их в очередь
-                        _fileSenderThread = new Thread(FileSender);
-                        _fileSenderThread.Start(packet.Sender);
-                    }
-
-                    // Выслать подверждение получения пакета
-                    
-                   SendAcknowledge(packet);
                     return;
                 }
-            
-            // Если получен пакет отмены или отказа передачи файла
-            if (packet.Option1String == "FileTransferDenied")
-            {
-                // Если принимался файл
-                if (_isRecivingFile)
-                {
-#if DEBUG
-                    // Debug message
-                    MessageBox.Show("Отправитель отменил передачу файла");
-#endif
-                    CancelRecivingFile();
-                    // Выслать подверждение получения пакета
-                    SendAcknowledge(packet);
-                    return;
-                }
-
-                if (_isSendingFile)
-                {
-#if DEBUG
-                    // Debug message
-                    MessageBox.Show("Получатель отменил передачу");
-#endif
-                    CancelSendingFile();
-                    // Выслать подверждение получения пакета
-                    SendAcknowledge(packet);
-                    return;
-                }
-                
-                if (_allowSendingFile)
-                {
-                    _allowSendingFile = false;
-#if DEBUG
-                    // Debug message
-                    MessageBox.Show("В передаче файла отказано");
-#endif        
-                }
-            
-                // Выслать подверждение получения пакета
-                SendAcknowledge(packet);
-                return;
-            }
-
-            if (packet.Option1String == "FileTransferCompleted")
-            {
-                _isSendingFile = false;
-#if DEBUG
-                // Debug message
-                MessageBox.Show("Файл доставлен");
-#endif      
-                SendAcknowledge(packet);
-                return;
-            }
 
             switch (packet.Data.Type)
             {
@@ -746,6 +658,125 @@ namespace ChatClient
                         }
                         break;
             }
+        }
+
+        private bool ParseOptions (Packet packet)
+        {
+           switch (packet.Option1String)
+           {
+               case "ACK":
+                   {
+                       // Обработка пакета подверждения доставки сообщения
+                       // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
+                       if (_lastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
+                       {
+                           // Установить что последнее сообщение было доставлено
+                           _sendedPacketDelivered[packet.Sender] = true;
+                           _answerEvent.Set();
+                           return true;
+                       }
+         
+                   }
+                   break;
+
+               case "FileTransferAllowed":
+                   {
+                       // Обработка пакета разрешения на передачу файла
+                       // Если получено разрешение на передачу файлов
+                       if (_allowSendingFile)
+                       {
+#if DEBUG
+                           // Debug message
+                           MessageBox.Show("Запрос одобрен!!");
+#endif
+                           // Начать отправку файла
+
+                           // Отчищает очередь пакетов файла на передачу 
+                           lock (_outFilePacketsQueue)
+                           {
+                               _outFilePacketsQueue.Clear();
+                           }
+
+                           // Запрещает отправлять файла на последующие запросы до завершения передачи
+                           _allowSendingFile = false;
+                           //_workWithFileNow = true;
+                           // Устанавливает что идет передача файла
+                           _isSendingFile = true;
+                           // Обнуляет счетчик пакетов
+                           _countOfFilePackets = 0;
+                           // Устанавливает кому будет передаваться файл
+                           _fileRecipient = packet.Sender;
+                           // Запускает поток для упаковки файла в пакеты и добавления их в очередь
+                           _fileSenderThread = new Thread(FileSender);
+                           _fileSenderThread.Start(packet.Sender);
+                       }
+
+                       // Выслать подверждение получения пакета
+
+                       SendAcknowledge(packet);
+                       return true;
+                   }
+                   break;
+
+               case "FileTransferDenied":
+                   {
+                       // Если получен пакет отмены или отказа передачи файла
+                       // Если принимался файл
+                       if (_isRecivingFile)
+                       {
+#if DEBUG
+                           // Debug message
+                           MessageBox.Show("Отправитель отменил передачу файла");
+#endif
+                           CancelRecivingFile();
+                           // Выслать подверждение получения пакета
+                           SendAcknowledge(packet);
+                           return true;
+                       }
+
+                       if (_isSendingFile)
+                       {
+#if DEBUG
+                           // Debug message
+                           MessageBox.Show("Получатель отменил передачу");
+#endif
+                           CancelSendingFile();
+                           // Выслать подверждение получения пакета
+                           SendAcknowledge(packet);
+                           return true;
+                       }
+
+                       if (_allowSendingFile)
+                       {
+                           _allowSendingFile = false;
+#if DEBUG
+                           // Debug message
+                           MessageBox.Show("В передаче файла отказано");
+#endif
+                       }
+                       // Выслать подверждение получения пакета
+                       SendAcknowledge(packet);
+                       return true;
+                   }
+                   break;
+
+               case "FileTransferCompleted" :
+                   {
+                       if (packet.Option1String == "FileTransferCompleted")
+                       {
+                           _isSendingFile = false;
+#if DEBUG
+                           // Debug message
+                           MessageBox.Show("Файл доставлен");
+#endif
+                           SendAcknowledge(packet);
+                           return true;
+                       }
+                   }
+                   break;
+           }
+
+           return false;
         }
 
         public bool CreateFile (string fileName) 
