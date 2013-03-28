@@ -45,6 +45,8 @@
             this.label3 = new System.Windows.Forms.Label();
             this.textBox4 = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.textBox5 = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // button1
@@ -75,9 +77,9 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(260, 251);
+            this.button2.Location = new System.Drawing.Point(299, 252);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(36, 23);
+            this.button2.Size = new System.Drawing.Size(56, 23);
             this.button2.TabIndex = 3;
             this.button2.Text = "Ok";
             this.button2.UseVisualStyleBackColor = true;
@@ -138,7 +140,7 @@
             // 
             this.textBox3.Location = new System.Drawing.Point(182, 254);
             this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(72, 20);
+            this.textBox3.Size = new System.Drawing.Size(35, 20);
             this.textBox3.TabIndex = 9;
             this.textBox3.Text = "0";
             // 
@@ -186,11 +188,30 @@
             this.label4.TabIndex = 14;
             this.label4.Text = "To client";
             // 
+            // textBox5
+            // 
+            this.textBox5.Location = new System.Drawing.Point(223, 254);
+            this.textBox5.Name = "textBox5";
+            this.textBox5.Size = new System.Drawing.Size(70, 20);
+            this.textBox5.TabIndex = 15;
+            this.textBox5.Text = "38400";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(220, 238);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(58, 13);
+            this.label5.TabIndex = 16;
+            this.label5.Text = "Port speed";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(363, 285);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.textBox5);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.textBox4);
             this.Controls.Add(this.label3);
@@ -208,6 +229,7 @@
             this.Controls.Add(this.button1);
             this.Name = "Form1";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -232,6 +254,8 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textBox4;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textBox5;
+        private System.Windows.Forms.Label label5;
     }
 }
 

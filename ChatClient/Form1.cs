@@ -22,14 +22,14 @@ namespace ChatClient
         private void button1_Click(object sender, EventArgs e)
         {
             comPort.SendTextMessage(richTextBox2.Text, Convert.ToByte(textBox4.Text));
-            richTextBox2.Clear();
-           
+            richTextBox2.Clear();    
+            
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            comPort = new ClientPort(textBox1.Text, textBox2.Text, Convert.ToByte(textBox3.Text));
-            timer1.Enabled = true;
+            comPort = new ClientPort(textBox1.Text, textBox2.Text, Convert.ToByte(textBox3.Text),Convert.ToInt32(textBox5.Text));
+            timer1.Enabled = true;            
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -62,6 +62,14 @@ namespace ChatClient
         private void button5_Click(object sender, EventArgs e)
         {
             comPort.CancelRecivingFile();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (comPort != null)
+            {
+                comPort.Dispose();
+            }
         }
     }
 }

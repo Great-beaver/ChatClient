@@ -11,7 +11,7 @@ using ChatClient.Main.Packet;
 
 namespace ChatClient
 {
-    class ClientPort
+    class ClientPort : IDisposable
     {
         private bool _continue = false;
         private SerialPort _comPortReader;
@@ -76,11 +76,11 @@ namespace ChatClient
         //   {
         //   }
 
-        public ClientPort(string readerPortName,string writerPortName, byte id)
+        public ClientPort(string readerPortName,string writerPortName, byte id, int portSpeed)
         {
             _comPortReader = new SerialPort();
             _comPortReader.PortName = readerPortName;
-            _comPortReader.BaudRate = 115200;
+            _comPortReader.BaudRate = portSpeed;
             _comPortReader.Parity = Parity.None;
             _comPortReader.DataBits = 8;
             _comPortReader.StopBits = StopBits.One;
@@ -95,7 +95,7 @@ namespace ChatClient
 
            _comPortWriter = new SerialPort();
            _comPortWriter.PortName = writerPortName;
-           _comPortWriter.BaudRate = 115200;
+           _comPortWriter.BaudRate = portSpeed;
            _comPortWriter.Parity = Parity.None;
            _comPortWriter.DataBits = 8;
            _comPortWriter.StopBits = StopBits.One;
@@ -129,7 +129,6 @@ namespace ChatClient
             _readThread = new Thread(Read);
             _writeThread = new Thread(Write);
             
-
             _comPortReader.Open();
             _comPortWriter.Open();
 
@@ -139,10 +138,27 @@ namespace ChatClient
             _writeThread.Start();
         }
 
+        public void Dispose()
+        {
+            _continue = false;
+
+            if (_readThread != null)
+            _readThread.Join(1000);
+
+            if (_writeThread != null)
+            _writeThread.Join(1000);
+
+            if (_fileSenderThread != null)
+            _fileSenderThread.Join(1000);
+
+            if (_waitForFilePacketThread != null)
+            _waitForFilePacketThread.Join(1000);
+        }
+
         private void WaitForFilePacket()
         {
             // Пока стоит флаг приема файла
-            while (_isRecivingFile)
+            while (_isRecivingFile && _continue)
             {
                 // Обнулить событие
                 _waitForFilePacketEvent.Reset();
@@ -174,7 +190,7 @@ namespace ChatClient
             Boolean finish = false;
             var stream = File.OpenRead(_fileToTransfer.FullName);
             // TO DO: Разобратся с длинной пакета, допустима ли такая длинна пакета?
-            var buffer = new byte[1024*50];
+            var buffer = new byte[1024*5];
 
             // Количество пакетов в файле
             long totalCountOfPackets = _fileToTransfer.Length / buffer.Length;
@@ -187,18 +203,15 @@ namespace ChatClient
             {
                 _outFilePacketsQueue.Clear();
             }
- 
-            while (true && _isSendingFile)
+
+            while (true && _isSendingFile && _continue)
             {
                 // Получает значение сколько байт считано из файла и считывает данные в буфер
                 var size = stream.Read(buffer, 0, buffer.Length);
 
                 // Завершает цикл если установлен соотвествующий флаг
                 if (finish)
-                {
-                    
-                        
-                    
+                {                  
                     break;
                 }
 
@@ -493,43 +506,52 @@ namespace ChatClient
         {
             while (_continue)
             {
-                //Если найдена сигнатура | 0xAA 0x55 | начинается обработка пакета
-                if (_comPortReader.BytesToRead >= 2 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
-                {
-                    // Если количество входных байтов равно или более количества байтов в Header'е без учета сигнатуры
-                    if (_comPortReader.BytesToRead >= 8)
+                //Если найдена сигнатура | 0xAA 0x55 | количество входных байтов равно или более количества байтов в Header'е то начинается обработка пакета 
+                    if (_comPortReader.BytesToRead >= 10 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
                     {
-                        // Считывание данных для создания пакета
-                        // Здесь важен строгий порядок считывания байтов, точно как в пакете.
-                        byte recipient = (byte)_comPortReader.ReadByte();
-                        byte sender = (byte)_comPortReader.ReadByte();
-                        ushort dataLenght = BitConverter.ToUInt16(
-                                new byte[] {(byte) _comPortReader.ReadByte(), (byte) _comPortReader.ReadByte()}, 0);
-                        byte option1 = (byte)_comPortReader.ReadByte();
-                        byte option2 = (byte)_comPortReader.ReadByte();
-                        ushort crc = BitConverter.ToUInt16(
-                                new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+                            // Считывание данных для создания пакета
+                            // Здесь важен строгий порядок считывания байтов, точно как в пакете.
+                            byte recipient = (byte)_comPortReader.ReadByte();
+                            byte sender = (byte)_comPortReader.ReadByte();
+                            ushort dataLenght = BitConverter.ToUInt16(
+                                    new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+                            byte option1 = (byte)_comPortReader.ReadByte();
+                            byte option2 = (byte)_comPortReader.ReadByte();
+                            ushort crc = BitConverter.ToUInt16(
+                                    new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+
+                        // Счетчик количества итерация цикла while 
+                            int count = 0;
+                            while (_comPortReader.BytesToRead < dataLenght)
+                            {
+                            count++;
+                            Thread.Sleep(_sleepTime);
+                                if (count>dataLenght)
+                                {
+                                    break;
+                                }
+                            }
 
                         byte[] data = new byte[dataLenght];
-                        _comPortReader.Read(data, 0, dataLenght);
+                            _comPortReader.Read(data, 0, dataLenght);
 
-                        Packet packet = new Packet(recipient, sender, option1, option2, data);
+                            Packet packet = new Packet(recipient, sender, option1, option2, data);
 
-                        // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
-                        if (packet.Crc == crc && packet.Recipient == _clietnId)
-                        {
-                            //Функция разбора пакета
-                            ParsePacket(packet);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Hash or ID NOT matches!");    
-                        } 
-                    } 
-                }
-                // Если данных нет, ожидать в течении _sleepTime
-                Thread.Sleep(_sleepTime);
-            }
+                            // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
+                            if (packet.Crc == crc && packet.Recipient == _clietnId)
+                            {
+                                //Функция разбора пакета
+                                ParsePacket(packet);
+                            }
+                            else
+                            {
+                                MessageBox.Show("Hash or ID NOT matches!");
+                                MessageBox.Show(packet.PacketInfo());
+                            }   
+                    }
+                    // Если данных нет, ожидать в течении _sleepTime
+                    Thread.Sleep(_sleepTime);
+            }   
         }
 
         private void SendFileTransferCancel(byte toId)

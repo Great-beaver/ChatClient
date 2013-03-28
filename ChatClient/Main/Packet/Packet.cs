@@ -131,6 +131,18 @@ namespace ChatClient.Main.Packet
             _packet = new byte[10 + data.Length];          
         }
 
+        public string PacketInfo ()
+        {
+            return "Packet info:" + '\n' +
+                   " Получатель: " + Recipient + '\n' +
+                   "Отправитель :" + Sender + '\n' +
+                   "Длинна данных: " + DataLenght + '\n' +
+                   "Опция 1: " + Option1String + '\n' +
+                   "Опция 2: " + Option2String + '\n' +
+                   "CRC пакета: " + Crc + '\n' +
+                   "Данные: " + Data.FileLenght;
+        }
+
         public byte[] ToByte()
         {
             // Всталяет сигнатуру
