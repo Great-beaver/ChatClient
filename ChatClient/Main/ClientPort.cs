@@ -39,22 +39,12 @@ namespace ChatClient
 
         // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
-       // private bool Client.IsSendingFile = false;
-        
-        
+               
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
-        private int _sleepTime = 1;
-      
-        // Служит для подсчета полученных или отправленых пакетов файла.
-       // private byte _countOfFilePackets = 0;
+        private int _sleepTime = 1;    
 
         // Данные о файле для передачи
         private FileInfo _fileToTransfer;
-        // Получатель файла
-       // private byte _fileRecipient;
-        
-        // Разрешает передачу файла при приему разрешения на передачу. Устанавливается если был отправлен запрос на передачу файла
-       // private bool _allowSendingFile = false;
 
         // Данные о файле для приема
         private string _receivingFileName = "";
@@ -158,6 +148,14 @@ namespace ChatClient
 
             if (_waitForFilePacketThread != null)
             _waitForFilePacketThread.Join(1000);
+        }
+
+        public event EventHandler<MessageRecivedEventArgs> PacketRecived;
+
+        private void OnPacketRecived(MessageRecivedEventArgs e)
+        {
+            EventHandler<MessageRecivedEventArgs> handler = PacketRecived;
+            if (handler != null) handler(this, e);
         }
 
         private void WaitForFilePacket()
@@ -267,105 +265,6 @@ namespace ChatClient
 #if DEBUG
             MessageBox.Show("Поток отправки файла завершен");
 #endif
-        }
-
-        private void Write()
-        {
-           // byte[] outPacket = new byte[0];
-            Packet outPacket;
-            while (Client.Continue)
-            {
-                Thread.Sleep(_sleepTime);
-
-                // Определяет есть ли пакеты в очереди
-                if (QueueCount(_outMessagesQueue) > 0)
-                {
-                    // Блокировка очередни на время извлечения пакета
-                    lock (_outMessagesQueue)
-                    {
-                        outPacket = (Packet) _outMessagesQueue.Dequeue();
-                    }
-                }
-                else
-                {
-                    // Определяет есть ли пакеты файлов в очереди и разрешена передача файла 
-                    if (QueueCount(_outFilePacketsQueue) > 0 && Client.IsSendingFile)
-                    {
-                        // Блокировка очередни на время извлечения пакета
-                        lock (_outFilePacketsQueue)
-                        {
-                            outPacket = (Packet)_outFilePacketsQueue.Dequeue();
-                        }
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                _answerEvent.Reset();
-
-                          // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
-                         // byte[] data= new byte[outPacket.Length-10];
-
-                         //  Array.Copy(outPacket,10,data,0,data.Length);
-
-                          _lastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
-
-                          lock (_comPortWriter)
-                          {
-                              _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                          }
-                    
-                              byte attempts = 0;
-
-                              while (true)
-                              {
-                                  if (_answerEvent.WaitOne(3000, false))
-                                  {
-                                      if (outPacket.Data.Type=="Text")
-                                      {
-                                          lock (InputMessageQueue)
-                                          {
-                                              InputMessageQueue.Enqueue("Сообщение доставлено!");
-                                          }
-                                      }
-                                      break;
-                                  }
-                                  else
-                                  {
-                                      if (outPacket.Data.Type == "FileData" && !Client.IsSendingFile)
-                                      {
-                                          break;
-                                      }
-
-                                      if (++attempts > 3)
-                                      {
-                                          if (outPacket.Data.Type == "FileData")
-                                          {
-                                              CancelSendingFile();
-#if DEBUG
-                                              MessageBox.Show("Получатель не доступен доставка отменена");
-#endif
-                                          }
-                                          lock (InputMessageQueue)
-                                          {
-                                              InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
-                                          }
-                                          
-
-                                          break;
-                                      }
-
-                                            // Debug message
-                                            MessageBox.Show("Переотправка сообщения попытка № " + attempts);
-
-                                            lock (_comPortWriter)
-                                            {
-                                                _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                                            }
-                                  }
-                              }    
-            }
         }
 
         public void SendTextMessage(string message, byte toId)
@@ -495,42 +394,6 @@ namespace ChatClient
           _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x04);
         }
 
-        private bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
-        {
-            Packet packet = new Packet(toId,_clietnId,option1,option2,messageBody);
-
-            // TO DO: Поправить логику условий
-            // Валидация данных
-
-            if (sendPacketImmediately)
-            {
-                lock (_comPortWriter)
-                {
-                    _comPortWriter.Write(packet.ToByte(), 0, packet.ToByte().Length);
-                }
-                return true;
-            }
-
-            if (packet.Data.Type == "FileData")
-            {
-                lock (_clientArray[toId].OutFilePacketsQueue)
-                {
-                    // _outFilePacketsQueue.Enqueue(packet.ToByte());
-                    _clientArray[toId].OutFilePacketsQueue.Enqueue(packet);
-                }
-                return true;
-            }
-
-                //Добавляем пакет в очередь на отправку
-            lock (_clientArray[toId].OutMessagesQueue)
-                {
-                    // _outMessagesQueue.Enqueue(packet.ToByte());
-                    _clientArray[toId].OutMessagesQueue.Enqueue(packet);
-                }
-
-            return true;
-        }
-
         private void Read()
         {
             while (Client.Continue)
@@ -574,8 +437,8 @@ namespace ChatClient
                             }
                             else
                             {
-                                MessageBox.Show("Hash or ID NOT matches!");
-                                MessageBox.Show(packet.PacketInfo());
+                               // MessageBox.Show("Hash or ID NOT matches!");
+                               // MessageBox.Show(packet.PacketInfo());
                             }   
                     }
                     // Если данных нет, ожидать в течении _sleepTime
@@ -602,11 +465,15 @@ namespace ChatClient
                             packet.Data.Content = Compressor.Unzip(packet.Data.Content);
                         }
 
-                        lock (InputMessageQueue)
-                        {
-                            InputMessageQueue.Enqueue(Encoding.UTF8.GetString(packet.Data.Content));
-                        }
-                        // Выслать подверждение получения пакета
+                        // Вызов события
+                        OnPacketRecived(new MessageRecivedEventArgs(packet.Data.Type, Encoding.UTF8.GetString(packet.Data.Content)));
+
+                       // lock (InputMessageQueue)
+                       // {
+                       //     InputMessageQueue.Enqueue(Encoding.UTF8.GetString(packet.Data.Content));
+                       // }
+
+                       // Выслать подверждение получения пакета
                        _clientArray[packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
                     }
                     break;
