@@ -61,6 +61,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Main\Client.cs" />
     <Compile Include="Main\Packet\DataTypes\DataError.cs" />
     <Compile Include="Main\Packet\DataTypes\IData.cs" />
     <Compile Include="Helpers\Compressor.cs" />

@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using ChatClient.Main;
 using ChatClient.Main.Packet;
 
 namespace ChatClient
 {
     class ClientPort : IDisposable
     {
-        private bool _continue = false;
         private SerialPort _comPortReader;
         private SerialPort _comPortWriter;
         private Thread _readThread;
@@ -27,6 +27,7 @@ namespace ChatClient
         private int _outFilePacketsQueueSize = 200;
         public Queue InputMessageQueue;
         public int InputMessageQueueSize = 100;
+        private Client[] _clientArray = new Client[5];
 
         // Событие при получении Acknowledge
         private ManualResetEvent _answerEvent = new ManualResetEvent(false);
@@ -34,28 +35,26 @@ namespace ChatClient
         // Событие при получении пакета файла
         private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
         // Таймаут ожидания пакета файла в мс
-        private int _waitForFilePacketTimeout = 10000;
-
-        // Определяет выполняются ли cейчас операции с файлами
-        // private static bool _workWithFileNow = false;
+        private int _waitForFilePacketTimeout = 100000;
 
         // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
-        private bool _isSendingFile = false;
+       // private bool Client.IsSendingFile = false;
+        
         
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
         private int _sleepTime = 1;
       
         // Служит для подсчета полученных или отправленых пакетов файла.
-        private byte _countOfFilePackets = 0;
+       // private byte _countOfFilePackets = 0;
 
         // Данные о файле для передачи
         private FileInfo _fileToTransfer;
         // Получатель файла
-        private byte _fileRecipient;
+       // private byte _fileRecipient;
         
         // Разрешает передачу файла при приему разрешения на передачу. Устанавливается если был отправлен запрос на передачу файла
-        private bool _allowSendingFile = false;
+       // private bool _allowSendingFile = false;
 
         // Данные о файле для приема
         private string _receivingFileName = "";
@@ -64,7 +63,7 @@ namespace ChatClient
         private long _receivingFileSize = 0;
         // Отправитель файла
         private byte _fileSender = 255;
-
+        
         // Хранит CRC для последнего отправленого пакета, чтобы идентифицировать его при получении сообщения о доставке этого пакета
         private ushort _lastMessageCrc=0;
 
@@ -77,7 +76,7 @@ namespace ChatClient
         //   }
 
         public ClientPort(string readerPortName,string writerPortName, byte id, int portSpeed)
-        {
+        { 
             _comPortReader = new SerialPort();
             _comPortReader.PortName = readerPortName;
             _comPortReader.BaudRate = portSpeed;
@@ -92,7 +91,7 @@ namespace ChatClient
 
           // Создает событие получения данных
           //  _comPortReader.DataReceived += new SerialDataReceivedEventHandler(_comPortReader_DataReceived);
-
+            
            _comPortWriter = new SerialPort();
            _comPortWriter.PortName = writerPortName;
            _comPortWriter.BaudRate = portSpeed;
@@ -125,22 +124,28 @@ namespace ChatClient
             _comPortWriter.Encoding = Encoding.GetEncoding(28591);
 
             _clietnId = id;
-           
+
+            for (int i = 0; i < 5; i++)
+            {
+                _clientArray[i] = new Client((byte)i,_clietnId, _outMessageQueueSize, _comPortWriter, InputMessageQueue);
+            }
+
             _readThread = new Thread(Read);
-            _writeThread = new Thread(Write);
+           // _writeThread = new Thread(Write);
             
             _comPortReader.Open();
             _comPortWriter.Open();
 
-            _continue = true;
+            Client.Continue = true;
 
             _readThread.Start();
-            _writeThread.Start();
+           // _writeThread.Start();
+            
         }
 
         public void Dispose()
         {
-            _continue = false;
+            Client.Continue = false;
 
             if (_readThread != null)
             _readThread.Join(1000);
@@ -158,7 +163,7 @@ namespace ChatClient
         private void WaitForFilePacket()
         {
             // Пока стоит флаг приема файла
-            while (_isRecivingFile && _continue)
+            while (_isRecivingFile && Client.Continue)
             {
                 // Обнулить событие
                 _waitForFilePacketEvent.Reset();
@@ -203,8 +208,9 @@ namespace ChatClient
             {
                 _outFilePacketsQueue.Clear();
             }
+            Client.CountOfFilePackets = 0;
 
-            while (true && _isSendingFile && _continue)
+            while (true && Client.IsSendingFile && Client.Continue)
             {
                 // Получает значение сколько байт считано из файла и считывает данные в буфер
                 var size = stream.Read(buffer, 0, buffer.Length);
@@ -218,25 +224,33 @@ namespace ChatClient
                 while (true)
                 {
                     // Если буфер почти заполнен то поток ожидает 10 мс и повторяет проверку
-                    if (QueueCount(_outFilePacketsQueue) < _outFilePacketsQueueSize)
+              //      if (QueueCount(_outFilePacketsQueue) < _outFilePacketsQueueSize)
+                    if (QueueCount(_clientArray[Client.FileRecipient].OutFilePacketsQueue) < _clientArray[Client.FileRecipient].QueueSize)
                     {
+                        if (!(Client.IsSendingFile && Client.Continue))
+                        {
+#if DEBUG
+                            MessageBox.Show("Поток отправки файла завершен");
+#endif
+                            return;
+                        }
                         // Если эот не последний пакет то отправляем весь буфер
                         if (countOfSendedPackets < totalCountOfPackets)
                         {
-                            SendFilePacket(buffer, (byte) toId,_countOfFilePackets);
+                            SendFilePacket(buffer, (byte) toId,Client.CountOfFilePackets);
                             countOfSendedPackets++;
-                            _countOfFilePackets++;
+                            Client.CountOfFilePackets++;
                         }
                         else 
                         { 
                             // Иначе отправляет только столько байт сколько было считано и этот пакет считается последним 
                             byte[] lastPacket = new byte[size];
                             Array.Copy(buffer, 0, lastPacket, 0, lastPacket.Length);
-                            SendFilePacket(lastPacket, (byte)toId, _countOfFilePackets,true);
+                            SendFilePacket(lastPacket, (byte)toId, Client.CountOfFilePackets,true);
                             //_workWithFileNow = false;
 
                             // TO DO: Убрать эту строку!
-                            // _isSendingFile = false;
+                            // Client.IsSendingFile = false;
                             //
                             finish = true;
                         } 
@@ -259,7 +273,7 @@ namespace ChatClient
         {
            // byte[] outPacket = new byte[0];
             Packet outPacket;
-            while (_continue)
+            while (Client.Continue)
             {
                 Thread.Sleep(_sleepTime);
 
@@ -275,7 +289,7 @@ namespace ChatClient
                 else
                 {
                     // Определяет есть ли пакеты файлов в очереди и разрешена передача файла 
-                    if (QueueCount(_outFilePacketsQueue) > 0 && _isSendingFile)
+                    if (QueueCount(_outFilePacketsQueue) > 0 && Client.IsSendingFile)
                     {
                         // Блокировка очередни на время извлечения пакета
                         lock (_outFilePacketsQueue)
@@ -319,7 +333,7 @@ namespace ChatClient
                                   }
                                   else
                                   {
-                                      if (outPacket.Data.Type == "FileData" && !_isSendingFile)
+                                      if (outPacket.Data.Type == "FileData" && !Client.IsSendingFile)
                                       {
                                           break;
                                       }
@@ -382,7 +396,7 @@ namespace ChatClient
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[1+]
             Array.Copy(messageBody, 0, messagePacket, 1, messageBody.Length);
 
-            AddPacketToQueue(messagePacket, toId, option1, option2);
+            _clientArray[(int)toId].AddPacketToQueue(messagePacket, _clietnId, option1, option2);
         }
 
         public void SendFileTransferRequest(string filePath, byte toId)
@@ -395,10 +409,10 @@ namespace ChatClient
 
             _fileToTransfer = new FileInfo(filePath);
 
-            _allowSendingFile = true;
+            Client.AllowSendingFile = true;
 
             // Устанавливает кому будет передаваться файл
-            _fileRecipient = toId;
+            Client.FileRecipient = toId;
 
 #if DEBUG
             MessageBox.Show(_fileToTransfer.Length.ToString());
@@ -428,7 +442,7 @@ namespace ChatClient
             //Вставляет имя файла в пакет
             Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packet, 9, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
 
-            AddPacketToQueue(packet, toId);
+            _clientArray[(int)toId].AddPacketToQueue(packet, _clietnId);
         }
 
         private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
@@ -463,7 +477,22 @@ namespace ChatClient
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[4+]
             Array.Copy(messageBody, 0, Packet, 3, messageBody.Length);
 
-            AddPacketToQueue(Packet, toId, option1, option2);
+            _clientArray[(int)toId].AddPacketToQueue(Packet, _clietnId, option1, option2);
+        }
+
+        private void SendFileTransferCancel(byte toId)
+        {
+            _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x18);
+        }
+
+        private void SendAcknowledge(Packet packet)
+        {
+            _clientArray[(int)packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
+        }
+
+        private void SendFileTransferCompleted(byte toId)
+        {
+          _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x04);
         }
 
         private bool AddPacketToQueue(byte[] messageBody, byte toId, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
@@ -484,19 +513,19 @@ namespace ChatClient
 
             if (packet.Data.Type == "FileData")
             {
-                lock (_outFilePacketsQueue)
+                lock (_clientArray[toId].OutFilePacketsQueue)
                 {
                     // _outFilePacketsQueue.Enqueue(packet.ToByte());
-                    _outFilePacketsQueue.Enqueue(packet);
+                    _clientArray[toId].OutFilePacketsQueue.Enqueue(packet);
                 }
                 return true;
             }
 
                 //Добавляем пакет в очередь на отправку
-                lock (_outMessagesQueue)
+            lock (_clientArray[toId].OutMessagesQueue)
                 {
                     // _outMessagesQueue.Enqueue(packet.ToByte());
-                     _outMessagesQueue.Enqueue(packet);
+                    _clientArray[toId].OutMessagesQueue.Enqueue(packet);
                 }
 
             return true;
@@ -504,7 +533,7 @@ namespace ChatClient
 
         private void Read()
         {
-            while (_continue)
+            while (Client.Continue)
             {
                 //Если найдена сигнатура | 0xAA 0x55 | количество входных байтов равно или более количества байтов в Header'е то начинается обработка пакета 
                     if (_comPortReader.BytesToRead >= 10 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
@@ -554,22 +583,6 @@ namespace ChatClient
             }   
         }
 
-        private void SendFileTransferCancel(byte toId)
-        {
-            AddPacketToQueue(new byte[] { 0x00 }, toId, 0x18);
-
-        }
-
-        private void SendAcknowledge(Packet packet)
-        {
-            AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
-        }
-
-        private void SendFileTransferCompleted(byte toId)
-        {
-            AddPacketToQueue(new byte[] { 0x00 }, toId, 0x04);
-        }
-
         private void ParsePacket(Packet packet)
         {
             // Функция вовращает true если найдена опция и дальнейший разбор данных не требуется.
@@ -594,7 +607,7 @@ namespace ChatClient
                             InputMessageQueue.Enqueue(Encoding.UTF8.GetString(packet.Data.Content));
                         }
                         // Выслать подверждение получения пакета
-                        AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), packet.Sender, 0x06, 0x00, true);
+                       _clientArray[packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
                     }
                     break;
 
@@ -605,7 +618,7 @@ namespace ChatClient
                        SendAcknowledge(packet);
 
                         // Если не принимается и не передается файл
-                        if (!_isSendingFile && !_isRecivingFile)
+                        if (!Client.IsSendingFile && !_isRecivingFile)
                         {
                             // Сообщения о том надо ли принимать файл
                             DialogResult dialogResult = MessageBox.Show("Прниять файл " + packet.Data.FileName + 
@@ -617,9 +630,9 @@ namespace ChatClient
                                 // Выставляет флаг приема 
                                 _isRecivingFile = true;
                                 //Высылает разрешение на отправку файла  
-                                AddPacketToQueue(new byte[] { 0x00 }, packet.Sender, 0x41);                                
+                              _clientArray[packet.Sender].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x41);                                
                                 //Обнулить счетчик пакетов файла
-                                _countOfFilePackets = 0;
+                                Client.CountOfFilePackets = 0;
                                 // Сохраняет параметры файла
                                 _receivingFileName = packet.Data.FileName;
                                 _receivingFileSize = packet.Data.FileLenght;
@@ -657,7 +670,7 @@ namespace ChatClient
                     case "FileData" :
                         {
                             // Если совпал номер пакета и разрешено получение файлов и файл существует и id отправителя совпал с id отправителя файла
-                            if (_countOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName) && packet.Sender == _fileSender)
+                            if (Client.CountOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName) && packet.Sender == _fileSender)
                             {
                                 // Устанавливает что пакет получен
                                 _waitForFilePacketEvent.Set();
@@ -672,13 +685,13 @@ namespace ChatClient
                                 ByteArrayToFile(_receivingFileFullName, packet.Data.Content);
 
                                 // Инкрементирует число принятых пакетов
-                                _countOfFilePackets++;
+                                Client.CountOfFilePackets++;
 
                                 // Если пакет последний в цепочке
                                 if (packet.Data.LastPacket == 0x4C)
                                 {
 #if DEBUG
-                                    MessageBox.Show("Файл принят! Всего пакетов в файле = " + _countOfFilePackets);
+                                    MessageBox.Show("Файл принят! Всего пакетов в файле = " + Client.CountOfFilePackets);
 #endif
                                     SendFileTransferCompleted(packet.Sender);
                                     _isRecivingFile = false;
@@ -687,7 +700,7 @@ namespace ChatClient
                             else
                             {
 #if DEBUG
-                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + _countOfFilePackets);
+                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + Client.CountOfFilePackets);
 #endif
                             }
                         }
@@ -703,11 +716,13 @@ namespace ChatClient
                    {
                        // Обработка пакета подверждения доставки сообщения
                        // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым
-                       if (_lastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
+
+                       if (_clientArray[packet.Sender].LastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
                        {
                            // Установить что последнее сообщение было доставлено
                            _sendedPacketDelivered[packet.Sender] = true;
-                           _answerEvent.Set();
+                           _clientArray[packet.Sender].AnswerEvent.Set();
+                          // _answerEvent.Set();
                            return true;
                        }
          
@@ -718,7 +733,7 @@ namespace ChatClient
                    {
                        // Обработка пакета разрешения на передачу файла
                        // Если получено разрешение на передачу файлов и отправитель пакета является тем кому был отправлен запрос на передачу
-                       if (_allowSendingFile && _fileRecipient == packet.Sender)
+                       if (Client.AllowSendingFile && Client.FileRecipient == packet.Sender)
                        {
 #if DEBUG
                            // Debug message
@@ -733,11 +748,11 @@ namespace ChatClient
                            }
 
                            // Запрещает отправлять файла на последующие запросы до завершения передачи
-                           _allowSendingFile = false;
+                           Client.AllowSendingFile = false;
                            // Устанавливает что идет передача файла
-                           _isSendingFile = true;
+                           Client.IsSendingFile = true;
                            // Обнуляет счетчик пакетов
-                           _countOfFilePackets = 0;
+                           Client.CountOfFilePackets = 0;
 
                            // Запускает поток для упаковки файла в пакеты и добавления их в очередь
                            _fileSenderThread = new Thread(FileSender);
@@ -767,7 +782,7 @@ namespace ChatClient
                            return true;
                        }
 
-                       if (_isSendingFile)
+                       if (Client.IsSendingFile)
                        {
 #if DEBUG
                            // Debug message
@@ -779,9 +794,9 @@ namespace ChatClient
                            return true;
                        }
 
-                       if (_allowSendingFile)
+                       if (Client.AllowSendingFile)
                        {
-                           _allowSendingFile = false;
+                           Client.AllowSendingFile = false;
 #if DEBUG
                            // Debug message
                            MessageBox.Show("В передаче файла отказано");
@@ -797,7 +812,7 @@ namespace ChatClient
                    {
                        if (packet.Option1String == "FileTransferCompleted")
                        {
-                           _isSendingFile = false;
+                           Client.IsSendingFile = false;
 #if DEBUG
                            // Debug message
                            MessageBox.Show("Файл доставлен");
@@ -857,11 +872,11 @@ namespace ChatClient
                 // Установить что файл больше не принимается
                 _isRecivingFile = false;
                 // Запрещает передавать файла до запроса на отправку
-                _allowSendingFile = false;
+                Client.AllowSendingFile = false;
                 // Удаляет недопринятый файл
                 DeleteFile(_receivingFileFullName);
                 // Обнуляет счетчик
-                _countOfFilePackets = 0;
+                Client.CountOfFilePackets = 0;
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(_fileSender);
             }           
@@ -869,20 +884,20 @@ namespace ChatClient
 
         public void CancelSendingFile()
         {
-            if (_isSendingFile)
+            if (Client.IsSendingFile)
             {
                 // Устанавливает что файл не передается
-                _isSendingFile = false;
+                Client.IsSendingFile = false;
                 // Запрещает передавать файла до запроса на отправку
-                _allowSendingFile = false;
+                Client.AllowSendingFile = false;
                 // Ждет завершения потока что бы он не слал больше пакетов. Надо ли оно тут?
-                _fileSenderThread.Join(1000);
+     //           _fileSenderThread.Join(1000);
                 // Отчищает очередь на отправку файла
-                _outFilePacketsQueue.Clear();
+                _clientArray[Client.FileRecipient].OutFilePacketsQueue.Clear();
                 // Высылает уведемление о прекращении передачи файла
-                SendFileTransferCancel(_fileRecipient);
+                SendFileTransferCancel(Client.FileRecipient);
                 // Обнуляет счетчик
-                _countOfFilePackets = 0;
+                Client.CountOfFilePackets = 0;
             }            
         }
 
