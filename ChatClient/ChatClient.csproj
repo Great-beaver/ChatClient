@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="Main\Client.cs" />
     <Compile Include="Main\MessageRecivedEventArgs.cs" />
+    <Compile Include="Main\FileRequestRecivedEventArgs.cs" />
     <Compile Include="Main\Packet\DataTypes\DataError.cs" />
     <Compile Include="Main\Packet\DataTypes\IData.cs" />
     <Compile Include="Helpers\Compressor.cs" />

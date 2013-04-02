@@ -20,6 +20,7 @@ namespace ChatClient.Main
         private int _sleepTime = 1;
         public static bool Continue = false;
         public ushort LastMessageCrc { get; private set; }
+        public Packet.Packet LastPacket { get; private set; }
         private SerialPort _comPortWriter;
         public Queue InputMessageQueue;
         public static bool IsSendingFile = false;
@@ -44,6 +45,15 @@ namespace ChatClient.Main
             _comPortWriter = writePort;
             InputMessageQueue = inputQueue;
         }
+
+        public event EventHandler<MessageRecivedEventArgs> AcknowledgeRecived;
+
+        private void OnAcknowledgeRecived(MessageRecivedEventArgs e)
+        {
+            EventHandler<MessageRecivedEventArgs> handler = AcknowledgeRecived;
+            if (handler != null) handler(this, e);
+        }
+
 
         public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
@@ -116,12 +126,13 @@ namespace ChatClient.Main
                 }
                 AnswerEvent.Reset();
 
-                // Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
-                // byte[] data= new byte[outPacket.Length-10];
+                 //Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
+                 //byte[] data= new byte[outPacket.Length-10];
 
-                //  Array.Copy(outPacket,10,data,0,data.Length);
+                 // Array.Copy(outPacket,10,data,0,data.Length);
 
                 LastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
+                LastPacket = outPacket;
 
                 lock (_comPortWriter)
                 {
@@ -136,10 +147,13 @@ namespace ChatClient.Main
                     {
                         if (outPacket.Data.Type == "Text")
                         {
-                            lock (InputMessageQueue)
-                            {
-                                InputMessageQueue.Enqueue("Сообщение доставлено!");
-                            }
+                          //lock (InputMessageQueue)
+                          //{
+                          //    InputMessageQueue.Enqueue("Сообщение доставлено!");
+                          //}
+                            // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs("ACK", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+
                         }
                         break;
                     }
@@ -156,21 +170,34 @@ namespace ChatClient.Main
                             if (outPacket.Data.Type == "FileData")
                             {
                                 CancelSendingFile();
-#if DEBUG
-                                MessageBox.Show("Получатель не доступен доставка отменена");
-#endif
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs("FileUndelivered", "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+//#if DEBUG
+//                                MessageBox.Show("Получатель не доступен доставка файла отменена");
+//#endif
                             }
-                            lock (InputMessageQueue)
+
+                            if (outPacket.Data.Type == "Text")
                             {
-                                InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs("TextUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
                             }
 
+                            else
+                            {
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs("MessageUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                            }
 
+                            // lock (InputMessageQueue)
+                          // {
+                          //     InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
+                          // }
+                            
                             break;
                         }
-
+                       
+#if DEBUG
                         // Debug message
                         MessageBox.Show("Переотправка сообщения попытка № " + attempts);
+#endif
 
                         lock (_comPortWriter)
                         {
