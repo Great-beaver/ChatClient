@@ -31,7 +31,7 @@ namespace ChatClient
             {
                 case "Text" :
                     {
-                        richTextBox1.AppendText("Клиент " + sender+ " :"+ '\n' + text + '\n');
+                        richTextBox1.AppendText("Клиент " + sender + " :"+ '\n' + text + '\n');
                     }
                     break;
 
@@ -52,13 +52,82 @@ namespace ChatClient
                     case "FileUndelivered":
                     {
                         richTextBox1.AppendText(
-                    "Клиента " + sender + "не лоступен, отправка файла отменена." + '\n');
+                    "Получатель " + sender + "не доступен, отправка файла отменена." + '\n');
                     }
                     break;
 
+                    case "MessageUndelivered":
+                    {
+                        richTextBox1.AppendText("Клиента " + sender + "не лоступен." + '\n');
+                    }
+                    break;
+
+                    case "FileReceivingComplete":
+                    {
+                        richTextBox1.AppendText(
+                    "Файл " + text + " от клиента " + sender + " получен." + '\n');
+                    }
+                    break;
+
+                    case "FileSendingComplete":
+                    {
+                        richTextBox1.AppendText(
+                    "Передача файла " + text + " клиенту " + sender + " завершена." + '\n');
+                    }
+                    break;
+
+                    case "FileTransferAllowed":
+                    {
+                        richTextBox1.AppendText(
+                    "Клиент " + sender + " одобрил получение файла " + text +"." + '\n');
+                    }
+                    break;
+
+                    case "FileTransferDenied":
+                    {
+                        richTextBox1.AppendText(
+                    "Клиент " + sender + " отклонил получение файла " + text +"." + '\n');
+                    }
+                    break;
+
+                    case "FileReceivingStarted":
+                    {
+                    richTextBox1.AppendText(
+                    "Начат прием файла  " + text + " от клиента " + sender + "." + '\n');
+                    }
+                    break;
+
+                    case "FileTransferCanceled":
+                    {
+                    richTextBox1.AppendText(
+                    "Прием файла  " + text + " от клиента " + sender + " отменен." + '\n');
+                    }
+                    break;
+                    case "FileTransferCanceledBySender":
+                    {
+                        richTextBox1.AppendText(
+                    "Передача файла " + text + " отменан отправителем " + sender +"." + '\n');
+                    }
+                    break;
+
+                    case "FileTransferCanceledByRecipient":
+                    {
+                        richTextBox1.AppendText(
+                    "Передача файла " + text + " отменан получателем " + sender +"." + '\n');
+                    }
+                    break;
+
+                    case "FileReceivingTimeOut":
+                    {
+                        richTextBox1.AppendText(
+                    "Вышло время ожидания файла " + text + " от " + sender + " передача отменена." + '\n');
+                    }
+                    break;
 
             }
 
+            // Скрол вниз
+            if (richTextBox1.TextLength>0)
             richTextBox1.Select(this.richTextBox1.TextLength - 1, 0);
             richTextBox1.ScrollToCaret();
 
@@ -117,7 +186,6 @@ namespace ChatClient
 
             if (od.ShowDialog() == DialogResult.OK)
             {
-                MessageBox.Show(od.FileName);
                 comPort.SendFileTransferRequest(od.FileName, Convert.ToByte(textBox4.Text));
             }
         }

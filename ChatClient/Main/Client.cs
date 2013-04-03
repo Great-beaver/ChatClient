@@ -54,7 +54,6 @@ namespace ChatClient.Main
             if (handler != null) handler(this, e);
         }
 
-
         public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
             Packet.Packet packet = new Packet.Packet(IdToSend, sender, option1, option2, messageBody);
