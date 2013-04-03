@@ -153,9 +153,6 @@ namespace ChatClient
             ReciveAcknowledge(e.MessageType, e.MessageText, e.Sender);
         }
 
-
-
-
         public void Dispose()
         {
             Client.Continue = false;
@@ -232,7 +229,7 @@ namespace ChatClient
             Boolean finish = false;
             var stream = File.OpenRead(_fileToTransfer.FullName);
             // TO DO: Разобратся с длинной пакета, допустима ли такая длинна пакета?
-            var buffer = new byte[1024*5];
+            var buffer = new byte[1024*2];
 
             // Количество пакетов в файле
             long totalCountOfPackets = _fileToTransfer.Length / buffer.Length;

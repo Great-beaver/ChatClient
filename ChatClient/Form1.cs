@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Text;
 using System.Windows.Forms;
 using ChatClient.Main;
@@ -8,7 +9,7 @@ namespace ChatClient
 
     public partial class Form1 : Form
     {
-        private ClientPort comPort;
+        private ClientPort _comPort;
 
         public Form1()
         {
@@ -17,8 +18,11 @@ namespace ChatClient
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            
-
+         //  _comPort = new ClientPort(Properties.Settings.Default.ReadComPort, Properties.Settings.Default.WriteComPort, 
+         //      Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
+         //  // Подписывание на событие
+         //  _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
+         //  _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);                
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -164,20 +168,19 @@ namespace ChatClient
         }
 
         private void button1_Click(object sender, EventArgs e)
-        {
-            comPort.SendTextMessage(richTextBox2.Text, Convert.ToByte(textBox4.Text));
-            richTextBox2.Clear();    
-            
+        {            
+            _comPort.SendTextMessage(richTextBox2.Text, Convert.ToByte(textBox4.Text));
+            richTextBox2.Clear();                
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            comPort = new ClientPort(textBox1.Text, textBox2.Text, Convert.ToByte(textBox3.Text),Convert.ToInt32(textBox5.Text));
-            // Подписывание на событие
-            comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
-            comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
-          
-            timer1.Enabled = true;            
+            _comPort = new ClientPort(textBox1.Text, textBox2.Text,
+                 Convert.ToByte(textBox3.Text), Convert.ToInt32(textBox5.Text));
+             // Подписывание на событие
+             _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
+             _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);   
+            
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -186,36 +189,36 @@ namespace ChatClient
 
             if (od.ShowDialog() == DialogResult.OK)
             {
-                comPort.SendFileTransferRequest(od.FileName, Convert.ToByte(textBox4.Text));
+                _comPort.SendFileTransferRequest(od.FileName, Convert.ToByte(textBox4.Text));
             }
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            lock (comPort.InputMessageQueue)
-            {
-                if (comPort.InputMessageQueue.Count > 0)
-                {
-                    richTextBox1.AppendText(comPort.InputMessageQueue.Dequeue().ToString() + '\n');
-                }
-            }           
+          // lock (_comPort.InputMessageQueue)
+          // {
+          //     if (_comPort.InputMessageQueue.Count > 0)
+          //     {
+          //         richTextBox1.AppendText(_comPort.InputMessageQueue.Dequeue().ToString() + '\n');
+          //     }
+          // }           
         }
 
         private void button4_Click(object sender, EventArgs e)
         {
-            comPort.CancelSendingFile();
+            _comPort.CancelSendingFile();
         }
 
         private void button5_Click(object sender, EventArgs e)
         {
-            comPort.CancelRecivingFile();
+            _comPort.CancelRecivingFile();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (comPort != null)
+            if (_comPort != null)
             {
-                comPort.Dispose();
+                _comPort.Dispose();
             }
         }
     }
