@@ -141,10 +141,10 @@ namespace ChatClient
         }
 
         // Делегат обработчика  текстовых сообщений 
-        public delegate void ReciveAcknowledgeDelegate(string type, string text, byte sender);
+        public delegate void ReciveAcknowledgeDelegate(MessageType type, string text, byte sender);
 
         // Метод обработки текстовых сообщений 
-        void ReciveAcknowledge(string type, string text, byte sender)
+        void ReciveAcknowledge(MessageType type, string text, byte sender)
         {
             // Событие передает тип пакета и текст для пользователя
             OnMessageRecived(new MessageRecivedEventArgs(type, text, sender));
@@ -216,7 +216,7 @@ namespace ChatClient
 //#endif
 
                         // Событие - отправитель файла не доступен    
-                        OnMessageRecived(new MessageRecivedEventArgs(" FileReceivingTimeOut", _receivingFileName, _fileSender));
+                        OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingTimeOut, _receivingFileName, _fileSender));
 
                         CancelRecivingFile();
                     }
@@ -514,7 +514,7 @@ namespace ChatClient
                         }
 
                         // Событие передает тип пакета и текст для пользователя
-                        OnMessageRecived(new MessageRecivedEventArgs(packet.Data.Type.ToString(), Encoding.UTF8.GetString(packet.Data.Content), packet.Sender));
+                        OnMessageRecived(new MessageRecivedEventArgs(MessageType.Text, Encoding.UTF8.GetString(packet.Data.Content), packet.Sender));
 
                         // Выслать ACK
                       // _clientArray[packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
@@ -545,7 +545,7 @@ namespace ChatClient
                             if (ea.FileTransferAllowed)
                             {
                                 // Событие - начат прием файла
-                                OnMessageRecived(new MessageRecivedEventArgs("FileReceivingStarted", packet.Data.FileName, packet.Sender));
+                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingStarted, packet.Data.FileName, packet.Sender));
 
                                 // Выставляет флаг приема 
                                 _isRecivingFile = true;
@@ -569,7 +569,7 @@ namespace ChatClient
                             else
                             {
                                 // Событие - прием файла отклонен
-                                OnMessageRecived(new MessageRecivedEventArgs("FileTransferCanceled", packet.Data.FileName, packet.Sender));
+                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, packet.Data.FileName, packet.Sender));
                                 
                                 _isRecivingFile = false;
                                 //Отказ отправки файла
@@ -614,7 +614,7 @@ namespace ChatClient
                                 {
 
                                     // Событие о заверщении приема файла 
-                                    OnMessageRecived(new MessageRecivedEventArgs("FileReceivingComplete", _receivingFileName, packet.Sender));
+                                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingComplete, _receivingFileName, packet.Sender));
 
                                     SendFileTransferCompleted(packet.Sender);
                                     _isRecivingFile = false;
@@ -665,7 +665,7 @@ namespace ChatClient
 //#endif
 
                            // Событие о разрещении на передачу файла
-                           OnMessageRecived(new MessageRecivedEventArgs("FileTransferAllowed", _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferAllowed, _fileToTransfer.Name, packet.Sender));
 
                            // Начать отправку файла
 
@@ -706,7 +706,7 @@ namespace ChatClient
 //                           MessageBox.Show("Отправитель отменил передачу файла");
 //#endif
                            // Событие отмены перадачи файла отправителем
-                           OnMessageRecived(new MessageRecivedEventArgs("FileTransferCanceledBySender", _receivingFileName, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledBySender, _receivingFileName, packet.Sender));
                            
                            CancelRecivingFile();
                            // Выслать подверждение получения пакета
@@ -723,7 +723,7 @@ namespace ChatClient
 //#endif
 
                            // Событие отмены перадачи файла получателем
-                           OnMessageRecived(new MessageRecivedEventArgs("FileTransferCanceledByRecipient", _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledByRecipient, _fileToTransfer.Name, packet.Sender));
 
                            CancelSendingFile();
                            // Выслать подверждение получения пакета
@@ -740,7 +740,7 @@ namespace ChatClient
 //                           MessageBox.Show("В передаче файла отказано");
 //#endif
                            // Событие отказа от приема файла 
-                           OnMessageRecived(new MessageRecivedEventArgs("FileTransferDenied", _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferDenied, _fileToTransfer.Name, packet.Sender));
                        }
                        // Выслать подверждение получения пакета
                        SendAcknowledge(packet);
@@ -758,7 +758,7 @@ namespace ChatClient
 //                           MessageBox.Show("Файл доставлен");
 //#endif
                            // Событие доставки файла
-                           OnMessageRecived(new MessageRecivedEventArgs("FileSendingComplete", _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileSendingComplete, _fileToTransfer.Name, packet.Sender));
 
 
                            SendAcknowledge(packet);

@@ -26,102 +26,102 @@ namespace ChatClient
         }
 
         // Делегат обработчика  текстовых сообщений 
-        public delegate void ReciveMessageDelegate(string type, string text, byte sender);
+        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender);
 
         // Метод обработки текстовых сообщений 
-        void ReciveMessage(string type, string text, byte sender)
+        void ReciveMessage(MessageType type, string text, byte sender)
         {
             switch (type)
             {
-                    case "Text" :
+                case MessageType.Text:
                     {
                         richTextBox1.AppendText("Клиент " + sender + " :"+ '\n' + text + '\n');
                     }
                     break;
 
-                    case "ACK":
+                case MessageType.TextDelivered:
                     {
                         richTextBox1.AppendText(text + '\n'+
                     "Сообщение для клиента " + sender + " доставлено." + '\n');
                     }
                     break;
 
-                    case "TextUndelivered":
+                case MessageType.TextUndelivered:
                     {
                         richTextBox1.AppendText(text + '\n' +
                     "Сообщение для клиента " + sender + "НЕ доставлено." + '\n');
                     }
                     break;
 
-                    case "FileUndelivered":
+                case MessageType.FileUndelivered:
                     {
                         richTextBox1.AppendText(
                     "Получатель " + sender + "не доступен, отправка файла отменена." + '\n');
                     }
                     break;
 
-                    case "MessageUndelivered":
+                case MessageType.MessageUndelivered:
                     {
-                        richTextBox1.AppendText("Клиента " + sender + "не лоступен." + '\n');
+                        richTextBox1.AppendText("Клиента " + sender + "не доступен." + '\n');
                     }
                     break;
 
-                    case "FileReceivingComplete":
+                case MessageType.FileReceivingComplete:
                     {
                         richTextBox1.AppendText(
                     "Файл " + text + " от клиента " + sender + " получен." + '\n');
                     }
                     break;
 
-                    case "FileSendingComplete":
+                case MessageType.FileSendingComplete:
                     {
                         richTextBox1.AppendText(
                     "Передача файла " + text + " клиенту " + sender + " завершена." + '\n');
                     }
                     break;
 
-                    case "FileTransferAllowed":
+                case MessageType.FileTransferAllowed:
                     {
                         richTextBox1.AppendText(
                     "Клиент " + sender + " одобрил получение файла " + text +"." + '\n');
                     }
                     break;
 
-                    case "FileTransferDenied":
+                    case MessageType.FileTransferDenied:
                     {
                         richTextBox1.AppendText(
                     "Клиент " + sender + " отклонил получение файла " + text +"." + '\n');
                     }
                     break;
 
-                    case "FileReceivingStarted":
+                    case MessageType.FileReceivingStarted:
                     {
                     richTextBox1.AppendText(
                     "Начат прием файла  " + text + " от клиента " + sender + "." + '\n');
                     }
                     break;
 
-                    case "FileTransferCanceled":
+                    case MessageType.FileTransferCanceled:
                     {
                     richTextBox1.AppendText(
                     "Прием файла  " + text + " от клиента " + sender + " отменен." + '\n');
                     }
                     break;
-                    case "FileTransferCanceledBySender":
+                    case MessageType.FileTransferCanceledBySender:
                     {
                         richTextBox1.AppendText(
                     "Передача файла " + text + " отменан отправителем " + sender +"." + '\n');
                     }
                     break;
 
-                    case "FileTransferCanceledByRecipient":
+                    case MessageType.FileTransferCanceledByRecipient:
                     {
                         richTextBox1.AppendText(
                     "Передача файла " + text + " отменан получателем " + sender +"." + '\n');
                     }
                     break;
 
-                    case "FileReceivingTimeOut":
+                    case MessageType.FileReceivingTimeOut:
                     {
                         richTextBox1.AppendText(
                     "Вышло время ожидания файла " + text + " от " + sender + " передача отменена." + '\n');

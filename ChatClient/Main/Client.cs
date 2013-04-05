@@ -131,7 +131,7 @@ namespace ChatClient.Main
                                 //    InputMessageQueue.Enqueue("Сообщение доставлено!");
                                 //}
                                 // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs("ACK", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
 
                             }
                             break;
@@ -149,7 +149,7 @@ namespace ChatClient.Main
                                 if (outPacket.Data.Type ==  DataType.FileData)
                                 {
                                     CancelSendingFile();
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs("FileUndelivered", "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Recipient));
                                     //#if DEBUG
                                     //                                MessageBox.Show("Получатель не доступен доставка файла отменена");
                                     //#endif
@@ -157,12 +157,12 @@ namespace ChatClient.Main
 
                                 if (outPacket.Data.Type ==  DataType.Text)
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs("TextUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
                                 }
 
                                 else
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs("MessageUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
                                 }
 
                                 // lock (InputMessageQueue)

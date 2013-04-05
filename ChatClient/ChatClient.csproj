@@ -68,6 +68,7 @@
     <Compile Include="Main\Client.cs" />
     <Compile Include="Main\MessageRecivedEventArgs.cs" />
     <Compile Include="Main\FileRequestRecivedEventArgs.cs" />
+    <Compile Include="Main\MessageType.cs" />
     <Compile Include="Main\Packet\DataTypes\DataError.cs" />
     <Compile Include="Main\Packet\DataTypes\IData.cs" />
     <Compile Include="Helpers\Compressor.cs" />
@@ -100,7 +101,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
