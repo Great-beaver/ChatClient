@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
@@ -14,8 +15,8 @@ namespace ChatClient.Main
     {
         public byte IdToSend { get; private set; }
         public ManualResetEvent AnswerEvent { get; private set; }
-        public Queue OutMessagesQueue { get; private set; }
-        public  Queue OutFilePacketsQueue { get; private set; }
+        public ConcurrentQueue<Packet.Packet> OutMessagesQueue { get; private set; }
+        public ConcurrentQueue<Packet.Packet> OutFilePacketsQueue { get;  set; }
         private Thread _writeThread;
         private int _sleepTime = 1;
         public static bool Continue = false;
@@ -36,8 +37,8 @@ namespace ChatClient.Main
             _ownerId = ownerId;
             QueueSize = queueSize;
             AnswerEvent = new ManualResetEvent(false);
-            OutMessagesQueue = new Queue(QueueSize);
-            OutFilePacketsQueue = new Queue(QueueSize); ;
+            OutMessagesQueue = new ConcurrentQueue<Packet.Packet>();
+            OutFilePacketsQueue = new ConcurrentQueue<Packet.Packet>();
             Continue = true;
             _writeThread = new Thread(Write);
             _writeThread.Start();
@@ -96,114 +97,123 @@ namespace ChatClient.Main
             Packet.Packet outPacket;
             while (Continue)
             {
-                Thread.Sleep(_sleepTime);
+                Thread.Sleep(_sleepTime*100);
 
                 // Определяет есть ли пакеты в очереди
-                if (QueueCount(OutMessagesQueue) > 0)
+                //if (OutMessagesQueue.Count > 0)
+                //{
+                //          OutMessagesQueue.TryDequeue(out outPacket);
+                //}
+                //else
+                //{
+                //    // Определяет есть ли пакеты файлов в очереди и разрешена передача файла 
+                //    if (OutFilePacketsQueue.Count > 0 && IsSendingFile)
+                //    {
+                //        OutFilePacketsQueue.TryDequeue(out outPacket);
+                //    }
+                //    else
+                //    {
+                //        continue;
+                //    }
+                //}
+
+
+              ////  if (!OutMessagesQueue.TryDequeue(out outPacket))
+              ////  {
+              ////      if (!OutFilePacketsQueue.TryDequeue(out outPacket))
+              ////      {
+              ////          continue;
+              ////      } 
+              ////  }
+
+                while (OutMessagesQueue.TryDequeue(out outPacket) || OutFilePacketsQueue.TryDequeue(out outPacket))
                 {
-                    // Блокировка очередни на время извлечения пакета
-                    lock (OutMessagesQueue)
+                    AnswerEvent.Reset();
+
+                    //Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
+                    //byte[] data= new byte[outPacket.Length-10];
+
+                    // Array.Copy(outPacket,10,data,0,data.Length);
+
+                    LastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
+                    LastPacket = outPacket;
+
+                    lock (_comPortWriter)
                     {
-                        outPacket = (Packet.Packet)OutMessagesQueue.Dequeue();
+                        _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
                     }
-                }
-                else
-                {
-                    // Определяет есть ли пакеты файлов в очереди и разрешена передача файла 
-                    if (QueueCount(OutFilePacketsQueue) > 0 && IsSendingFile)
+
+                    byte attempts = 0;
+
+                    while (true)
                     {
-                        // Блокировка очередни на время извлечения пакета
-                        lock (OutFilePacketsQueue)
+                        if (AnswerEvent.WaitOne(3000, false))
                         {
-                            outPacket = (Packet.Packet)OutFilePacketsQueue.Dequeue();
-                        }
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                AnswerEvent.Reset();
-
-                 //Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
-                 //byte[] data= new byte[outPacket.Length-10];
-
-                 // Array.Copy(outPacket,10,data,0,data.Length);
-
-                LastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
-                LastPacket = outPacket;
-
-                lock (_comPortWriter)
-                {
-                    _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                }
-
-                byte attempts = 0;
-
-                while (true)
-                {
-                    if (AnswerEvent.WaitOne(3000, false))
-                    {
-                        if (outPacket.Data.Type == "Text")
-                        {
-                          //lock (InputMessageQueue)
-                          //{
-                          //    InputMessageQueue.Enqueue("Сообщение доставлено!");
-                          //}
-                            // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
-                            OnAcknowledgeRecived(new MessageRecivedEventArgs("ACK", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
-
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        if (outPacket.Data.Type == "FileData" && !IsSendingFile)
-                        {
-                            CancelSendingFile();
-                            break;
-                        }
-
-                        if (++attempts > 3)
-                        {
-                            if (outPacket.Data.Type == "FileData")
-                            {
-                                CancelSendingFile();
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs("FileUndelivered", "Получатель не доступен доставка файла отменена", outPacket.Recipient));
-//#if DEBUG
-//                                MessageBox.Show("Получатель не доступен доставка файла отменена");
-//#endif
-                            }
-
                             if (outPacket.Data.Type == "Text")
                             {
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs("TextUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
-                            }
+                                //lock (InputMessageQueue)
+                                //{
+                                //    InputMessageQueue.Enqueue("Сообщение доставлено!");
+                                //}
+                                // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs("ACK", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
 
-                            else
-                            {
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs("MessageUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
                             }
-
-                            // lock (InputMessageQueue)
-                          // {
-                          //     InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
-                          // }
-                            
                             break;
                         }
-                       
+                        else
+                        {
+                            if (outPacket.Data.Type == "FileData" && !IsSendingFile)
+                            {
+                                CancelSendingFile();
+                                break;
+                            }
+
+                            if (++attempts > 3)
+                            {
+                                if (outPacket.Data.Type == "FileData")
+                                {
+                                    CancelSendingFile();
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs("FileUndelivered", "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+                                    //#if DEBUG
+                                    //                                MessageBox.Show("Получатель не доступен доставка файла отменена");
+                                    //#endif
+                                }
+
+                                if (outPacket.Data.Type == "Text")
+                                {
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs("TextUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                }
+
+                                else
+                                {
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs("MessageUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                }
+
+                                // lock (InputMessageQueue)
+                                // {
+                                //     InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
+                                // }
+
+                                break;
+                            }
+
 #if DEBUG
-                        // Debug message
-                        MessageBox.Show("Переотправка сообщения попытка № " + attempts);
+                            // Debug message
+                            MessageBox.Show("Переотправка сообщения попытка № " + attempts);
 #endif
 
-                        lock (_comPortWriter)
-                        {
-                            _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
+                            lock (_comPortWriter)
+                            {
+                                _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
+                            }
                         }
-                    }
+                    } 
                 }
+
+
+
+
             }
         }
 
@@ -223,7 +233,8 @@ namespace ChatClient.Main
                 // Ждет завершения потока что бы он не слал больше пакетов. Надо ли оно тут?
                 //_fileSenderThread.Join(1000);
                 // Отчищает очередь на отправку файла
-                OutFilePacketsQueue.Clear();
+                //OutFilePacketsQueue.Clear();
+                OutFilePacketsQueue = new ConcurrentQueue<Packet.Packet>();
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(FileRecipient);
                 // Обнуляет счетчик

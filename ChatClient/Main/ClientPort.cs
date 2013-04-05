@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
@@ -35,7 +36,7 @@ namespace ChatClient
         // Событие при получении пакета файла
         private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
         // Таймаут ожидания пакета файла в мс
-        private int _waitForFilePacketTimeout = 100000;
+        private int _waitForFilePacketTimeout = 10000;
 
         // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
@@ -78,6 +79,7 @@ namespace ChatClient
             _comPortReader.WriteTimeout = 500;
             _comPortReader.WriteBufferSize = 65000;
             _comPortReader.ReadBufferSize = 65000;
+            _comPortReader.ReadTimeout = 5000;
 
           // Создает событие получения данных
           //  _comPortReader.DataReceived += new SerialDataReceivedEventHandler(_comPortReader_DataReceived);
@@ -229,7 +231,7 @@ namespace ChatClient
             Boolean finish = false;
             var stream = File.OpenRead(_fileToTransfer.FullName);
             // TO DO: Разобратся с длинной пакета, допустима ли такая длинна пакета?
-            var buffer = new byte[1024*2];
+            var buffer = new byte[1024];
 
             // Количество пакетов в файле
             long totalCountOfPackets = _fileToTransfer.Length / buffer.Length;
@@ -238,10 +240,8 @@ namespace ChatClient
             long countOfSendedPackets = 0;
 
             // Отчищает очередь пакетов файла на передачу 
-            lock (_outFilePacketsQueue)
-            {
-                _outFilePacketsQueue.Clear();
-            }
+             //   _clientArray[Client.FileRecipient].OutFilePacketsQueue =  new ConcurrentQueue<Main.Packet.Packet>();
+ 
             Client.CountOfFilePackets = 0;
 
             while (true && Client.IsSendingFile && Client.Continue)
@@ -259,7 +259,7 @@ namespace ChatClient
                 {
                     // Если буфер почти заполнен то поток ожидает 10 мс и повторяет проверку
               //      if (QueueCount(_outFilePacketsQueue) < _outFilePacketsQueueSize)
-                    if (QueueCount(_clientArray[Client.FileRecipient].OutFilePacketsQueue) < _clientArray[Client.FileRecipient].QueueSize)
+                    if (_clientArray[Client.FileRecipient].OutFilePacketsQueue.Count < _clientArray[Client.FileRecipient].QueueSize)
                     {
                         if (!(Client.IsSendingFile && Client.Continue))
                         {
@@ -439,51 +439,56 @@ namespace ChatClient
         {
             while (Client.Continue)
             {
-                //Если найдена сигнатура | 0xAA 0x55 | количество входных байтов равно или более количества байтов в Header'е то начинается обработка пакета 
-                    if (_comPortReader.BytesToRead >= 10 && _comPortReader.ReadByte() == 0xAA && _comPortReader.ReadByte() == 0x55)
+                try
+                {
+                    _comPortReader.ReadTo("\xAA\x55");
+
+                    // Считывание данных для создания пакета
+                    // Здесь важен строгий порядок считывания байтов, точно как в пакете.
+                    byte recipient = (byte)_comPortReader.ReadByte();
+                    byte sender = (byte)_comPortReader.ReadByte();
+                    ushort dataLenght = BitConverter.ToUInt16(
+                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+                    byte option1 = (byte)_comPortReader.ReadByte();
+                    byte option2 = (byte)_comPortReader.ReadByte();
+                    ushort crc = BitConverter.ToUInt16(
+                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+
+                    // Счетчик количества итерация цикла while 
+                    int count = 0;
+                    while (_comPortReader.BytesToRead < dataLenght)
                     {
-                            // Считывание данных для создания пакета
-                            // Здесь важен строгий порядок считывания байтов, точно как в пакете.
-                            byte recipient = (byte)_comPortReader.ReadByte();
-                            byte sender = (byte)_comPortReader.ReadByte();
-                            ushort dataLenght = BitConverter.ToUInt16(
-                                    new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
-                            byte option1 = (byte)_comPortReader.ReadByte();
-                            byte option2 = (byte)_comPortReader.ReadByte();
-                            ushort crc = BitConverter.ToUInt16(
-                                    new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
-
-                        // Счетчик количества итерация цикла while 
-                            int count = 0;
-                            while (_comPortReader.BytesToRead < dataLenght)
-                            {
-                            count++;
-                            Thread.Sleep(_sleepTime);
-                                if (count>dataLenght)
-                                {
-                                    break;
-                                }
-                            }
-
-                        byte[] data = new byte[dataLenght];
-                            _comPortReader.Read(data, 0, dataLenght);
-
-                            Packet packet = new Packet(recipient, sender, option1, option2, data);
-
-                            // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
-                            if (packet.Crc == crc && packet.Recipient == _clietnId)
-                            {
-                                //Функция разбора пакета
-                                ParsePacket(packet);
-                            }
-                            else
-                            {
-                               // MessageBox.Show("Hash or ID NOT matches!");
-                               // MessageBox.Show(packet.PacketInfo());
-                            }   
+                        count++;
+                        Thread.Sleep(_sleepTime);
+                        if (count > dataLenght)
+                        {
+                            break;
+                        }
                     }
-                    // Если данных нет, ожидать в течении _sleepTime
-                    Thread.Sleep(_sleepTime);
+
+                    byte[] data = new byte[dataLenght];
+                    _comPortReader.Read(data, 0, dataLenght);
+
+                    Packet packet = new Packet(recipient, sender, option1, option2, data);
+
+                    // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
+                    if (packet.Crc == crc && packet.Recipient == _clietnId)
+                    {
+                        //Функция разбора пакета
+                        ParsePacket(packet);
+                    }
+                    else
+                    {
+                        // MessageBox.Show("Hash or ID NOT matches!");
+                        // MessageBox.Show(packet.PacketInfo());
+                    }
+                }
+                catch (Exception)
+                {
+
+
+                }
+
             }   
         }
 
@@ -751,7 +756,7 @@ namespace ChatClient
 //                           MessageBox.Show("Файл доставлен");
 //#endif
                            // Событие доставки файла
-                           OnMessageRecived(new MessageRecivedEventArgs(" FileSendingComplete", _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs("FileSendingComplete", _fileToTransfer.Name, packet.Sender));
 
 
                            SendAcknowledge(packet);
@@ -830,7 +835,8 @@ namespace ChatClient
                 // Ждет завершения потока что бы он не слал больше пакетов. Надо ли оно тут?
      //           _fileSenderThread.Join(1000);
                 // Отчищает очередь на отправку файла
-                _clientArray[Client.FileRecipient].OutFilePacketsQueue.Clear();
+                //_clientArray[Client.FileRecipient].OutFilePacketsQueue.Clear();
+                _clientArray[Client.FileRecipient].OutFilePacketsQueue = new ConcurrentQueue<Main.Packet.Packet>();
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(Client.FileRecipient);
                 // Обнуляет счетчик
