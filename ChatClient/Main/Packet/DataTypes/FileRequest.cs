@@ -5,7 +5,7 @@ namespace ChatClient.Main.Packet.DataTypes
 {
     public struct FileRequest : IData
     {
-        public string Type { get; private set; }
+        public DataType Type { get; private set; }
         public byte[] Content { get;  set; }
         public byte LastPacket { get; private set; }
         public byte PacketNumber { get; private set; }
@@ -20,7 +20,7 @@ namespace ChatClient.Main.Packet.DataTypes
             // |    0x52    |
 
             // Тип пакета
-            Type = "FileRequest";
+            Type = DataType.FileRequest;
 
             // Длинна файла
             FileLenght = BitConverter.ToInt64(data, 1);

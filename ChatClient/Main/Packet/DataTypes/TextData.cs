@@ -4,7 +4,7 @@ namespace ChatClient.Main.Packet.DataTypes
 {
     public struct TextData : IData
     {
-        public string Type { get; private set; }
+        public DataType Type { get; private set; }
         public byte[] Content { get; set; }
         public byte LastPacket { get; private set; }
         public byte PacketNumber { get; private set; }
@@ -18,7 +18,7 @@ namespace ChatClient.Main.Packet.DataTypes
         // |   1 байт   | 0 - x байт | 
         // |    0x54    |
 
-        Type = "Text";
+        Type = DataType.Text;
         Content = new byte[data.Length - 1];
         Array.Copy(data, 1, Content, 0, Content.Length);
         

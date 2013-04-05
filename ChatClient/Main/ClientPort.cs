@@ -10,6 +10,7 @@ using System.Threading;
 using System.Windows.Forms;
 using ChatClient.Main;
 using ChatClient.Main.Packet;
+using ChatClient.Main.Packet.DataTypes;
 
 namespace ChatClient
 {
@@ -502,17 +503,18 @@ namespace ChatClient
 
             switch (packet.Data.Type)
             {
+                    
                 // Обработка пакета текстового сообщения 
-                case "Text" : 
+                case  DataType.Text: 
                     {
                         // Определяет необходимость разархивирования
-                        if (packet.Option2String == "Compressed")
+                        if (packet.Option2 ==  PacketOption2.Compressed)
                         {
                             packet.Data.Content = Compressor.Unzip(packet.Data.Content);
                         }
 
                         // Событие передает тип пакета и текст для пользователя
-                        OnMessageRecived(new MessageRecivedEventArgs(packet.Data.Type, Encoding.UTF8.GetString(packet.Data.Content), packet.Sender));
+                        OnMessageRecived(new MessageRecivedEventArgs(packet.Data.Type.ToString(), Encoding.UTF8.GetString(packet.Data.Content), packet.Sender));
 
                         // Выслать ACK
                       // _clientArray[packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
@@ -521,7 +523,7 @@ namespace ChatClient
                     break;
 
                 // Обработка пакета запроса на передачу файла
-                case "FileRequest":
+                case DataType.FileRequest:
                     {
                         // Выслать подверждение получения пакета
                        SendAcknowledge(packet);
@@ -587,7 +589,7 @@ namespace ChatClient
                         break;
 
                     // Обработка пакета файла
-                    case "FileData" :
+                    case DataType.FileData :
                         {
                             // Если совпал номер пакета и разрешено получение файлов и файл существует и id отправителя совпал с id отправителя файла
                             if (Client.CountOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName) && packet.Sender == _fileSender)
@@ -631,9 +633,9 @@ namespace ChatClient
 
         private bool ParseOptions (Packet packet)
         {
-           switch (packet.Option1String)
+           switch (packet.Option1)
            {
-               case "ACK":
+               case PacketOption1.Acknowledge:
                    {
                        // Обработка пакета подверждения доставки сообщения
                        // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым пакетом для этого клиента
@@ -651,7 +653,7 @@ namespace ChatClient
                    }
                    break;
 
-               case "FileTransferAllowed":
+               case PacketOption1.FileTransferAllowed:
                    {
                        // Обработка пакета разрешения на передачу файла
                        // Если получено разрешение на передачу файлов и отправитель пакета является тем кому был отправлен запрос на передачу
@@ -692,7 +694,7 @@ namespace ChatClient
                    }
                    break;
 
-               case "FileTransferDenied":
+               case PacketOption1.FileTransferDenied:
                    {
                        // Если получен пакет отмены передачи файла
 
@@ -746,9 +748,9 @@ namespace ChatClient
                    }
                    break;
 
-               case "FileTransferCompleted" :
+               case PacketOption1.FileTransferCompleted :
                    {
-                       if (packet.Option1String == "FileTransferCompleted")
+                       if (packet.Option1 == PacketOption1.FileTransferCompleted)
                        {
                            Client.IsSendingFile = false;
 //#if DEBUG

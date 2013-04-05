@@ -2,7 +2,7 @@
 {
     public struct DataError : IData
     {
-        public string Type { get; private set; }
+        public DataType Type { get; private set; }
         public byte[] Content { get;  set; }
         public byte LastPacket { get; private set; }
         public byte PacketNumber { get; private set; }
@@ -12,7 +12,7 @@
         public DataError (byte[] data) : this()
         {
             // Тип пакета
-            Type = "DataError";
+            Type = DataType.Error;
 
             // Добавлено чтобы избежать значения null    
             FileName = "";

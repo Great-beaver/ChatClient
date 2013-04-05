@@ -33,7 +33,7 @@ namespace ChatClient
         {
             switch (type)
             {
-                case "Text" :
+                    case "Text" :
                     {
                         richTextBox1.AppendText("Клиент " + sender + " :"+ '\n' + text + '\n');
                     }

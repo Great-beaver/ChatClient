@@ -1,8 +1,8 @@
-﻿namespace ChatClient
+﻿namespace ChatClient.Main.Packet.DataTypes
 {
     public interface IData
     {
-        string Type { get;}
+        DataType Type { get; }
         byte[] Content { get; set; }
         byte LastPacket { get; }
         byte PacketNumber{ get;}

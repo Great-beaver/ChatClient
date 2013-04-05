@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using ChatClient.Main.Packet.DataTypes;
 
 namespace ChatClient.Main
 {
@@ -71,7 +72,7 @@ namespace ChatClient.Main
                 return true;
             }
 
-            if (packet.Data.Type == "FileData")
+            if (packet.Data.Type == DataType.FileData)
             {
                 lock (OutFilePacketsQueue)
                 {
@@ -99,33 +100,7 @@ namespace ChatClient.Main
             {
                 Thread.Sleep(_sleepTime*100);
 
-                // Определяет есть ли пакеты в очереди
-                //if (OutMessagesQueue.Count > 0)
-                //{
-                //          OutMessagesQueue.TryDequeue(out outPacket);
-                //}
-                //else
-                //{
-                //    // Определяет есть ли пакеты файлов в очереди и разрешена передача файла 
-                //    if (OutFilePacketsQueue.Count > 0 && IsSendingFile)
-                //    {
-                //        OutFilePacketsQueue.TryDequeue(out outPacket);
-                //    }
-                //    else
-                //    {
-                //        continue;
-                //    }
-                //}
-
-
-              ////  if (!OutMessagesQueue.TryDequeue(out outPacket))
-              ////  {
-              ////      if (!OutFilePacketsQueue.TryDequeue(out outPacket))
-              ////      {
-              ////          continue;
-              ////      } 
-              ////  }
-
+                // Проверка пакетов в очереди
                 while (OutMessagesQueue.TryDequeue(out outPacket) || OutFilePacketsQueue.TryDequeue(out outPacket))
                 {
                     AnswerEvent.Reset();
@@ -149,7 +124,7 @@ namespace ChatClient.Main
                     {
                         if (AnswerEvent.WaitOne(3000, false))
                         {
-                            if (outPacket.Data.Type == "Text")
+                            if (outPacket.Data.Type == DataType.Text)
                             {
                                 //lock (InputMessageQueue)
                                 //{
@@ -163,7 +138,7 @@ namespace ChatClient.Main
                         }
                         else
                         {
-                            if (outPacket.Data.Type == "FileData" && !IsSendingFile)
+                            if (outPacket.Data.Type ==  DataType.FileData && !IsSendingFile)
                             {
                                 CancelSendingFile();
                                 break;
@@ -171,7 +146,7 @@ namespace ChatClient.Main
 
                             if (++attempts > 3)
                             {
-                                if (outPacket.Data.Type == "FileData")
+                                if (outPacket.Data.Type ==  DataType.FileData)
                                 {
                                     CancelSendingFile();
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs("FileUndelivered", "Получатель не доступен доставка файла отменена", outPacket.Recipient));
@@ -180,7 +155,7 @@ namespace ChatClient.Main
                                     //#endif
                                 }
 
-                                if (outPacket.Data.Type == "Text")
+                                if (outPacket.Data.Type ==  DataType.Text)
                                 {
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs("TextUndelivered", Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
                                 }

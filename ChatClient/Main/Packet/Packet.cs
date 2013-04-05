@@ -17,8 +17,8 @@ namespace ChatClient.Main.Packet
         public readonly ushort DataLenght;
         public readonly byte Option1Byte;
         public readonly byte Option2Byte;
-        public readonly string Option1String;
-        public readonly string Option2String;
+        public readonly PacketOption1 Option1;
+        public readonly PacketOption2 Option2;
         public readonly ushort Crc;
         public readonly byte[] ByteData;
         public readonly IData Data;
@@ -43,32 +43,32 @@ namespace ChatClient.Main.Packet
             Option1Byte = option1;
             Option2Byte = option2;
 
-            Option1String = option1.ToString();
-            Option2String = option2.ToString();
+            Option1 = PacketOption1.None;
+            Option2 = PacketOption2.None;
 
             switch (option1)
             {
                 case 0x06:
                     {
-                        Option1String = "ACK";
+                        Option1 = PacketOption1.Acknowledge;
                     }
                     break;
 
                 case 0x41:
                     {
-                        Option1String = "FileTransferAllowed";
+                        Option1 = PacketOption1.FileTransferAllowed;
                     }
                     break;
 
                 case 0x18:
                     {
-                        Option1String = "FileTransferDenied";
+                        Option1 = PacketOption1.FileTransferDenied;
                     }
                     break;
 
                 case 0x04:
                     {
-                        Option1String = "FileTransferCompleted";
+                        Option1 = PacketOption1.FileTransferCompleted;
                     }
                     break;
 
@@ -78,7 +78,7 @@ namespace ChatClient.Main.Packet
             {
                 case 0x43:
                     {
-                        Option2String = "Compressed";
+                        Option2 = PacketOption2.Compressed;
                     }
                     break;
 
@@ -92,9 +92,8 @@ namespace ChatClient.Main.Packet
             if (data[0] == 0x54 && data.Length >= 1)
             {
                     Data = new TextData(data);
-
             }
-
+            
             // | Тип пакета |  Длина файла   | Имя файла |
             // |   1 байт   |     8 байт     |  0 - 1024 |
             if (data[0] == 0x52 && data.Length >= 9)
@@ -108,7 +107,7 @@ namespace ChatClient.Main.Packet
             {
                 Data = new FileData(data);
             }
-
+           
             ByteData = new byte[data.Length];
 
             // Копирует данные
@@ -137,8 +136,8 @@ namespace ChatClient.Main.Packet
                    " Получатель: " + Recipient + '\n' +
                    "Отправитель :" + Sender + '\n' +
                    "Длинна данных: " + DataLenght + '\n' +
-                   "Опция 1: " + Option1String + '\n' +
-                   "Опция 2: " + Option2String + '\n' +
+                   "Опция 1: " + Option1 + '\n' +
+                   "Опция 2: " + Option2 + '\n' +
                    "CRC пакета: " + Crc + '\n' +
                    "Данные: " + Data.FileLenght;
         }
