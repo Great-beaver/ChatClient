@@ -128,6 +128,12 @@ namespace ChatClient
                     }
                     break;
 
+                    case MessageType.Error:
+                    {
+                        richTextBox1.AppendText(text + '\n');
+                    }
+                    break;
+
             }
 
             // Скрол вниз
@@ -140,7 +146,15 @@ namespace ChatClient
         // Получение данных и вызов обработчика для текстовых сообщений
         void ComPortMessageRecived(object sender, MessageRecivedEventArgs e)
         {
-            BeginInvoke(new ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender);
+            try
+            {
+                BeginInvoke(new ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender);
+            }
+            catch (Exception)
+            {
+              // TO DO: Do something  
+            }
+            
         }
 
         // Делегат обработчика запроса на передачу

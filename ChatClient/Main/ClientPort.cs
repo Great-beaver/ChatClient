@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using ChatClient.Main;
 using ChatClient.Main.Packet;
 using ChatClient.Main.Packet.DataTypes;
 
-namespace ChatClient
+namespace ChatClient.Main
 {
     class ClientPort : IDisposable
     {
@@ -128,10 +125,44 @@ namespace ChatClient
             }
 
             _readThread = new Thread(Read);
-           // _writeThread = new Thread(Write);
+
+
+            if (!TryOpenPort(_comPortReader))
+            {
+                MessageBox.Show("Ошибка при попытки открытия порта: " + _comPortReader.PortName);
+            }
+
+           if (!TryOpenPort(_comPortWriter))
+            {
+                MessageBox.Show("Ошибка при попытки открытия порта: " + _comPortWriter.PortName);
+            }
+
+         // try
+         // {
+         //     _comPortReader.Open();
+         // }
+         // catch (IOException)
+         // {
+         //     MessageBox.Show("Не удалось открыть порт: " + _comPortReader.PortName);
+         // }
+         // catch (Exception)
+         // {
+         //     MessageBox.Show("Ошибка при попытки открытия порта: " + _comPortReader.PortName);
+         // }
+         //
+         // try
+         // {
+         //     _comPortWriter.Open();
+         // }
+         // catch (IOException)
+         // {
+         //     MessageBox.Show("Не удалось открыть порт: " + _comPortWriter.PortName);
+         // }
+         // catch (Exception)
+         // {
+         //     MessageBox.Show("Ошибка при попытки открытия порта: " + _comPortReader.PortName);
+         // }
             
-            _comPortReader.Open();
-            _comPortWriter.Open();
 
             Client.Continue = true;
 
@@ -426,7 +457,7 @@ namespace ChatClient
             _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x41); 
         }
          
-        private void SendAcknowledge(Packet packet)
+        private void SendAcknowledge(Packet.Packet packet)
         {
             _clientArray[(int)packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
         }
@@ -446,14 +477,14 @@ namespace ChatClient
 
                     // Считывание данных для создания пакета
                     // Здесь важен строгий порядок считывания байтов, точно как в пакете.
-                    byte recipient = (byte)_comPortReader.ReadByte();
-                    byte sender = (byte)_comPortReader.ReadByte();
+                    byte recipient = (byte) _comPortReader.ReadByte();
+                    byte sender = (byte) _comPortReader.ReadByte();
                     ushort dataLenght = BitConverter.ToUInt16(
-                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
-                    byte option1 = (byte)_comPortReader.ReadByte();
-                    byte option2 = (byte)_comPortReader.ReadByte();
+                        new byte[] {(byte) _comPortReader.ReadByte(), (byte) _comPortReader.ReadByte()}, 0);
+                    byte option1 = (byte) _comPortReader.ReadByte();
+                    byte option2 = (byte) _comPortReader.ReadByte();
                     ushort crc = BitConverter.ToUInt16(
-                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+                        new byte[] {(byte) _comPortReader.ReadByte(), (byte) _comPortReader.ReadByte()}, 0);
 
                     // Счетчик количества итерация цикла while 
                     int count = 0;
@@ -470,7 +501,7 @@ namespace ChatClient
                     byte[] data = new byte[dataLenght];
                     _comPortReader.Read(data, 0, dataLenght);
 
-                    Packet packet = new Packet(recipient, sender, option1, option2, data);
+                    Packet.Packet packet = new Packet.Packet(recipient, sender, option1, option2, data);
 
                     // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
                     if (packet.Crc == crc && packet.Recipient == _clietnId)
@@ -484,6 +515,15 @@ namespace ChatClient
                         // MessageBox.Show(packet.PacketInfo());
                     }
                 }
+
+                catch (InvalidOperationException)
+                {
+                    // Передает событие с текстом ошибки
+                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortReader.PortName + "  не доступен.",0));
+                    TryOpenPort(_comPortReader);
+                    Thread.Sleep(3000);
+                }
+
                 catch (Exception)
                 {
 
@@ -493,7 +533,7 @@ namespace ChatClient
             }   
         }
 
-        private void ParsePacket(Packet packet)
+        private void ParsePacket(Packet.Packet packet)
         {
             // Функция вовращает true если найдена опция и дальнейший разбор данных не требуется.
                 if (ParseOptions(packet))
@@ -631,7 +671,7 @@ namespace ChatClient
             }
         }
 
-        private bool ParseOptions (Packet packet)
+        private bool ParseOptions (Packet.Packet packet)
         {
            switch (packet.Option1)
            {
@@ -909,34 +949,17 @@ namespace ChatClient
             return false;
         }
 
-        private string PacketType(byte[] packet)
+        public static bool TryOpenPort(SerialPort port)
         {
-            if (packet.Length<11)
+            try
             {
-                return "Error";
+                if (!port.IsOpen) port.Open();
+
+                return port.IsOpen;
             }
-
-            if (packet[10] == 0x54)
+            catch (Exception)
             {
-                return "Text";
-            }
-
-            if (packet[10] == 0x46)
-            {
-                return "File";
-            }
-
-            return "Unknown";
-
-
-
-        }
-
-        private int QueueCount (Queue queue)
-        {
-            lock (queue)
-            {
-                return queue.Count;
+                return false;
             }
             
         }

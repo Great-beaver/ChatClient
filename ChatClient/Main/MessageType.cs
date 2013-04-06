@@ -16,5 +16,6 @@
         FileTransferCanceledBySender,
         FileTransferCanceledByRecipient,
         FileReceivingTimeOut,
+        Error,
     }
 }

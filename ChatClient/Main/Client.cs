@@ -65,10 +65,20 @@ namespace ChatClient.Main
 
             if (sendPacketImmediately)
             {
-                lock (_comPortWriter)
+               // lock (_comPortWriter)
+               // {
+               //     _comPortWriter.Write(packet.ToByte(), 0, packet.ToByte().Length);
+               // }
+
+               // TryWrite(_comPortWriter, packet);
+
+                if (!TryWrite(_comPortWriter, packet))
                 {
-                    _comPortWriter.Write(packet.ToByte(), 0, packet.ToByte().Length);
-                }
+                    // Передает событие с текстом ошибки
+                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                } 
+
+
                 return true;
             }
 
@@ -113,10 +123,29 @@ namespace ChatClient.Main
                     LastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
                     LastPacket = outPacket;
 
-                    lock (_comPortWriter)
+                       // try
+                       // {
+                       //     lock (_comPortWriter)
+                       //     {
+                       //         _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
+                       //     }  
+                       // }
+                       // catch (InvalidOperationException)
+                       // {
+                       //     MessageBox.Show("Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.");
+                       //     ClientPort.TryOpenPort(_comPortWriter);
+                       //     continue;
+                       // }  
+
+    
+
+                    if (!TryWrite(_comPortWriter, outPacket))
                     {
-                        _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                    }
+                        // Передает событие с текстом ошибки
+                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                        continue;
+                    } 
+
 
                     byte attempts = 0;
 
@@ -126,10 +155,6 @@ namespace ChatClient.Main
                         {
                             if (outPacket.Data.Type == DataType.Text)
                             {
-                                //lock (InputMessageQueue)
-                                //{
-                                //    InputMessageQueue.Enqueue("Сообщение доставлено!");
-                                //}
                                 // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
                                 OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
 
@@ -165,10 +190,6 @@ namespace ChatClient.Main
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
                                 }
 
-                                // lock (InputMessageQueue)
-                                // {
-                                //     InputMessageQueue.Enqueue("Сообщение НЕ доставлено!");
-                                // }
 
                                 break;
                             }
@@ -178,10 +199,39 @@ namespace ChatClient.Main
                             MessageBox.Show("Переотправка сообщения попытка № " + attempts);
 #endif
 
-                            lock (_comPortWriter)
+
+                            if (!TryWrite(_comPortWriter, outPacket))
                             {
-                                _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                            }
+                                //MessageBox.Show("Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.");
+                                // Передает событие с текстом ошибки
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                                if (outPacket.Data.Type == DataType.FileData)
+                                {
+                                    CancelSendingFile();
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+                                }
+                                break;
+                            }  
+
+                            //try
+                            //{
+                            //    lock (_comPortWriter)
+                            //    {
+                            //        _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
+                            //    }
+                            //}
+                            //catch (InvalidOperationException)
+                            //{
+                            //    MessageBox.Show("Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.");
+                            //    ClientPort.TryOpenPort(_comPortWriter);
+                            //    if (outPacket.Data.Type == DataType.FileData)
+                            //    {
+                            //        CancelSendingFile();
+                            //        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+                            //    }
+                            //    break;
+                            //}
+
                         }
                     } 
                 }
@@ -225,6 +275,30 @@ namespace ChatClient.Main
             }
 
         }
+
+        private bool TryWrite(SerialPort port, Packet.Packet packet)
+        {
+            if (ClientPort.TryOpenPort(port))
+            {
+                try
+                {
+                    lock (port)
+                    {
+                        port.Write(packet.ToByte(), 0, packet.ToByte().Length);
+                    }
+                    return true;
+                }
+                catch (InvalidOperationException)
+                {
+                    ClientPort.TryOpenPort(port);
+                    return false;
+                }
+            }
+            else
+            return false;
+
+        }
+
 
     }
 }
