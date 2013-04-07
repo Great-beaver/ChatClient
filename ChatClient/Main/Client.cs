@@ -63,49 +63,29 @@ namespace ChatClient.Main
 
             // TO DO: Поправить логику условий
             // Валидация данных
-
             if (sendPacketImmediately)
             {
-               // lock (_comPortWriter)
-               // {
-               //     _comPortWriter.Write(packet.ToByte(), 0, packet.ToByte().Length);
-               // }
-
-               // TryWrite(_comPortWriter, packet);
-
                 if (!TryWrite(_comPortWriter, packet))
                 {
                     // Передает событие с текстом ошибки
                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
                 } 
-
-
                 return true;
             }
 
             if (packet.Data.Type == DataType.FileData)
             {
-                lock (OutFilePacketsQueue)
-                {
-                    // _outFilePacketsQueue.Enqueue(packet.ToByte());
-                    OutFilePacketsQueue.Enqueue(packet);
-                }
+                OutFilePacketsQueue.Enqueue(packet);
                 return true;
             }
 
             //Добавляем пакет в очередь на отправку
-            lock (OutMessagesQueue)
-            {
-                // _outMessagesQueue.Enqueue(packet.ToByte());
-                OutMessagesQueue.Enqueue(packet);
-            }
-
+            OutMessagesQueue.Enqueue(packet);
             return true;
         }
 
         private void Write()
         {
-            // byte[] outPacket = new byte[0];
             Packet.Packet outPacket;
             while (Continue)
             {
@@ -116,29 +96,8 @@ namespace ChatClient.Main
                 {
                     AnswerEvent.Reset();
 
-                    //Сохраняет CRC последнего отправленого сообщения, для последующей проверки получения сообщения
-                    //byte[] data= new byte[outPacket.Length-10];
-
-                    // Array.Copy(outPacket,10,data,0,data.Length);
-
                     LastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
-                    LastPacket = outPacket;
-
-                       // try
-                       // {
-                       //     lock (_comPortWriter)
-                       //     {
-                       //         _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                       //     }  
-                       // }
-                       // catch (InvalidOperationException)
-                       // {
-                       //     MessageBox.Show("Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.");
-                       //     ClientPort.TryOpenPort(_comPortWriter);
-                       //     continue;
-                       // }  
-
-    
+                    LastPacket = outPacket;   
 
                     if (!TryWrite(_comPortWriter, outPacket))
                     {
@@ -147,9 +106,7 @@ namespace ChatClient.Main
                         continue;
                     } 
 
-
                     byte attempts = 0;
-
                     while (true)
                     {
                         if (AnswerEvent.WaitOne(3000, false))
@@ -158,7 +115,6 @@ namespace ChatClient.Main
                             {
                                 // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
                                 OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
-
                             }
                             break;
                         }
@@ -176,22 +132,16 @@ namespace ChatClient.Main
                                 {
                                     CancelSendingFile();
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient));
-                                    //#if DEBUG
-                                    //                                MessageBox.Show("Получатель не доступен доставка файла отменена");
-                                    //#endif
                                 }
 
                                 if (outPacket.Data.Type ==  DataType.Text)
                                 {
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                                 }
-
                                 else
                                 {
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                                 }
-
-
                                 break;
                             }
 
@@ -203,7 +153,6 @@ namespace ChatClient.Main
 
                             if (!TryWrite(_comPortWriter, outPacket))
                             {
-                                //MessageBox.Show("Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.");
                                 // Передает событие с текстом ошибки
                                 OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
                                 if (outPacket.Data.Type == DataType.FileData)
@@ -213,33 +162,9 @@ namespace ChatClient.Main
                                 }
                                 break;
                             }  
-
-                            //try
-                            //{
-                            //    lock (_comPortWriter)
-                            //    {
-                            //        _comPortWriter.Write(outPacket.ToByte(), 0, outPacket.ToByte().Length);
-                            //    }
-                            //}
-                            //catch (InvalidOperationException)
-                            //{
-                            //    MessageBox.Show("Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.");
-                            //    ClientPort.TryOpenPort(_comPortWriter);
-                            //    if (outPacket.Data.Type == DataType.FileData)
-                            //    {
-                            //        CancelSendingFile();
-                            //        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Recipient));
-                            //    }
-                            //    break;
-                            //}
-
                         }
                     } 
                 }
-
-
-
-
             }
         }
 
@@ -256,10 +181,7 @@ namespace ChatClient.Main
                 IsSendingFile = false;
                 // Запрещает передавать файла до запроса на отправку
                 AllowSendingFile = false;
-                // Ждет завершения потока что бы он не слал больше пакетов. Надо ли оно тут?
-                //_fileSenderThread.Join(1000);
                 // Отчищает очередь на отправку файла
-                //OutFilePacketsQueue.Clear();
                 OutFilePacketsQueue = new ConcurrentQueue<Packet.Packet>();
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(FileRecipient);
@@ -268,14 +190,6 @@ namespace ChatClient.Main
             }
         }
 
-        private int QueueCount(Queue queue)
-        {
-            lock (queue)
-            {
-                return queue.Count;
-            }
-
-        }
 
         private bool TryWrite(SerialPort port, Packet.Packet packet)
         {
@@ -297,9 +211,6 @@ namespace ChatClient.Main
             }
             else
             return false;
-
         }
-
-
     }
 }
