@@ -459,7 +459,7 @@ namespace ChatClient.Main
          
         private void SendAcknowledge(Packet.Packet packet)
         {
-            _clientArray[(int)packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
+            _clientArray[(int)packet.Header.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
         }
 
         private void SendFileTransferCompleted(byte toId)
@@ -501,10 +501,10 @@ namespace ChatClient.Main
                     byte[] data = new byte[dataLenght];
                     _comPortReader.Read(data, 0, dataLenght);
 
-                    Packet.Packet packet = new Packet.Packet(recipient, sender, option1, option2, data);
+                    Packet.Packet packet = new Packet.Packet(new Header(recipient, sender, option1, option2), data);
 
                     // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
-                    if (packet.Crc == crc && packet.Recipient == _clietnId)
+                    if (packet.Header.Crc == crc && packet.Header.Recipient == _clietnId)
                     {
                         //Функция разбора пакета
                         ParsePacket(packet);
@@ -548,13 +548,13 @@ namespace ChatClient.Main
                 case  DataType.Text: 
                     {
                         // Определяет необходимость разархивирования
-                        if (packet.Option2 ==  PacketOption2.Compressed)
+                        if (packet.Header.Option2 == PacketOption2.Compressed)
                         {
                             packet.Data.Content = Compressor.Unzip(packet.Data.Content);
                         }
 
                         // Событие передает тип пакета и текст для пользователя
-                        OnMessageRecived(new MessageRecivedEventArgs(MessageType.Text, Encoding.UTF8.GetString(packet.Data.Content), packet.Sender));
+                        OnMessageRecived(new MessageRecivedEventArgs(MessageType.Text, Encoding.UTF8.GetString(packet.Data.Content), packet.Header.Sender));
 
                         // Выслать ACK
                       // _clientArray[packet.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
@@ -576,7 +576,7 @@ namespace ChatClient.Main
                          //       "от клиента № " + packet.Sender + " размером " + packet.Data.FileLenght/1024/1024 + "МБ?",
                          //       "Передача файла", MessageBoxButtons.YesNo);
 
-                           var ea = new FileRequestRecivedEventArgs(packet.Data.FileName, packet.Data.FileLenght, packet.Sender);
+                            var ea = new FileRequestRecivedEventArgs(packet.Data.FileName, packet.Data.FileLenght, packet.Header.Sender);
 
                             OnFileRequestRecived(ea);
                             
@@ -585,12 +585,12 @@ namespace ChatClient.Main
                             if (ea.FileTransferAllowed)
                             {
                                 // Событие - начат прием файла
-                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingStarted, packet.Data.FileName, packet.Sender));
+                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingStarted, packet.Data.FileName, packet.Header.Sender));
 
                                 // Выставляет флаг приема 
                                 _isRecivingFile = true;
                                 //Высылает разрешение на отправку файла  
-                                SendFileTransferAllow(packet.Sender);
+                                SendFileTransferAllow(packet.Header.Sender);
                              // _clientArray[packet.Sender].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x41);                                
                                 //Обнулить счетчик пакетов файла
                                 Client.CountOfFilePackets = 0;
@@ -598,7 +598,7 @@ namespace ChatClient.Main
                                 _receivingFileName = packet.Data.FileName;
                                 _receivingFileSize = packet.Data.FileLenght;
                                 // Сохраняет id отправителя файла
-                                _fileSender = packet.Sender;
+                                _fileSender = packet.Header.Sender;
                                 // Запускает поток ожидания пакетов файла
                                 _waitForFilePacketThread = new Thread(WaitForFilePacket);
                                 _waitForFilePacketThread.Start();
@@ -609,18 +609,18 @@ namespace ChatClient.Main
                             else
                             {
                                 // Событие - прием файла отклонен
-                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, packet.Data.FileName, packet.Sender));
+                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, packet.Data.FileName, packet.Header.Sender));
                                 
                                 _isRecivingFile = false;
                                 //Отказ отправки файла
-                                SendFileTransferCancel(packet.Sender);  
+                                SendFileTransferCancel(packet.Header.Sender);  
                             }                            
                         }
                         else
                         {
 #if DEBUG
-                            SendFileTransferCancel(packet.Sender); 
-                            MessageBox.Show("Клиенту № " + packet.Sender + " Было отказано в передачи файла "
+                            SendFileTransferCancel(packet.Header.Sender);
+                            MessageBox.Show("Клиенту № " + packet.Header.Sender + " Было отказано в передачи файла "
                                 + packet.Data.FileName + " размером " + packet.Data.FileLenght / 1024 / 1024
                                 + "МБ, так как в данный момент уже осуществляется прием другого файла ");
 #endif                                                                      
@@ -632,7 +632,7 @@ namespace ChatClient.Main
                     case DataType.FileData :
                         {
                             // Если совпал номер пакета и разрешено получение файлов и файл существует и id отправителя совпал с id отправителя файла
-                            if (Client.CountOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName) && packet.Sender == _fileSender)
+                            if (Client.CountOfFilePackets == packet.Data.PacketNumber && _isRecivingFile && File.Exists(_receivingFileFullName) && packet.Header.Sender == _fileSender)
                             {
                                 // Устанавливает что пакет получен
                                 _waitForFilePacketEvent.Set();
@@ -654,9 +654,9 @@ namespace ChatClient.Main
                                 {
 
                                     // Событие о заверщении приема файла 
-                                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingComplete, _receivingFileName, packet.Sender));
+                                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingComplete, _receivingFileName, packet.Header.Sender));
 
-                                    SendFileTransferCompleted(packet.Sender);
+                                    SendFileTransferCompleted(packet.Header.Sender);
                                     _isRecivingFile = false;
                                 }
                             }
@@ -673,20 +673,20 @@ namespace ChatClient.Main
 
         private bool ParseOptions (Packet.Packet packet)
         {
-           switch (packet.Option1)
+           switch (packet.Header.Option1)
            {
                case PacketOption1.Acknowledge:
                    {
                        // Обработка пакета подверждения доставки сообщения
                        // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым пакетом для этого клиента
 
-                       if (_clientArray[packet.Sender].LastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
+                       if (_clientArray[packet.Header.Sender].LastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
                        {
 
                          //  OnMessageRecived(new MessageRecivedEventArgs(packet.Option1String, "Сообщение доставлено.", packet.Sender));
 
                            // Установить что последнее сообщение было доставлено
-                           _clientArray[packet.Sender].AnswerEvent.Set();
+                           _clientArray[packet.Header.Sender].AnswerEvent.Set();
                            return true;
                        }
          
@@ -697,7 +697,7 @@ namespace ChatClient.Main
                    {
                        // Обработка пакета разрешения на передачу файла
                        // Если получено разрешение на передачу файлов и отправитель пакета является тем кому был отправлен запрос на передачу
-                       if (Client.AllowSendingFile && Client.FileRecipient == packet.Sender)
+                       if (Client.AllowSendingFile && Client.FileRecipient == packet.Header.Sender)
                        {
 //#if DEBUG
 //                           // Debug message
@@ -705,7 +705,7 @@ namespace ChatClient.Main
 //#endif
 
                            // Событие о разрещении на передачу файла
-                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferAllowed, _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferAllowed, _fileToTransfer.Name, packet.Header.Sender));
 
                            // Начать отправку файла
 
@@ -724,7 +724,7 @@ namespace ChatClient.Main
 
                            // Запускает поток для упаковки файла в пакеты и добавления их в очередь
                            _fileSenderThread = new Thread(FileSender);
-                           _fileSenderThread.Start(packet.Sender);
+                           _fileSenderThread.Start(packet.Header.Sender);
                        }
 
                        // Выслать подверждение получения пакета
@@ -746,7 +746,7 @@ namespace ChatClient.Main
 //                           MessageBox.Show("Отправитель отменил передачу файла");
 //#endif
                            // Событие отмены перадачи файла отправителем
-                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledBySender, _receivingFileName, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledBySender, _receivingFileName, packet.Header.Sender));
                            
                            CancelRecivingFile();
                            // Выслать подверждение получения пакета
@@ -763,7 +763,7 @@ namespace ChatClient.Main
 //#endif
 
                            // Событие отмены перадачи файла получателем
-                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledByRecipient, _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledByRecipient, _fileToTransfer.Name, packet.Header.Sender));
 
                            CancelSendingFile();
                            // Выслать подверждение получения пакета
@@ -780,7 +780,7 @@ namespace ChatClient.Main
 //                           MessageBox.Show("В передаче файла отказано");
 //#endif
                            // Событие отказа от приема файла 
-                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferDenied, _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferDenied, _fileToTransfer.Name, packet.Header.Sender));
                        }
                        // Выслать подверждение получения пакета
                        SendAcknowledge(packet);
@@ -790,7 +790,7 @@ namespace ChatClient.Main
 
                case PacketOption1.FileTransferCompleted :
                    {
-                       if (packet.Option1 == PacketOption1.FileTransferCompleted)
+                       if (packet.Header.Option1 == PacketOption1.FileTransferCompleted)
                        {
                            Client.IsSendingFile = false;
 //#if DEBUG
@@ -798,7 +798,7 @@ namespace ChatClient.Main
 //                           MessageBox.Show("Файл доставлен");
 //#endif
                            // Событие доставки файла
-                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileSendingComplete, _fileToTransfer.Name, packet.Sender));
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileSendingComplete, _fileToTransfer.Name, packet.Header.Sender));
 
 
                            SendAcknowledge(packet);

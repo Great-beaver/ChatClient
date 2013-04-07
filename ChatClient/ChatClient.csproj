@@ -83,6 +83,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Main\ClientPort.cs" />
+    <Compile Include="Main\Packet\Header.cs" />
     <Compile Include="Main\Packet\Packet.cs" />
     <Compile Include="Main\Packet\PacketOption1.cs" />
     <Compile Include="Main\Packet\PacketOption2.cs" />

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using ChatClient.Main.Packet;
 using ChatClient.Main.Packet.DataTypes;
 
 namespace ChatClient.Main
@@ -58,7 +59,7 @@ namespace ChatClient.Main
 
         public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
-            Packet.Packet packet = new Packet.Packet(IdToSend, sender, option1, option2, messageBody);
+            Packet.Packet packet = new Packet.Packet(new Header(IdToSend, sender, option1, option2), messageBody);
 
             // TO DO: Поправить логику условий
             // Валидация данных
@@ -156,7 +157,7 @@ namespace ChatClient.Main
                             if (outPacket.Data.Type == DataType.Text)
                             {
                                 // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
 
                             }
                             break;
@@ -174,7 +175,7 @@ namespace ChatClient.Main
                                 if (outPacket.Data.Type ==  DataType.FileData)
                                 {
                                     CancelSendingFile();
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient));
                                     //#if DEBUG
                                     //                                MessageBox.Show("Получатель не доступен доставка файла отменена");
                                     //#endif
@@ -182,12 +183,12 @@ namespace ChatClient.Main
 
                                 if (outPacket.Data.Type ==  DataType.Text)
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                                 }
 
                                 else
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                                 }
 
 
@@ -208,7 +209,7 @@ namespace ChatClient.Main
                                 if (outPacket.Data.Type == DataType.FileData)
                                 {
                                     CancelSendingFile();
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient));
                                 }
                                 break;
                             }  
