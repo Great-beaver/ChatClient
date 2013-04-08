@@ -5,13 +5,14 @@ using System.IO;
 using System.IO.Ports;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
+using ChatClient;
+using ChatClient.Main;
 using ChatClient.Main.Packet;
 using ChatClient.Main.Packet.DataTypes;
 
-namespace ChatClient.Main
+namespace Chat.Main
 {
-    class ClientPort : IDisposable
+   public class ClientPort : IDisposable
     {
         private SerialPort _comPortReader;
         private SerialPort _comPortWriter;
@@ -110,12 +111,15 @@ namespace ChatClient.Main
 
             if (!TryOpenPort(_comPortReader))
             {
-                MessageBox.Show("Ошибка при попытки открытия порта: " + _comPortReader.PortName);
+                // Событие - сообщение о ошибке 
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortReader.PortName, 0));
+                
             }
 
            if (!TryOpenPort(_comPortWriter))
             {
-                MessageBox.Show("Ошибка при попытки открытия порта: " + _comPortWriter.PortName);
+                // Событие - сообщение о ошибке 
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortReader.PortName, 0));
             }
             
             Client.Continue = true;
@@ -219,7 +223,7 @@ namespace ChatClient.Main
 
             // TO DO: Возможно стоит удалить эту строку
             // Отчищает очередь пакетов файла на передачу 
-                _clientArray[Client.FileRecipient].OutFilePacketsQueue =  new ConcurrentQueue<Main.Packet.Packet>();
+                _clientArray[Client.FileRecipient].OutFilePacketsQueue =  new ConcurrentQueue<Packet>();
  
             Client.CountOfFilePackets = 0;
 
@@ -318,13 +322,15 @@ namespace ChatClient.Main
 
             if (Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length >= 1023)
             {
-                MessageBox.Show("Слишком длинное имя файла");
+                // Событие - сообщение о ошибке 
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Слишком длинное имя файла", 0));
                 return;
             }
 
             if (!(File.Exists(filePath)))
             {
-                MessageBox.Show("Файла не существует");
+                // Событие - сообщение о ошибке 
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Файла не существует", 0));
                 return;
             }
 
@@ -389,7 +395,7 @@ namespace ChatClient.Main
             _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x41); 
         }
          
-        private void SendAcknowledge(Packet.Packet packet)
+        private void SendAcknowledge(Packet packet)
         {
             _clientArray[(int)packet.Header.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
         }
@@ -401,39 +407,39 @@ namespace ChatClient.Main
 
         private void Read()
         {
-            byte[] headerBytes = new byte[8];
-            Header header;
-            byte[] data;
-            Packet.Packet packet;
-            ushort crc; 
-
             while (Client.Continue)
             {
                 try
                 {
                     _comPortReader.ReadTo("\xAA\x55");
 
-                    _comPortReader.Read(headerBytes, 0, 8);
+                    // Считывание данных для создания пакета
+                    // Здесь важен строгий порядок считывания байтов, точно как в пакете.
+                    byte recipient = (byte)_comPortReader.ReadByte();
+                    byte sender = (byte)_comPortReader.ReadByte();
+                    ushort dataLenght = BitConverter.ToUInt16(
+                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+                    byte option1 = (byte)_comPortReader.ReadByte();
+                    byte option2 = (byte)_comPortReader.ReadByte();
+                    ushort crc = BitConverter.ToUInt16(
+                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
 
-                    header = new Header(headerBytes);
+                  // Счетчик количества итерация цикла while 
+                  int count = 0;
+                  while (_comPortReader.BytesToRead < dataLenght)
+                  {
+                      count++;
+                      Thread.Sleep(_sleepTime);
+                      if (count > dataLenght)
+                      {
+                          break;
+                      }
+                  }
 
-                    crc = header.Crc;
+                    byte[] data = new byte[dataLenght];
+                    _comPortReader.Read(data, 0, dataLenght);
 
-                    int count = 0;
-                    while (_comPortReader.BytesToRead < header.DataLenght)
-                    {
-                        count++;
-                        Thread.Sleep(_sleepTime);
-                        if (count > header.DataLenght)
-                        {
-                            break;
-                        }
-                    }
-
-                    data = new byte[header.DataLenght];
-                    _comPortReader.Read(data, 0, header.DataLenght);
-                  
-                    packet = new Packet.Packet(header, data);
+                    Packet packet = new Packet(new Header(recipient, sender, option1, option2), data);
 
                     // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
                     if (packet.Header.Crc == crc && packet.Header.Recipient == _clietnId)
@@ -451,7 +457,7 @@ namespace ChatClient.Main
                 catch (InvalidOperationException)
                 {
                     // Передает событие с текстом ошибки
-                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortReader.PortName + "  не доступен.",0));
+                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortReader.PortName + "  не доступен.", 0));
                     TryOpenPort(_comPortReader);
                     Thread.Sleep(3000);
                 }
@@ -459,11 +465,13 @@ namespace ChatClient.Main
                 catch (Exception)
                 {
 
+
                 }
-            }   
+
+            }
         }
 
-        private void ParsePacket(Packet.Packet packet)
+        private void ParsePacket(Packet packet)
         {
             // Функция вовращает true если найдена опция и дальнейший разбор данных не требуется.
                 if (ParseOptions(packet))
@@ -539,9 +547,11 @@ namespace ChatClient.Main
                         {
 #if DEBUG
                             SendFileTransferCancel(packet.Header.Sender);
-                            MessageBox.Show("Клиенту № " + packet.Header.Sender + " Было отказано в передачи файла "
+
+                            // Событие - сообщение о ошибке 
+                            OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Клиенту № " + packet.Header.Sender + " Было отказано в передачи файла "
                                 + packet.Data.FileName + " размером " + packet.Data.FileLenght / 1024 / 1024
-                                + "МБ, так как в данный момент уже осуществляется прием другого файла ");
+                                + "МБ, так как в данный момент уже осуществляется прием другого файла ", 0));
 #endif                                                                      
                         }
                     }
@@ -576,7 +586,9 @@ namespace ChatClient.Main
                             else
                             {
 #if DEBUG
-                                MessageBox.Show("Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + "сохраненый номер " + Client.CountOfFilePackets);
+                                // Событие - сообщение о ошибке 
+                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + 
+                                    "сохраненый номер " + Client.CountOfFilePackets, 0));
 #endif
                             }
                         }
@@ -584,7 +596,7 @@ namespace ChatClient.Main
             }
         }
 
-        private bool ParseOptions (Packet.Packet packet)
+        private bool ParseOptions (Packet packet)
         {
            switch (packet.Header.Option1)
            {
@@ -692,19 +704,20 @@ namespace ChatClient.Main
                 Directory.CreateDirectory(md);
             }
 
+            // TO DO: Вернуть код диалога о перезаписи файла
             // Проверяет наличие файла
-            if ((File.Exists(md+fileName)))
-            {
-                // Если файл существует то предлагает его перезаписать
-                DialogResult dialogResult = MessageBox.Show("Файл " + fileName  + " уже существует, перезаписать его?", "Перезаписать файл?", MessageBoxButtons.YesNo);
-
-                // В случае отказа прекращает фанкцию
-                if (dialogResult == DialogResult.No)
-                {
-                    // TO DO: Добавить код отмены приема файла
-                    return false;
-                }               
-            }
+       //     if ((File.Exists(md+fileName)))
+       //     {
+       //         // Если файл существует то предлагает его перезаписать
+       //         DialogResult dialogResult = MessageBox.Show("Файл " + fileName  + " уже существует, перезаписать его?", "Перезаписать файл?", MessageBoxButtons.YesNo);
+       //
+       //         // В случае отказа прекращает фанкцию
+       //         if (dialogResult == DialogResult.No)
+       //         {
+       //             // TO DO: Добавить код отмены приема файла
+       //             return false;
+       //         }               
+       //     }
 
             try
             {
@@ -714,7 +727,6 @@ namespace ChatClient.Main
             }
             catch (Exception _Exception)
             {
-                MessageBox.Show("Exception caught in process: {0}", _Exception.ToString());
                 return false;
             }
 
@@ -747,7 +759,7 @@ namespace ChatClient.Main
                 // Запрещает передавать файла до запроса на отправку
                 Client.AllowSendingFile = false;
                 // Отчищает очередь на отправку файла
-                _clientArray[Client.FileRecipient].OutFilePacketsQueue = new ConcurrentQueue<Main.Packet.Packet>();
+                _clientArray[Client.FileRecipient].OutFilePacketsQueue = new ConcurrentQueue<Packet>();
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(Client.FileRecipient);
                 // Обнуляет счетчик

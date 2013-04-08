@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Forms;
 using ChatClient.Main.Packet.DataTypes;
 
 namespace ChatClient.Main.Packet

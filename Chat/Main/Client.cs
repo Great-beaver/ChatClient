@@ -7,7 +7,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
+using Chat.Main;
 using ChatClient.Main.Packet;
 using ChatClient.Main.Packet.DataTypes;
 
@@ -147,7 +147,7 @@ namespace ChatClient.Main
 
 #if DEBUG
                             // Debug message
-                            MessageBox.Show("Переотправка сообщения попытка № " + attempts);
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Переотправка сообщения попытка № " + attempts, 0));
 #endif
 
 
