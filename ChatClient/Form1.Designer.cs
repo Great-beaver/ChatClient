@@ -47,6 +47,8 @@
             this.label4 = new System.Windows.Forms.Label();
             this.textBox5 = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
+            this.AllowBut = new System.Windows.Forms.Button();
+            this.DenyBut = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -205,11 +207,35 @@
             this.label5.TabIndex = 16;
             this.label5.Text = "Port speed";
             // 
+            // AllowBut
+            // 
+            this.AllowBut.Location = new System.Drawing.Point(257, 181);
+            this.AllowBut.Name = "AllowBut";
+            this.AllowBut.Size = new System.Drawing.Size(75, 23);
+            this.AllowBut.TabIndex = 17;
+            this.AllowBut.Text = "Allow";
+            this.AllowBut.UseVisualStyleBackColor = true;
+            this.AllowBut.Visible = false;
+            this.AllowBut.Click += new System.EventHandler(this.AllowBut_Click);
+            // 
+            // DenyBut
+            // 
+            this.DenyBut.Location = new System.Drawing.Point(257, 210);
+            this.DenyBut.Name = "DenyBut";
+            this.DenyBut.Size = new System.Drawing.Size(75, 23);
+            this.DenyBut.TabIndex = 18;
+            this.DenyBut.Text = "Deny";
+            this.DenyBut.UseVisualStyleBackColor = true;
+            this.DenyBut.Visible = false;
+            this.DenyBut.Click += new System.EventHandler(this.DenyBut_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(363, 285);
+            this.Controls.Add(this.DenyBut);
+            this.Controls.Add(this.AllowBut);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.textBox5);
             this.Controls.Add(this.label4);
@@ -256,6 +282,8 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox textBox5;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button AllowBut;
+        private System.Windows.Forms.Button DenyBut;
     }
 }
 

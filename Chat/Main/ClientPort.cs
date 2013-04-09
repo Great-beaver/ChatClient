@@ -21,16 +21,8 @@ namespace Chat.Main
         private Thread _fileSenderThread;
         private Thread _waitForFilePacketThread;
         private byte _clietnId;
-        private Queue _outMessagesQueue;
         private int _outMessageQueueSize = 200;
-        private Queue _outFilePacketsQueue;
-        private int _outFilePacketsQueueSize = 200;
-        public Queue InputMessageQueue;
-        public int InputMessageQueueSize = 100;
         private Client[] _clientArray = new Client[5];
-
-        // Событие при получении Acknowledge
-        private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
         // Событие при получении пакета файла
         private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
@@ -53,17 +45,10 @@ namespace Chat.Main
         private long _receivingFileSize = 0;
         // Отправитель файла
         private byte _fileSender = 255;
-        
-        // Хранит CRC для последнего отправленого пакета, чтобы идентифицировать его при получении сообщения о доставке этого пакета
-        private ushort _lastMessageCrc=0;
 
-        // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
-        private bool[] _sendedPacketDelivered = new bool[5];
+       // Флаг устанавливается когда получен запрос на передачу файла и снимается когда пользователь посылает ответ
+       private bool _waitFileTransferAnswer = false;
 
-        // Событие при получении данных
-        //   void _comPortReader_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        //   {
-        //   }
 
         public ClientPort(string readerPortName,string writerPortName, byte id, int portSpeed)
         { 
@@ -394,18 +379,51 @@ namespace Chat.Main
         {
             _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x41); 
         }
-         
-        private void SendAcknowledge(Packet packet)
+
+        public void AllowFileTransfer ()
+        {
+            if (!_waitFileTransferAnswer) return;
+
+            _waitFileTransferAnswer = false;
+            // Событие - начат прием файла
+            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingStarted, _receivingFileName, _fileSender));
+
+            // Выставляет флаг приема 
+            _isRecivingFile = true;
+            //Высылает разрешение на отправку файла  
+            SendFileTransferAllow(_fileSender);
+            //Обнулить счетчик пакетов файла
+            Client.CountOfFilePackets = 0;
+            // Запускает поток ожидания пакетов файла
+            _waitForFilePacketThread = new Thread(WaitForFilePacket);
+            _waitForFilePacketThread.Start();
+            // Создает файл если его еще нет
+            CreateFile(_receivingFileName);
+        }
+        
+        public void DenyFileTransfer ()
+        {
+            if (!_waitFileTransferAnswer) return;
+
+            _waitFileTransferAnswer = false;
+            // Событие - прием файла отклонен
+            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));
+            _isRecivingFile = false;
+            //Отказ отправки файла
+            SendFileTransferCancel(_fileSender);  
+        }
+
+       private void SendAcknowledge(Packet packet)
         {
             _clientArray[(int)packet.Header.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
         }
 
-        private void SendFileTransferCompleted(byte toId)
+       private void SendFileTransferCompleted(byte toId)
         {
           _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x04);
         }
 
-        private void Read()
+       private void Read()
         {
             while (Client.Continue)
             {
@@ -471,7 +489,7 @@ namespace Chat.Main
             }
         }
 
-        private void ParsePacket(Packet packet)
+       private void ParsePacket(Packet packet)
         {
             // Функция вовращает true если найдена опция и дальнейший разбор данных не требуется.
                 if (ParseOptions(packet))
@@ -510,38 +528,15 @@ namespace Chat.Main
                             var ea = new FileRequestRecivedEventArgs(packet.Data.FileName, packet.Data.FileLenght, packet.Header.Sender);
 
                             OnFileRequestRecived(ea);
-                            
-                            if (ea.FileTransferAllowed)
-                            {
-                                // Событие - начат прием файла
-                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingStarted, packet.Data.FileName, packet.Header.Sender));
 
-                                // Выставляет флаг приема 
-                                _isRecivingFile = true;
-                                //Высылает разрешение на отправку файла  
-                                SendFileTransferAllow(packet.Header.Sender);                              
-                                //Обнулить счетчик пакетов файла
-                                Client.CountOfFilePackets = 0;
-                                // Сохраняет параметры файла
-                                _receivingFileName = packet.Data.FileName;
-                                _receivingFileSize = packet.Data.FileLenght;
-                                // Сохраняет id отправителя файла
-                                _fileSender = packet.Header.Sender;
-                                // Запускает поток ожидания пакетов файла
-                                _waitForFilePacketThread = new Thread(WaitForFilePacket);
-                                _waitForFilePacketThread.Start();
-                                // Создает файл если его еще нет
-                                CreateFile(_receivingFileName);
-                            }
-                            else
-                            {
-                                // Событие - прием файла отклонен
-                                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, packet.Data.FileName, packet.Header.Sender));
-                                
-                                _isRecivingFile = false;
-                                //Отказ отправки файла
-                                SendFileTransferCancel(packet.Header.Sender);  
-                            }                            
+                            _waitFileTransferAnswer = true;
+
+                            // Сохраняет параметры файла
+                            _receivingFileName = packet.Data.FileName;
+                            _receivingFileSize = packet.Data.FileLenght;
+                            // Сохраняет id отправителя файла
+                            _fileSender = packet.Header.Sender;
+                         
                         }
                         else
                         {
@@ -596,7 +591,7 @@ namespace Chat.Main
             }
         }
 
-        private bool ParseOptions (Packet packet)
+       private bool ParseOptions (Packet packet)
         {
            switch (packet.Header.Option1)
            {
@@ -695,7 +690,7 @@ namespace Chat.Main
            return false;
         }
 
-        public bool CreateFile (string fileName) 
+       public bool CreateFile (string fileName) 
         {
             // Создает папку в "Мои документы" если ее нет
             string md = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + "\\ChatRecivedFiles\\";
@@ -733,7 +728,7 @@ namespace Chat.Main
             return false;
         }
 
-        public void CancelRecivingFile()
+       public void CancelRecivingFile()
         {
             if (_isRecivingFile)
             {
@@ -750,7 +745,7 @@ namespace Chat.Main
             }           
         }
 
-        public void CancelSendingFile()
+       public void CancelSendingFile()
         {
             if (Client.IsSendingFile)
             {
@@ -767,7 +762,7 @@ namespace Chat.Main
             }            
         }
 
-        private bool DeleteFile(string file)
+       private bool DeleteFile(string file)
         {
             int attempts = 0;
 
@@ -795,7 +790,7 @@ namespace Chat.Main
             return false;
         }
 
-        private bool ByteArrayToFile(string fileName, byte[] byteArray)
+       private bool ByteArrayToFile(string fileName, byte[] byteArray)
         {
             try
             {
@@ -828,7 +823,7 @@ namespace Chat.Main
             return false;
         }
 
-        public static bool TryOpenPort(SerialPort port)
+       public static bool TryOpenPort(SerialPort port)
         {
             try
             {
