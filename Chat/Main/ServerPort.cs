@@ -12,40 +12,30 @@ using ChatClient.Main.Packet.DataTypes;
 
 namespace Chat.Main
 {
-   public class ClientPort : IDisposable
+   public class ServerPort : IDisposable
     {
-        private SerialPort _comPortReader;
+        //private SerialPort _comPortReader;
+        private SerialPort[] _readPorts = new SerialPort[4];
         private SerialPort _comPortWriter;
         private Thread _readThread;
-        private Thread _writeThread;
         private Thread _fileSenderThread;
         private Thread _waitForFilePacketThread;
         private byte _clietnId;
-        private Queue _outMessagesQueue;
         private int _outMessageQueueSize = 200;
-        private Queue _outFilePacketsQueue;
-        private int _outFilePacketsQueueSize = 200;
-        public Queue InputMessageQueue;
         public int InputMessageQueueSize = 100;
         private Client[] _clientArray = new Client[5];
-
-        // Событие при получении Acknowledge
-        private ManualResetEvent _answerEvent = new ManualResetEvent(false);
 
         // Событие при получении пакета файла
         private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
         // Таймаут ожидания пакета файла в мс
         private int _waitForFilePacketTimeout = 10000;
-
         // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
-               
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
         private int _sleepTime = 1;    
 
         // Данные о файле для передачи
         private FileInfo _fileToTransfer;
-
         // Данные о файле для приема
         private string _receivingFileName = "";
         // Имя учитывая путь к файлу
@@ -53,77 +43,86 @@ namespace Chat.Main
         private long _receivingFileSize = 0;
         // Отправитель файла
         private byte _fileSender = 255;
-        
-        // Хранит CRC для последнего отправленого пакета, чтобы идентифицировать его при получении сообщения о доставке этого пакета
-        private ushort _lastMessageCrc=0;
 
-        // Хранит состояния был ли доставлен последний отправленый пакет конкретному клиенту
-        private bool[] _sendedPacketDelivered = new bool[5];
-
-        // Событие при получении данных
-        //   void _comPortReader_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        //   {
-        //   }
-
-        public ClientPort(string readerPortName,string writerPortName, byte id, int portSpeed)
-        { 
-            _comPortReader = new SerialPort();
-            _comPortReader.PortName = readerPortName;
-            _comPortReader.BaudRate = portSpeed;
-            _comPortReader.Parity = Parity.None;
-            _comPortReader.DataBits = 8;
-            _comPortReader.StopBits = StopBits.One;
-            _comPortReader.Handshake = Handshake.None;
-            _comPortReader.ReadTimeout = 500;
-            _comPortReader.WriteTimeout = 500;
-            _comPortReader.WriteBufferSize = 65000;
-            _comPortReader.ReadBufferSize = 65000;
-            _comPortReader.ReadTimeout = 5000;
-            
-           _comPortWriter = new SerialPort();
-           _comPortWriter.PortName = writerPortName;
-           _comPortWriter.BaudRate = portSpeed;
-           _comPortWriter.Parity = Parity.None;
-           _comPortWriter.DataBits = 8;
-           _comPortWriter.StopBits = StopBits.One;
-           _comPortWriter.Handshake = Handshake.None;
-           _comPortWriter.ReadTimeout = 500;
-           _comPortWriter.WriteTimeout = 500;
-           _comPortWriter.WriteBufferSize = 65000;
-           _comPortWriter.ReadBufferSize = 65000;
-
-            // Особая уличная кодировка для правильной отправки байтов чьё значение больше 127-ми
-            _comPortReader.Encoding = Encoding.GetEncoding(28591);
+        public ServerPort(string readerPortName1, string readerPortName2, string readerPortName3, string readerPortName4, string writerPortName, byte id, int portSpeed)
+        {
+            _comPortWriter = new SerialPort();
+            _comPortWriter.PortName = writerPortName;
+            _comPortWriter.BaudRate = portSpeed;
+            _comPortWriter.Parity = Parity.None;
+            _comPortWriter.DataBits = 8;
+            _comPortWriter.StopBits = StopBits.One;
+            _comPortWriter.Handshake = Handshake.None;
+            _comPortWriter.ReadTimeout = 500;
+            _comPortWriter.WriteTimeout = 500;
+            _comPortWriter.WriteBufferSize = 65000;
+            _comPortWriter.ReadBufferSize = 65000;
             _comPortWriter.Encoding = Encoding.GetEncoding(28591);
+
+            if (!TryOpenPort(_comPortWriter))
+            {
+                // Событие - сообщение о ошибке 
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortWriter.PortName, 0));
+            }
+
+            _readPorts[0] = new SerialPort();
+            _readPorts[0].PortName = readerPortName1;
+
+            _readPorts[1] = new SerialPort();
+            _readPorts[1].PortName = readerPortName2;
+
+            _readPorts[2] = new SerialPort();
+            _readPorts[2].PortName = readerPortName3;
+
+            _readPorts[3] = new SerialPort();
+            _readPorts[3].PortName = readerPortName4;
+
+            Client.Continue = true;
+
+            for (int i = 0; i < _readPorts.Length; i++)
+            {
+                _readPorts[i].BaudRate = portSpeed;
+                _readPorts[i].Parity = Parity.None;
+                _readPorts[i].DataBits = 8;
+                _readPorts[i].StopBits = StopBits.One;
+                _readPorts[i].Handshake = Handshake.None;
+                _readPorts[i].ReadTimeout = 500;
+                _readPorts[i].WriteTimeout = 500;
+                _readPorts[i].WriteBufferSize = 65000;
+                _readPorts[i].ReadBufferSize = 65000;
+                _readPorts[i].ReadTimeout = 5000;
+                _readPorts[i].Encoding = Encoding.GetEncoding(28591);
+
+                if (!TryOpenPort(_readPorts[i]))
+                {
+                    // Событие - сообщение о ошибке 
+                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _readPorts[i].PortName, 0));
+                }
+
+                _readThread = new Thread(Read);
+                _readThread.Start(_readPorts[i]); 
+
+            }
+
+            
+
+            
 
             _clietnId = id;
 
             for (int i = 0; i < 5; i++)
             {
-                _clientArray[i] = new Client((byte)i,_clietnId, _outMessageQueueSize, _comPortWriter);
+                _clientArray[i] = new Client((byte)i, _clietnId, _outMessageQueueSize, _comPortWriter);
 
                 // Подписывает на события от клиента
                 _clientArray[i].AcknowledgeRecived +=
                     new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
             }
 
-            _readThread = new Thread(Read);
-
-            if (!TryOpenPort(_comPortReader))
-            {
-                // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortReader.PortName, 0));
-                
-            }
-
-           if (!TryOpenPort(_comPortWriter))
-            {
-                // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortReader.PortName, 0));
-            }
             
-            Client.Continue = true;
-            _readThread.Start();           
+          
+            
+                      
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -149,8 +148,8 @@ namespace Chat.Main
             if (_readThread != null)
             _readThread.Join(1000);
 
-            if (_writeThread != null)
-            _writeThread.Join(1000);
+       //     if (_writeThread != null)
+       //     _writeThread.Join(1000);
 
             if (_fileSenderThread != null)
             _fileSenderThread.Join(1000);
@@ -405,28 +404,31 @@ namespace Chat.Main
           _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x04);
         }
 
-        private void Read()
+        private void Read(object readport)
         {
+
+            SerialPort readPort = (SerialPort)readport;
+
             while (Client.Continue)
             {
                 try
                 {
-                    _comPortReader.ReadTo("\xAA\x55");
+                    readPort.ReadTo("\xAA\x55");
 
                     // Считывание данных для создания пакета
                     // Здесь важен строгий порядок считывания байтов, точно как в пакете.
-                    byte recipient = (byte)_comPortReader.ReadByte();
-                    byte sender = (byte)_comPortReader.ReadByte();
+                    byte recipient = (byte)readPort.ReadByte();
+                    byte sender = (byte)readPort.ReadByte();
                     ushort dataLenght = BitConverter.ToUInt16(
-                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
-                    byte option1 = (byte)_comPortReader.ReadByte();
-                    byte option2 = (byte)_comPortReader.ReadByte();
+                        new byte[] { (byte)readPort.ReadByte(), (byte)readPort.ReadByte() }, 0);
+                    byte option1 = (byte)readPort.ReadByte();
+                    byte option2 = (byte)readPort.ReadByte();
                     ushort crc = BitConverter.ToUInt16(
-                        new byte[] { (byte)_comPortReader.ReadByte(), (byte)_comPortReader.ReadByte() }, 0);
+                        new byte[] { (byte)readPort.ReadByte(), (byte)readPort.ReadByte() }, 0);
 
                   // Счетчик количества итерация цикла while 
                   int count = 0;
-                  while (_comPortReader.BytesToRead < dataLenght)
+                  while (readPort.BytesToRead < dataLenght)
                   {
                       count++;
                       Thread.Sleep(_sleepTime);
@@ -437,7 +439,7 @@ namespace Chat.Main
                   }
 
                     byte[] data = new byte[dataLenght];
-                    _comPortReader.Read(data, 0, dataLenght);
+                    readPort.Read(data, 0, dataLenght);
 
                     Packet packet = new Packet(new Header(recipient, sender, option1, option2), data);
 
@@ -457,8 +459,8 @@ namespace Chat.Main
                 catch (InvalidOperationException)
                 {
                     // Передает событие с текстом ошибки
-                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortReader.PortName + "  не доступен.", 0));
-                    TryOpenPort(_comPortReader);
+                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + readPort.PortName + "  не доступен.", 0));
+                    TryOpenPort(readPort);
                     Thread.Sleep(3000);
                 }
 

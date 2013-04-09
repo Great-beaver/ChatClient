@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using Chat.Main;
@@ -33,7 +30,7 @@ namespace ChatClient.Main
         public static byte FileRecipient = 0;
         public int QueueSize { get; private set; }
 
-        public Client (byte idTosend,byte ownerId, int queueSize, SerialPort writePort, Queue inputQueue)
+        public Client (byte idTosend,byte ownerId, int queueSize, SerialPort writePort)
         {
             IdToSend = idTosend;
             _ownerId = ownerId;
@@ -46,7 +43,6 @@ namespace ChatClient.Main
             _writeThread.Start();
             LastMessageCrc = 0;
             _comPortWriter = writePort;
-            InputMessageQueue = inputQueue;
         }
 
         public event EventHandler<MessageRecivedEventArgs> AcknowledgeRecived;
@@ -125,7 +121,6 @@ namespace ChatClient.Main
                                 CancelSendingFile();
                                 break;
                             }
-
                             if (++attempts > 3)
                             {
                                 if (outPacket.Data.Type ==  DataType.FileData)
@@ -149,8 +144,6 @@ namespace ChatClient.Main
                             // Debug message
                             OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Переотправка сообщения попытка № " + attempts, 0));
 #endif
-
-
                             if (!TryWrite(_comPortWriter, outPacket))
                             {
                                 // Передает событие с текстом ошибки

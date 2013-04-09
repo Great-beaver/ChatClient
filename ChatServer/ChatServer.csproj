@@ -66,6 +66,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="App.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -80,6 +81,10 @@
     <ProjectReference Include="..\ChatClient\ChatClient.csproj">
       <Project>{C2BA7653-042A-4A0F-ACA0-B4C82BB240FF}</Project>
       <Name>ChatClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Chat\Chat.csproj">
+      <Project>{BA745D28-0D6B-4C51-AD71-36DFD48A5220}</Project>
+      <Name>Chat</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

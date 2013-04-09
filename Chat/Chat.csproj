@@ -40,11 +40,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
     <Compile Include="Helpers\Compressor.cs" />
     <Compile Include="Helpers\Crc16.cs" />
     <Compile Include="Main\Client.cs" />
     <Compile Include="Main\ClientPort.cs" />
+    <Compile Include="Main\ServerPort.cs" />
     <Compile Include="Main\FileRequestRecivedEventArgs.cs" />
     <Compile Include="Main\MessageRecivedEventArgs.cs" />
     <Compile Include="Main\MessageType.cs" />
