@@ -444,8 +444,13 @@ namespace Chat.Main
                     Packet packet = new Packet(new Header(recipient, sender, option1, option2), data);
 
                     // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
-                    if (packet.Header.Crc == crc && packet.Header.Recipient == _clietnId)
+                    if (packet.Header.Crc == crc)
                     {
+
+                        if (packet.Header.Recipient != _clietnId)
+                        {
+                            _clientArray[0].SendPacketNow(packet);
+                        }
                         //Функция разбора пакета
                         ParsePacket(packet);
                     }

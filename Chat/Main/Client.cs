@@ -53,6 +53,18 @@ namespace ChatClient.Main
             if (handler != null) handler(this, e);
         }
 
+        public bool SendPacketNow (Packet.Packet packet)
+        {
+            if (!TryWrite(_comPortWriter, packet))
+            {
+                // Передает событие с текстом ошибки
+               // OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                return false;
+            }
+            return true;
+        }
+
+
         public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
             Packet.Packet packet = new Packet.Packet(new Header(IdToSend, sender, option1, option2), messageBody);
