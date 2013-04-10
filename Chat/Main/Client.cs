@@ -121,8 +121,11 @@ namespace ChatClient.Main
                         {
                             if (outPacket.Data.Type == DataType.Text)
                             {
-                                // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                                // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения   ORIGINAL 
+                                  OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                               
+                                // TEST
+                                //OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Sender));
                             }
                             break;
                         }
@@ -194,7 +197,6 @@ namespace ChatClient.Main
                 CountOfFilePackets = 0;
             }
         }
-
 
         private bool TryWrite(SerialPort port, Packet.Packet packet)
         {

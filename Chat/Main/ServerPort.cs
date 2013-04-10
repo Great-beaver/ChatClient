@@ -20,7 +20,7 @@ namespace Chat.Main
         private Thread _readThread;
         private Thread _fileSenderThread;
         private Thread _waitForFilePacketThread;
-        private byte _clietnId;
+        public byte ClietnId { get; private set; } 
         private int _outMessageQueueSize = 200;
         public int InputMessageQueueSize = 100;
         private Client[] _clientArray = new Client[5];
@@ -111,11 +111,11 @@ namespace Chat.Main
 
             
 
-            _clietnId = id;
+            ClietnId = id;
 
             for (int i = 0; i < 5; i++)
             {
-                _clientArray[i] = new Client((byte)i, _clietnId, _outMessageQueueSize, _comPortWriter);
+                _clientArray[i] = new Client((byte)i, ClietnId, _outMessageQueueSize, _comPortWriter);
 
                 // Подписывает на события от клиента
                 _clientArray[i].AcknowledgeRecived +=
@@ -304,7 +304,7 @@ namespace Chat.Main
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[1+]
             Array.Copy(messageBody, 0, messagePacket, 1, messageBody.Length);
 
-            _clientArray[(int)toId].AddPacketToQueue(messagePacket, _clietnId, option1, option2);
+            _clientArray[(int)toId].AddPacketToQueue(messagePacket, ClietnId, option1, option2);
         }
 
         public void SendFileTransferRequest(string filePath, byte toId)
@@ -349,7 +349,7 @@ namespace Chat.Main
             //Вставляет имя файла в пакет
             Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packet, 9, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
 
-            _clientArray[(int)toId].AddPacketToQueue(packet, _clietnId);
+            _clientArray[(int)toId].AddPacketToQueue(packet, ClietnId);
         }
 
         private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
@@ -384,17 +384,17 @@ namespace Chat.Main
             // Копирует тело сообщения в позицию после Header'а, то есть в  messagePacket[4+]
             Array.Copy(messageBody, 0, Packet, 3, messageBody.Length);
 
-            _clientArray[(int)toId].AddPacketToQueue(Packet, _clietnId, option1, option2);
+            _clientArray[(int)toId].AddPacketToQueue(Packet, ClietnId, option1, option2);
         }
 
         private void SendFileTransferCancel(byte toId)
         {
-            _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x18);
+            _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x18);
         }
 
         private void SendFileTransferAllow(byte toId)
         {
-            _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x41); 
+            _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x41); 
         }
 
         public void AllowFileTransfer()
@@ -432,12 +432,12 @@ namespace Chat.Main
          
         private void SendAcknowledge(Packet packet)
         {
-            _clientArray[(int)packet.Header.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), _clietnId, 0x06, 0x00, true);
+            _clientArray[(int)packet.Header.Sender].AddPacketToQueue(BitConverter.GetBytes(Crc16.ComputeChecksum(packet.ByteData)), ClietnId, 0x06, 0x00, true);
         }
 
         private void SendFileTransferCompleted(byte toId)
         {
-          _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, _clietnId, 0x04);
+          _clientArray[(int)toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x04);
         }
 
         private void Read(object readport)
@@ -482,7 +482,7 @@ namespace Chat.Main
                     // Проверка crc и id клиента, то есть предназначен ли этот пакет этому клиенту.
                     if (packet.Header.Crc == crc)
                     {
-                        if (packet.Header.Recipient != _clietnId)
+                        if (packet.Header.Recipient != ClietnId)
                         {
                             _clientArray[0].SendPacketNow(packet);
 

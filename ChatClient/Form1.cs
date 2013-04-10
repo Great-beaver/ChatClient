@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Configuration;
+using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using Chat.Main;
@@ -18,13 +19,16 @@ namespace ChatClient
             InitializeComponent();
         }
 
+        TabPage[] _tabPages = new TabPage[5];
+        RichTextBox[] _richTextBoxs = new RichTextBox[5];
+
         private void Form1_Load(object sender, EventArgs e)
         {
          //  _comPort = new ClientPort(Properties.Settings.Default.ReadComPort, Properties.Settings.Default.WriteComPort, 
          //      Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
          //  // Подписывание на событие
          //  _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
-         //  _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);                
+         //  _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);             
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -37,111 +41,117 @@ namespace ChatClient
             {
                 case MessageType.Text:
                     {
-                        richTextBox1.AppendText("Клиент " + sender + " :"+ '\n' + text + '\n');
+                        _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Left;
+                        _richTextBoxs[sender].SelectionColor = Color.Red;
+                        _richTextBoxs[sender].AppendText("Клиент " + sender + " :" + '\n' + text + '\n');
+                        _richTextBoxs[sender].Controls.Add(AllowBut);
+                        AllowBut.Visible = true;
                     }
                     break;
 
                 case MessageType.TextDelivered:
                     {
-                        richTextBox1.AppendText(text + '\n'+
+                        _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Right;
+                        _richTextBoxs[sender].SelectionColor = Color.Green;
+                        _richTextBoxs[sender].AppendText(text + '\n' +
                     "Сообщение для клиента " + sender + " доставлено." + '\n');
                     }
                     break;
 
                 case MessageType.TextUndelivered:
                     {
-                        richTextBox1.AppendText(text + '\n' +
+                        _richTextBoxs[sender].AppendText(text + '\n' +
                     "Сообщение для клиента " + sender + "НЕ доставлено." + '\n');
                     }
                     break;
 
                 case MessageType.FileUndelivered:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Получатель " + sender + "не доступен, отправка файла отменена." + '\n');
                     }
                     break;
 
                 case MessageType.MessageUndelivered:
                     {
-                        richTextBox1.AppendText("Клиента " + sender + "не доступен." + '\n');
+                        _richTextBoxs[sender].AppendText("Клиента " + sender + "не доступен." + '\n');
                     }
                     break;
 
                 case MessageType.FileReceivingComplete:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Файл " + text + " от клиента " + sender + " получен." + '\n');
                     }
                     break;
 
                 case MessageType.FileSendingComplete:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " клиенту " + sender + " завершена." + '\n');
                     }
                     break;
 
                 case MessageType.FileTransferAllowed:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Клиент " + sender + " одобрил получение файла " + text +"." + '\n');
                     }
                     break;
 
                     case MessageType.FileTransferDenied:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Клиент " + sender + " отклонил получение файла " + text +"." + '\n');
                     }
                     break;
 
                     case MessageType.FileReceivingStarted:
                     {
-                    richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Начат прием файла  " + text + " от клиента " + sender + "." + '\n');
                     }
                     break;
 
                     case MessageType.FileTransferCanceled:
                     {
-                    richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Прием файла  " + text + " от клиента " + sender + " отменен." + '\n');
                     }
                     break;
                     case MessageType.FileTransferCanceledBySender:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " отменан отправителем " + sender +"." + '\n');
                     }
                     break;
 
                     case MessageType.FileTransferCanceledByRecipient:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " отменан получателем " + sender +"." + '\n');
                     }
                     break;
 
                     case MessageType.FileReceivingTimeOut:
                     {
-                        richTextBox1.AppendText(
+                        _richTextBoxs[sender].AppendText(
                     "Вышло время ожидания файла " + text + " от " + sender + " передача отменена." + '\n');
                     }
                     break;
 
                     case MessageType.Error:
                     {
-                        richTextBox1.AppendText(text + '\n');
+                        _richTextBoxs[sender].AppendText(text + '\n');
                     }
                     break;
 
             }
 
             // Скрол вниз
-            if (richTextBox1.TextLength>0)
-            richTextBox1.Select(richTextBox1.TextLength - 1, 0);
-            richTextBox1.ScrollToCaret();
+            //if (richTextBox1.TextLength>0)
+            //richTextBox1.Select(richTextBox1.TextLength - 1, 0);
+            _richTextBoxs[sender].ScrollToCaret();
 
         }
 
@@ -174,13 +184,13 @@ namespace ChatClient
            //
            // e.FileTransferAllowed = dialogResult == DialogResult.Yes;
 
-            richTextBox1.AppendText("Прниять файл " +e.FileName  +
+            _richTextBoxs[e.Sender].AppendText("Прниять файл " + e.FileName +
                    "от клиента № " + e.Sender + " размером " + e.FileLenght / 1024 / 1024 + "МБ?" + '\n');
 
             // Скрол вниз
-            if (richTextBox1.TextLength > 0)
-                richTextBox1.Select(richTextBox1.TextLength - 1, 0);
-            richTextBox1.ScrollToCaret();
+            if (_richTextBoxs[e.Sender].TextLength > 0)
+                _richTextBoxs[e.Sender].Select(_richTextBoxs[e.Sender].TextLength - 1, 0);
+            _richTextBoxs[e.Sender].ScrollToCaret();
 
             AllowBut.Visible = true;
             DenyBut.Visible = true;
@@ -196,9 +206,11 @@ namespace ChatClient
         }
 
         private void button1_Click(object sender, EventArgs e)
-        {            
-            _comPort.SendTextMessage(richTextBox2.Text, Convert.ToByte(textBox4.Text));
-            richTextBox2.Clear();                
+        {
+            
+          //MessageBox.Show(tabControl1.SelectedTab.ToString());
+            _comPort.SendTextMessage(writeRichTextBox.Text, (byte)tabControl1.SelectedTab.TabIndex);
+            writeRichTextBox.Clear();                
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -207,8 +219,35 @@ namespace ChatClient
                  Convert.ToByte(textBox3.Text), Convert.ToInt32(textBox5.Text));
              // Подписывание на событие
              _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
-             _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);   
+             _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
+
+            for (int i = 0; i < 5; i++)
+            {
+                _richTextBoxs[i] = new RichTextBox();
+                if (i!=_comPort.ClietnId)
+                {
+                    //string title = "TabPage " + (tabControl1.TabCount + 1).ToString();
+                    _tabPages[i] = new TabPage("Клиент " + i);
+                    _tabPages[i].TabIndex = i;
+                    
+                    _richTextBoxs[i].Name = "ClientRichTextBox" + i;
+                    _richTextBoxs[i].Left = 1;
+                    _richTextBoxs[i].Top = 1;
+                    _richTextBoxs[i].Width = 245;
+                    _richTextBoxs[i].Height = 113;
+                    _richTextBoxs[i].BackColor = Color.Beige;
+
+                    _richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
+
+                    _tabPages[i].Controls.Add(_richTextBoxs[i]);
+
+                    tabControl1.TabPages.Add(_tabPages[i]);
+
+                }
+            }
+
             
+           
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -217,7 +256,7 @@ namespace ChatClient
 
             if (od.ShowDialog() == DialogResult.OK)
             {
-                _comPort.SendFileTransferRequest(od.FileName, Convert.ToByte(textBox4.Text));
+                _comPort.SendFileTransferRequest(od.FileName, (byte)tabControl1.SelectedTab.TabIndex);
             }
         }
 
@@ -262,6 +301,11 @@ namespace ChatClient
             AllowBut.Visible = false;
             DenyBut.Visible = false;
             _comPort.DenyFileTransfer();
+        }
+
+        private void richTextBox1_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
