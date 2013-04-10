@@ -167,14 +167,25 @@ namespace ChatServer
         // Метод обработки запроса на передачу
         void ReciveFileRequest(FileRequestRecivedEventArgs e)
         {
-            //  MessageBox.Show("Запрос на передачу файла " + fileName + " размером " + fileLenght / 1024 / 1024 + "МБ" + " от клиента " + sender);
+           // //  MessageBox.Show("Запрос на передачу файла " + fileName + " размером " + fileLenght / 1024 / 1024 + "МБ" + " от клиента " + sender);
+           //
+           // // Сообщения о том надо ли принимать файл
+           // DialogResult dialogResult = MessageBox.Show("Прниять файл " + e.FileName +
+           //        "от клиента № " + e.Sender + " размером " + e.FileLenght / 1024 / 1024 + "МБ?",
+           //        "Передача файла", MessageBoxButtons.YesNo);
+           //
+           // e.FileTransferAllowed = dialogResult == DialogResult.Yes;
 
-            // Сообщения о том надо ли принимать файл
-            DialogResult dialogResult = MessageBox.Show("Прниять файл " + e.FileName +
-                   "от клиента № " + e.Sender + " размером " + e.FileLenght / 1024 / 1024 + "МБ?",
-                   "Передача файла", MessageBoxButtons.YesNo);
+            richTextBox1.AppendText("Прниять файл " + e.FileName +
+                   "от клиента № " + e.Sender + " размером " + e.FileLenght / 1024 / 1024 + "МБ?" + '\n');
 
-            e.FileTransferAllowed = dialogResult == DialogResult.Yes;
+            // Скрол вниз
+            if (richTextBox1.TextLength > 0)
+                richTextBox1.Select(richTextBox1.TextLength - 1, 0);
+            richTextBox1.ScrollToCaret();
+
+            AllowBut.Visible = true;
+            DenyBut.Visible = true;
         }
 
         // Получение данных и вызов обработчика запроса на передачу
@@ -217,6 +228,20 @@ namespace ChatServer
             {
                 _comPort.Dispose();
             }
+        }
+
+        private void AllowBut_Click(object sender, EventArgs e)
+        {
+            AllowBut.Visible = false;
+            DenyBut.Visible = false;
+            _comPort.AllowFileTransfer();
+        }
+
+        private void DenyBut_Click(object sender, EventArgs e)
+        {
+            AllowBut.Visible = false;
+            DenyBut.Visible = false;
+            _comPort.DenyFileTransfer();
         }
 
 
