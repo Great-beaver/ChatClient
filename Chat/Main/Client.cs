@@ -64,7 +64,6 @@ namespace ChatClient.Main
             return true;
         }
 
-
         public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
             Packet.Packet packet = new Packet.Packet(new Header(IdToSend, sender, option1, option2), messageBody);
@@ -109,19 +108,20 @@ namespace ChatClient.Main
 
                     if (!TryWrite(_comPortWriter, outPacket))
                     {
-                        // Передает событие с текстом ошибки
+                        // Событие о недостцуппности порта
                         OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                        // Событие о недоставки сообщения
                         OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                         continue;
                     }
                     else
                     {
-                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient));
-                        
+                        if (outPacket.Data.Type == DataType.Text)
+                        {
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                        }
                     }
                     
-                    
-
                     byte attempts = 0;
                     while (true)
                     {

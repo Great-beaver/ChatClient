@@ -30,7 +30,16 @@ namespace Chat.Main
         // Таймаут ожидания пакета файла в мс
         private int _waitForFilePacketTimeout = 10000;
 
-        // Отражает состояние принимается ли или передается ли файл
+       // Таймер для ожидания ответа о передачи файла
+        private Timer _waitFileTransferAnswerTimer;
+       // Время таймаута для ответа получателя, в мс
+        private int _waitFileTransferAnswerTimeOut = 30000;
+       // Флаг устанавливается когда получен запрос на передачу файла и снимается когда пользователь посылает ответ
+       private bool _waitFileTransferAnswer = false;
+
+
+        
+       // Отражает состояние принимается ли или передается ли файл
         private bool _isRecivingFile = false;
                
         // Определяет сколько времение в мс потоки будут находится в состоянии сна
@@ -47,8 +56,7 @@ namespace Chat.Main
         // Отправитель файла
         private byte _fileSender = 255;
 
-       // Флаг устанавливается когда получен запрос на передачу файла и снимается когда пользователь посылает ответ
-       private bool _waitFileTransferAnswer = false;
+
 
         public ClientPort(string readerPortName,string writerPortName, byte id, int portSpeed)
         { 
@@ -92,6 +100,7 @@ namespace Chat.Main
                     new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
             }
 
+            _waitFileTransferAnswerTimer = new Timer(WaitFileAnswerTransfer);
 
             ReOpenPort(_comPortReader);
             ReOpenPort(_comPortWriter);
@@ -102,6 +111,25 @@ namespace Chat.Main
 
             _selfCheckingThread = new Thread(SelfChecking);
             _selfCheckingThread.Start();           
+        }
+
+        private void WaitFileAnswerTransfer(object state)
+        {
+            // Если был отправлен запрос на передачу файла
+            if (Client.AllowSendingFile)
+            {
+                // Таймаут ожидания ответа от получателя файла о приеме файла
+                Client.AllowSendingFile = false;
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferDenied, _fileToTransfer.Name, Client.FileRecipient));  
+            }
+
+            // Если был получен запрос на передачу файла 
+            if (_waitFileTransferAnswer)
+            {
+                _waitFileTransferAnswer = false;
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));  
+            }
+
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -115,12 +143,12 @@ namespace Chat.Main
         }
 
         // Получение данных и вызов обработчика для текстовых сообщений
-        void ClientAcknowledgeRecived(object sender, MessageRecivedEventArgs e)
+       void ClientAcknowledgeRecived(object sender, MessageRecivedEventArgs e)
         {
             ReciveAcknowledge(e.MessageType, e.MessageText, e.Sender);
         }
 
-        public void Dispose()
+       public void Dispose()
         {
             Client.Continue = false;
 
@@ -137,21 +165,21 @@ namespace Chat.Main
             _waitForFilePacketThread.Join(1000);
         }
 
-        // Получение сообщения 
+       // Получение сообщения 
 
-        public event EventHandler<MessageRecivedEventArgs> MessageRecived;
+       public event EventHandler<MessageRecivedEventArgs> MessageRecived;
 
-        private void OnMessageRecived(MessageRecivedEventArgs e)
+       private void OnMessageRecived(MessageRecivedEventArgs e)
         {
             EventHandler<MessageRecivedEventArgs> handler = MessageRecived;
             if (handler != null) handler(this, e);
         }
 
-        // Получение запроса на передачу файла
+       // Получение запроса на передачу файла
 
-        public event EventHandler<FileRequestRecivedEventArgs> FileRequestRecived;
+       public event EventHandler<FileRequestRecivedEventArgs> FileRequestRecived;
 
-        private void OnFileRequestRecived(FileRequestRecivedEventArgs e)
+       private void OnFileRequestRecived(FileRequestRecivedEventArgs e)
         {
             EventHandler<FileRequestRecivedEventArgs> handler = FileRequestRecived;
             if (handler != null) handler(this, e);
@@ -364,6 +392,8 @@ namespace Chat.Main
             Array.Copy(Encoding.UTF8.GetBytes(_fileToTransfer.Name), 0, packet, 9, Encoding.UTF8.GetBytes(_fileToTransfer.Name).Length);
 
             _clientArray[(int)toId].AddPacketToQueue(packet, ClietnId);
+
+
         }
 
        private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
@@ -568,7 +598,9 @@ namespace Chat.Main
                             _receivingFileSize = packet.Data.FileLenght;
                             // Сохраняет id отправителя файла
                             _fileSender = packet.Header.Sender;
-                         
+
+                            _waitFileTransferAnswerTimer.Change(_waitFileTransferAnswerTimeOut, Timeout.Infinite);
+
                         }
                         else
                         {
@@ -633,6 +665,13 @@ namespace Chat.Main
                        // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым пакетом для этого клиента
                        if (_clientArray[packet.Header.Sender].LastMessageCrc == BitConverter.ToUInt16(packet.ByteData, 0))
                        {
+                           // Елси был доставлен пакет "запрос на передачу файла" то запустить таймер ожидания ответа
+                           if (_clientArray[packet.Header.Sender].LastPacket.Data.Type == DataType.FileRequest)
+                           {
+                               OnMessageRecived(new MessageRecivedEventArgs(MessageType.WaitFileRecipientAnswer, _fileToTransfer.Name, packet.Header.Sender));
+                               _waitFileTransferAnswerTimer.Change(_waitFileTransferAnswerTimeOut, Timeout.Infinite);
+                           }
+
                            // Установить что последнее сообщение было доставлено
                            _clientArray[packet.Header.Sender].AnswerEvent.Set();
                            return true;
@@ -774,6 +813,8 @@ namespace Chat.Main
                 Client.CountOfFilePackets = 0;
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(_fileSender);
+                // Событие - прием файла отклонен
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));
             }           
         }
 
@@ -867,8 +908,7 @@ namespace Chat.Main
             catch (Exception)
             {
                 return false;
-            }
-            
+            }   
         }
 
     }

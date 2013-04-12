@@ -2,6 +2,7 @@
 {
     public enum MessageType
     {
+        SystemMessage,
         Text,
         TextDelivered,
         TextUndelivered,
@@ -20,6 +21,7 @@
         ReadPortAvailable,
         ReadPortUnavailable,
         WritePortAvailable,
-        WritePortUnavailable,        
+        WritePortUnavailable,
+        WaitFileRecipientAnswer,
     }
 }

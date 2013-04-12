@@ -116,6 +116,9 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Прием файла  " + text + " от клиента " + sender + " отменен." + '\n');
+                        // Функция скрытия элементов приема файла
+                        AllowBut.Visible = false;
+                        DenyBut.Visible = false;
                     }
                     break;
                     case MessageType.FileTransferCanceledBySender:
@@ -167,28 +170,28 @@ namespace ChatClient
                     }
                     break;
 
+                    case MessageType.WaitFileRecipientAnswer:
+                    {
+                        _richTextBoxs[sender].AppendText("Ожидается ответ клиента " + sender + " о передачи файла " + text + "." + '\n');
+                    }
+                    break;
+
                     case MessageType.Error:
                     {
                         _richTextBoxs[sender].AppendText(text + '\n');
                     }
                     break;
-
             }
 
-            // Скрол вниз
-            //if (richTextBox1.TextLength>0)
-            //richTextBox1.Select(richTextBox1.TextLength - 1, 0);
-            try
-            {
-                _richTextBoxs[sender].ScrollToCaret();
-            }
-            catch (Exception)
-            {
-                
-         
-            }
-            
-
+          try
+          {
+             _richTextBoxs[sender].ScrollToCaret();
+          }
+          catch (Exception)
+          {
+              
+          }
+          
         }
 
         // Получение данных и вызов обработчика для текстовых сообщений
@@ -242,8 +245,7 @@ namespace ChatClient
         }
 
         private void button1_Click(object sender, EventArgs e)
-        {
-            
+        {  
           //MessageBox.Show(tabControl1.SelectedTab.ToString());
             _comPort.SendTextMessage(writeRichTextBox.Text, (byte)tabControl1.SelectedTab.TabIndex);
             writeRichTextBox.Clear();                
