@@ -65,7 +65,7 @@ namespace Chat.Main
             if (!TryOpenPort(_comPortWriter))
             {
                 // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortWriter.PortName, 0));
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, "Ошибка при попытки открытия порта: " + _comPortWriter.PortName, 0));
             }
 
             _readPorts[0] = new SerialPort();
@@ -99,7 +99,7 @@ namespace Chat.Main
                 if (!TryOpenPort(_readPorts[i]))
                 {
                     // Событие - сообщение о ошибке 
-                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _readPorts[i].PortName, 0));
+                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.ReadPortUnavailable, "Ошибка при попытки открытия порта: " + _readPorts[i].PortName, (byte)i));
                 }
 
                 _readThread = new Thread(Read);
@@ -506,14 +506,13 @@ namespace Chat.Main
                 catch (InvalidOperationException)
                 {
                     // Передает событие с текстом ошибки
-                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + readPort.PortName + "  не доступен.", 0));
+                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.ReadPortUnavailable, "Порт " + readPort.PortName + "  не доступен.", 0));
                     TryOpenPort(readPort);
                     Thread.Sleep(3000);
                 }
 
                 catch (Exception)
                 {
-
 
                 }
 

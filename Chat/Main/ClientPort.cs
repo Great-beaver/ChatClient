@@ -18,6 +18,7 @@ namespace Chat.Main
         private SerialPort _comPortWriter;
         private Thread _readThread;
         private Thread _writeThread;
+        private Thread _selfCheckingThread;
         private Thread _fileSenderThread;
         private Thread _waitForFilePacketThread;
         public byte ClietnId { get; private set; }  
@@ -91,23 +92,16 @@ namespace Chat.Main
                     new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
             }
 
-            _readThread = new Thread(Read);
 
-            if (!TryOpenPort(_comPortReader))
-            {
-                // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortReader.PortName, 0));
-                
-            }
-
-           if (!TryOpenPort(_comPortWriter))
-            {
-                // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при попытки открытия порта: " + _comPortReader.PortName, 0));
-            }
-            
+            ReOpenPort(_comPortReader);
+            ReOpenPort(_comPortWriter);
+           
             Client.Continue = true;
-            _readThread.Start();           
+            _readThread = new Thread(Read);
+            _readThread.Start();
+
+            _selfCheckingThread = new Thread(SelfChecking);
+            _selfCheckingThread.Start();           
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -163,7 +157,45 @@ namespace Chat.Main
             if (handler != null) handler(this, e);
         }
 
-        private void WaitForFilePacket()
+       private void SelfChecking()
+       {
+           while (Client.Continue)
+           {
+               if (IsPortAvailable(_comPortReader))
+                   OnMessageRecived(new MessageRecivedEventArgs(MessageType.ReadPortAvailable, _comPortReader.PortName, 255));
+               else
+               {
+                   OnMessageRecived(new MessageRecivedEventArgs(MessageType.ReadPortUnavailable, _comPortReader.PortName, 255));
+                   ReOpenPort(_comPortReader);
+               }
+
+               if (IsPortAvailable(_comPortWriter))
+                   OnMessageRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, 255));
+               else
+               {
+                   OnMessageRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, 255));
+                   ReOpenPort(_comPortWriter);
+               }
+
+               Thread.Sleep(2000);
+           }
+       }
+
+       public static bool IsPortAvailable(SerialPort port)
+       {
+           bool portExist = false;
+
+           foreach (string value in SerialPort.GetPortNames())
+           {
+               if (value == port.PortName) portExist = true;
+           }
+
+           if (portExist && port.IsOpen) return true;
+
+           return false;
+       }
+
+       private void WaitForFilePacket()
         {
             // Пока стоит флаг приема файла
             while (_isRecivingFile && Client.Continue)
@@ -193,7 +225,7 @@ namespace Chat.Main
             }
         }
 
-        private void FileSender(object toId)
+       private void FileSender(object toId)
         {
             Boolean finish = false;
             var stream = File.OpenRead(_fileToTransfer.FullName);
@@ -258,7 +290,7 @@ namespace Chat.Main
             }
         }
 
-        public void SendTextMessage(string message, byte toId)
+       public void SendTextMessage(string message, byte toId)
         {
             // Структура пакета данных текстового сообщения 
             // | Тип пакета |   Данные   |
@@ -289,7 +321,7 @@ namespace Chat.Main
             _clientArray[(int)toId].AddPacketToQueue(messagePacket, ClietnId, option1, option2);
         }
 
-        public void SendFileTransferRequest(string filePath, byte toId)
+       public void SendFileTransferRequest(string filePath, byte toId)
         {
             // TO DO: Отправлять запрос только если не идет работа с файлом
 
@@ -334,7 +366,7 @@ namespace Chat.Main
             _clientArray[(int)toId].AddPacketToQueue(packet, ClietnId);
         }
 
-        private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
+       private void SendFilePacket(byte[] packet, byte toId, byte packetNUmber, bool lastPacketInChain = false)
         {
             // Структура пакета файла
             // | Тип пакета | Последний пакет | Номер пакета |  Данные  |
@@ -369,17 +401,17 @@ namespace Chat.Main
             _clientArray[(int)toId].AddPacketToQueue(Packet, ClietnId, option1, option2);
         }
 
-        private void SendFileTransferCancel(byte toId)
+       private void SendFileTransferCancel(byte toId)
         {
             _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x18);
         }
 
-        private void SendFileTransferAllow(byte toId)
+       private void SendFileTransferAllow(byte toId)
         {
             _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x41); 
         }
 
-        public void AllowFileTransfer ()
+       public void AllowFileTransfer ()
         {
             if (!_waitFileTransferAnswer) return;
 
@@ -399,8 +431,8 @@ namespace Chat.Main
             // Создает файл если его еще нет
             CreateFile(_receivingFileName);
         }
-        
-        public void DenyFileTransfer ()
+       
+       public void DenyFileTransfer ()
         {
             if (!_waitFileTransferAnswer) return;
 
@@ -469,19 +501,20 @@ namespace Chat.Main
                         // MessageBox.Show("Hash or ID NOT matches!");
                         // MessageBox.Show(packet.PacketInfo());
                     }
+                    
                 }
 
                 catch (InvalidOperationException)
                 {
+                    IsPortAvailable(_comPortReader);
                     // Передает событие с текстом ошибки
-                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortReader.PortName + "  не доступен.", 0));
-                    TryOpenPort(_comPortReader);
+                  //  OnMessageRecived(new MessageRecivedEventArgs(MessageType.ReadPortUnavailable,  _comPortReader.PortName, 255));
+                  //  ReOpenPort(_comPortReader);
                     Thread.Sleep(3000);
                 }
 
                 catch (Exception)
                 {
-
 
                 }
 
@@ -822,11 +855,12 @@ namespace Chat.Main
             return false;
         }
 
-       public static bool TryOpenPort(SerialPort port)
+       public static bool ReOpenPort(SerialPort port)
         {
             try
             {
-                if (!port.IsOpen) port.Open();
+                port.Close();
+                port.Open();
 
                 return port.IsOpen;
             }

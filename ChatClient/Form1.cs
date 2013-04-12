@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using System.Drawing;
+using System.IO.Ports;
 using System.Text;
 using System.Windows.Forms;
 using Chat.Main;
@@ -44,8 +45,6 @@ namespace ChatClient
                         _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Left;
                         _richTextBoxs[sender].SelectionColor = Color.Red;
                         _richTextBoxs[sender].AppendText("Клиент " + sender + " :" + '\n' + text + '\n');
-                        _richTextBoxs[sender].Controls.Add(AllowBut);
-                        AllowBut.Visible = true;
                     }
                     break;
 
@@ -140,6 +139,34 @@ namespace ChatClient
                     }
                     break;
 
+                    case MessageType.ReadPortAvailable:
+                    {
+                        StatusLabelReadPortValue.Text = "Online";
+                        StatusLabelReadPortValue.ForeColor = Color.Green;
+                    }
+                    break;
+
+                    case MessageType.ReadPortUnavailable:
+                    {
+                        StatusLabelReadPortValue.Text = "Offline";
+                        StatusLabelReadPortValue.ForeColor = Color.Red;
+                    }
+                    break;
+
+                    case MessageType.WritePortAvailable:
+                    {
+                        StatusLabelWritePortValue.Text = "Online";
+                        StatusLabelWritePortValue.ForeColor = Color.Green;
+                    }
+                    break;
+
+                    case MessageType.WritePortUnavailable:
+                    {
+                        StatusLabelWritePortValue.Text = "Offline";
+                        StatusLabelWritePortValue.ForeColor = Color.Red;
+                    }
+                    break;
+
                     case MessageType.Error:
                     {
                         _richTextBoxs[sender].AppendText(text + '\n');
@@ -151,7 +178,16 @@ namespace ChatClient
             // Скрол вниз
             //if (richTextBox1.TextLength>0)
             //richTextBox1.Select(richTextBox1.TextLength - 1, 0);
-            _richTextBoxs[sender].ScrollToCaret();
+            try
+            {
+                _richTextBoxs[sender].ScrollToCaret();
+            }
+            catch (Exception)
+            {
+                
+         
+            }
+            
 
         }
 
@@ -218,6 +254,9 @@ namespace ChatClient
             _comPort = new ClientPort(textBox1.Text, textBox2.Text,
                  Convert.ToByte(textBox3.Text), Convert.ToInt32(textBox5.Text));
              // Подписывание на событие
+
+            StatusLabelIDValue.Text = _comPort.ClietnId.ToString();
+
              _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
              _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
 
@@ -237,17 +276,15 @@ namespace ChatClient
                     _richTextBoxs[i].Height = 113;
                     _richTextBoxs[i].BackColor = Color.Beige;
 
-                    _richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
+                    //_richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
+
+                    _richTextBoxs[i].ReadOnly = true;
 
                     _tabPages[i].Controls.Add(_richTextBoxs[i]);
 
                     tabControl1.TabPages.Add(_tabPages[i]);
-
                 }
-            }
-
-            
-           
+            }       
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -273,6 +310,19 @@ namespace ChatClient
 
         private void button4_Click(object sender, EventArgs e)
         {
+          //  string[] array = SerialPort.GetPortNames();
+          //  string s = "";
+          //  for (int i = 0; i < array.Length; i++)
+          //  {
+          //      s += (array[i] + '\n');
+          //  }
+
+        //    foreach (string value in SerialPort.GetPortNames())
+        //    {
+        //        if (value == "COM9") MessageBox.Show("ReadPort available"); 
+        //    }
+        //
+            
             _comPort.CancelSendingFile();
         }
 
@@ -304,6 +354,11 @@ namespace ChatClient
         }
 
         private void richTextBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void statusStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
 
         }

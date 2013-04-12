@@ -110,9 +110,17 @@ namespace ChatClient.Main
                     if (!TryWrite(_comPortWriter, outPacket))
                     {
                         // Передает событие с текстом ошибки
-                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                         continue;
-                    } 
+                    }
+                    else
+                    {
+                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                        
+                    }
+                    
+                    
 
                     byte attempts = 0;
                     while (true)
@@ -157,19 +165,22 @@ namespace ChatClient.Main
 
 #if DEBUG
                             // Debug message
-                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Переотправка сообщения попытка № " + attempts, 0));
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Переотправка сообщения попытка № " + attempts, outPacket.Header.Recipient));
 #endif
                             if (!TryWrite(_comPortWriter, outPacket))
                             {
                                 // Передает событие с текстом ошибки
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
                                 if (outPacket.Data.Type == DataType.FileData)
                                 {
                                     CancelSendingFile();
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient));
                                 }
                                 break;
-                            }  
+                            }
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+
                         }
                     } 
                 }
@@ -200,8 +211,6 @@ namespace ChatClient.Main
 
         private bool TryWrite(SerialPort port, Packet.Packet packet)
         {
-            if (ClientPort.TryOpenPort(port))
-            {
                 try
                 {
                     lock (port)
@@ -210,13 +219,12 @@ namespace ChatClient.Main
                     }
                     return true;
                 }
-                catch (InvalidOperationException)
+                catch (Exception)
                 {
-                    ClientPort.TryOpenPort(port);
+                    ClientPort.IsPortAvailable(port);
+                    ClientPort.ReOpenPort(port);
                     return false;
                 }
-            }
-            else
             return false;
         }
     }

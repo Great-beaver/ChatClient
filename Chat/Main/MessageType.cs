@@ -17,5 +17,9 @@
         FileTransferCanceledByRecipient,
         FileReceivingTimeOut,
         Error,
+        ReadPortAvailable,
+        ReadPortUnavailable,
+        WritePortAvailable,
+        WritePortUnavailable,        
     }
 }

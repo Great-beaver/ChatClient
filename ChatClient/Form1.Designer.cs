@@ -53,6 +53,9 @@
             this.StatusLabelReadPort = new System.Windows.Forms.ToolStripStatusLabel();
             this.StatusLabelWritePort = new System.Windows.Forms.ToolStripStatusLabel();
             this.StatusLabelID = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusLabelReadPortValue = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusLabelWritePortValue = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusLabelIDValue = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -239,14 +242,18 @@
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabelReadPort,
+            this.StatusLabelReadPortValue,
             this.StatusLabelWritePort,
-            this.StatusLabelID});
+            this.StatusLabelWritePortValue,
+            this.StatusLabelID,
+            this.StatusLabelIDValue});
             this.statusStrip1.Location = new System.Drawing.Point(0, 314);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.ManagerRenderMode;
             this.statusStrip1.Size = new System.Drawing.Size(383, 22);
             this.statusStrip1.TabIndex = 20;
             this.statusStrip1.Text = "statusStrip1";
+            this.statusStrip1.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.statusStrip1_ItemClicked);
             // 
             // StatusLabelReadPort
             // 
@@ -256,6 +263,7 @@
             // 
             // StatusLabelWritePort
             // 
+            this.StatusLabelWritePort.ForeColor = System.Drawing.SystemColors.ControlText;
             this.StatusLabelWritePort.Name = "StatusLabelWritePort";
             this.StatusLabelWritePort.Size = new System.Drawing.Size(57, 17);
             this.StatusLabelWritePort.Text = "WritePort";
@@ -265,6 +273,21 @@
             this.StatusLabelID.Name = "StatusLabelID";
             this.StatusLabelID.Size = new System.Drawing.Size(18, 17);
             this.StatusLabelID.Text = "ID";
+            // 
+            // StatusLabelReadPortValue
+            // 
+            this.StatusLabelReadPortValue.Name = "StatusLabelReadPortValue";
+            this.StatusLabelReadPortValue.Size = new System.Drawing.Size(0, 17);
+            // 
+            // StatusLabelWritePortValue
+            // 
+            this.StatusLabelWritePortValue.Name = "StatusLabelWritePortValue";
+            this.StatusLabelWritePortValue.Size = new System.Drawing.Size(0, 17);
+            // 
+            // StatusLabelIDValue
+            // 
+            this.StatusLabelIDValue.Name = "StatusLabelIDValue";
+            this.StatusLabelIDValue.Size = new System.Drawing.Size(0, 17);
             // 
             // Form1
             // 
@@ -328,6 +351,9 @@
         private System.Windows.Forms.ToolStripStatusLabel StatusLabelReadPort;
         private System.Windows.Forms.ToolStripStatusLabel StatusLabelWritePort;
         private System.Windows.Forms.ToolStripStatusLabel StatusLabelID;
+        private System.Windows.Forms.ToolStripStatusLabel StatusLabelReadPortValue;
+        private System.Windows.Forms.ToolStripStatusLabel StatusLabelWritePortValue;
+        private System.Windows.Forms.ToolStripStatusLabel StatusLabelIDValue;
     }
 }
 
