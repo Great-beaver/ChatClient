@@ -56,7 +56,7 @@
             this.StatusLabelWritePortValue = new System.Windows.Forms.ToolStripStatusLabel();
             this.StatusLabelID = new System.Windows.Forms.ToolStripStatusLabel();
             this.StatusLabelIDValue = new System.Windows.Forms.ToolStripStatusLabel();
-            this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -116,7 +116,7 @@
             // 
             // timer1
             // 
-            this.timer1.Interval = 10;
+            this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // button4
@@ -290,11 +290,19 @@
             this.StatusLabelIDValue.Name = "StatusLabelIDValue";
             this.StatusLabelIDValue.Size = new System.Drawing.Size(0, 17);
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(273, 246);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(100, 23);
+            this.progressBar1.TabIndex = 21;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 336);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.DenyBut);
@@ -355,7 +363,7 @@
         private System.Windows.Forms.ToolStripStatusLabel StatusLabelReadPortValue;
         private System.Windows.Forms.ToolStripStatusLabel StatusLabelWritePortValue;
         private System.Windows.Forms.ToolStripStatusLabel StatusLabelIDValue;
-        private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }
 

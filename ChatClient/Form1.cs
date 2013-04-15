@@ -68,6 +68,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Получатель " + sender + "не доступен, отправка файла отменена." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
                     }
                     break;
 
@@ -81,6 +83,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Файл " + text + " от клиента " + sender + " получен." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
                     }
                     break;
 
@@ -95,6 +99,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Клиент " + sender + " одобрил получение файла " + text +"." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = true;
                     }
                     break;
 
@@ -102,6 +108,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Клиент " + sender + " отклонил получение файла " + text +"." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
                     }
                     break;
 
@@ -109,6 +117,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Начат прием файла  " + text + " от клиента " + sender + "." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = true;
                     }
                     break;
 
@@ -119,12 +129,17 @@ namespace ChatClient
                         // Функция скрытия элементов приема файла
                         AllowBut.Visible = false;
                         DenyBut.Visible = false;
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
+
                     }
                     break;
                     case MessageType.FileTransferCanceledBySender:
                     {
                         _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " отменан отправителем " + sender +"." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
                     }
                     break;
 
@@ -132,6 +147,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " отменан получателем " + sender +"." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
                     }
                     break;
 
@@ -139,6 +156,8 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Вышло время ожидания файла " + text + " от " + sender + " передача отменена." + '\n');
+                        progressBar1.Value = 0;
+                        timer1.Enabled = false;
                     }
                     break;
 
@@ -301,36 +320,43 @@ namespace ChatClient
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-          // lock (_comPort.InputMessageQueue)
-          // {
-          //     if (_comPort.InputMessageQueue.Count > 0)
-          //     {
-          //         richTextBox1.AppendText(_comPort.InputMessageQueue.Dequeue().ToString() + '\n');
-          //     }
-          // }           
+
+            float receivedPacketPercentage;
+
+            if (_comPort.IsRecivingFile)
+            {
+                receivedPacketPercentage = (float)_comPort.ProcessedFileSize / _comPort.ReceivingFileSize * 100;
+            }
+            else
+            {
+                receivedPacketPercentage = (float)_comPort.ProcessedFileSize / _comPort.FileToTransfer.Length * 100;
+            }
+
+            if (receivedPacketPercentage < 100)
+            {
+                progressBar1.Value = (int)receivedPacketPercentage;
+            }
+            else
+            {
+                progressBar1.Value = 100;
+            }
+
         }
 
         private void button4_Click(object sender, EventArgs e)
-        {
-          //  string[] array = SerialPort.GetPortNames();
-          //  string s = "";
-          //  for (int i = 0; i < array.Length; i++)
-          //  {
-          //      s += (array[i] + '\n');
-          //  }
-
-        //    foreach (string value in SerialPort.GetPortNames())
-        //    {
-        //        if (value == "COM9") MessageBox.Show("ReadPort available"); 
-        //    }
-        //
-            
+        {           
             _comPort.CancelSendingFile();
+
+            progressBar1.Value = 0;
+            timer1.Enabled = true;
         }
 
         private void button5_Click(object sender, EventArgs e)
         {
             _comPort.CancelRecivingFile();
+
+            progressBar1.Value = 0;
+            timer1.Enabled = true;
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -361,6 +387,11 @@ namespace ChatClient
         }
 
         private void statusStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
         {
 
         }
