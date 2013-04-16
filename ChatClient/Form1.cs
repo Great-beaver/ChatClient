@@ -71,8 +71,11 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Получатель " + sender + "не доступен, отправка файла отменена." + '\n');
+                        CanBut.Visible = false;
                         progressBar1.Value = 0;
+                        progressBar1.Visible = false;
                         timer1.Enabled = false;
+                        FileBut.Visible = true;
                     }
                     break;
 
@@ -86,8 +89,11 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                         "Файл " + text + " от клиента " + sender + " получен." + '\n');
+                        progressBar1.Visible = false;
                         progressBar1.Value = 0;
                         timer1.Enabled = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
 
                         // Сохраняет содержимое буффера
                         IDataObject tmp = Clipboard.GetDataObject();
@@ -131,6 +137,9 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " клиенту " + sender + " завершена." + '\n');
+                        progressBar1.Visible = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
                     }
                     break;
 
@@ -138,8 +147,10 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Клиент " + sender + " одобрил получение файла " + text +"." + '\n');
+                        progressBar1.Visible = true;
                         progressBar1.Value = 0;
                         timer1.Enabled = true;
+                        CanBut.Visible = true;
                     }
                     break;
 
@@ -147,8 +158,11 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Клиент " + sender + " отклонил получение файла " + text +"." + '\n');
+                        progressBar1.Visible = false;
                         progressBar1.Value = 0;
                         timer1.Enabled = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
                     }
                     break;
 
@@ -156,8 +170,11 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Начат прием файла  " + text + " от клиента " + sender + "." + '\n');
+                        progressBar1.Visible = true;
                         progressBar1.Value = 0;
                         timer1.Enabled = true;
+                        CanBut.Visible = true;
+                        FileBut.Visible = false;
                     }
                     break;
 
@@ -168,8 +185,11 @@ namespace ChatClient
                         // Функция скрытия элементов приема файла
                         AllowBut.Visible = false;
                         DenyBut.Visible = false;
+                        CanBut.Visible = false;
+                        progressBar1.Visible = false;
                         progressBar1.Value = 0;
                         timer1.Enabled = false;
+                        FileBut.Visible = true;
 
                     }
                     break;
@@ -177,8 +197,11 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " отменан отправителем " + sender +"." + '\n');
+                        progressBar1.Visible = false;
                         progressBar1.Value = 0;
                         timer1.Enabled = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
                     }
                     break;
 
@@ -187,7 +210,10 @@ namespace ChatClient
                         _richTextBoxs[sender].AppendText(
                     "Передача файла " + text + " отменан получателем " + sender +"." + '\n');
                         progressBar1.Value = 0;
+                        progressBar1.Visible = false;
                         timer1.Enabled = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
                     }
                     break;
 
@@ -195,8 +221,34 @@ namespace ChatClient
                     {
                         _richTextBoxs[sender].AppendText(
                     "Вышло время ожидания файла " + text + " от " + sender + " передача отменена." + '\n');
+                        progressBar1.Visible = false;
                         progressBar1.Value = 0;
                         timer1.Enabled = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
+                    }
+                    break;
+
+                    case MessageType.FileRequestCanceledRecipientSide:
+                    {
+                        _richTextBoxs[sender].AppendText(
+                            "Клиент " + sender + " отменил запрос на передачу файла."+ '\n');
+
+                        AllowBut.Visible = false;
+                        DenyBut.Visible = false;
+                        FileBut.Visible = true;
+                    }
+                    break;
+
+                    case MessageType.FileRequestCanceledSenderSide:
+                    {
+                        _richTextBoxs[sender].AppendText(
+                            "Запрос на передачу файла " + text + " отменен." + '\n');
+
+                        AllowBut.Visible = false;
+                        DenyBut.Visible = false;
+                        CanBut.Visible = false;
+                        FileBut.Visible = true;
                     }
                     break;
 
@@ -289,6 +341,8 @@ namespace ChatClient
                 _richTextBoxs[e.Sender].Select(_richTextBoxs[e.Sender].TextLength - 1, 0);
             _richTextBoxs[e.Sender].ScrollToCaret();
 
+            FileBut.Visible = false;
+
             AllowBut.Visible = true;
             DenyBut.Visible = true;
 
@@ -332,8 +386,8 @@ namespace ChatClient
                     _richTextBoxs[i].Name = "ClientRichTextBox" + i;
                     _richTextBoxs[i].Left = 1;
                     _richTextBoxs[i].Top = 1;
-                    _richTextBoxs[i].Width = 245;
-                    _richTextBoxs[i].Height = 113;
+                    _richTextBoxs[i].Width = tabControl1.Width - 10;
+                    _richTextBoxs[i].Height = tabControl1.Height -28;
                     _richTextBoxs[i].BackColor = Color.Beige;
 
                     //_richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
@@ -347,15 +401,7 @@ namespace ChatClient
             }       
         }
 
-        private void button3_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog od = new OpenFileDialog();
 
-            if (od.ShowDialog() == DialogResult.OK)
-            {
-                _comPort.SendFileTransferRequest(od.FileName, (byte)tabControl1.SelectedTab.TabIndex);
-            }
-        }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
@@ -382,13 +428,6 @@ namespace ChatClient
 
         }
 
-        private void button4_Click(object sender, EventArgs e)
-        {           
-            _comPort.CancelSendingFile();
-            _comPort.CancelRecivingFile();
-            progressBar1.Value = 0;
-            timer1.Enabled = false;
-        }
 
 
 
@@ -404,7 +443,9 @@ namespace ChatClient
         {
             AllowBut.Visible = false;
             DenyBut.Visible = false;
-            _comPort.AllowFileTransfer();
+            progressBar1.Visible = true;
+            //CanBut.Visible = true;
+            _comPort.AllowFileTransfer();         
         }
 
         private void DenyBut_Click(object sender, EventArgs e)
@@ -414,20 +455,14 @@ namespace ChatClient
             _comPort.DenyFileTransfer();
         }
 
-        private void richTextBox1_TextChanged(object sender, EventArgs e)
-        {
 
-        }
 
         private void statusStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
 
         }
 
-        private void timer2_Tick(object sender, EventArgs e)
-        {
 
-        }
 
         public Image ResizeImg(Image b, int nWidth, int nHeight)
         {
@@ -439,6 +474,33 @@ namespace ChatClient
                 g.Dispose();
             }
             return result;
+        }
+
+
+
+        private void CanBut_Click(object sender, EventArgs e)
+        {
+            _comPort.CancelSendingFile();
+            _comPort.CancelRecivingFile();
+            _comPort.CancleFileRequest();
+            progressBar1.Value = 0;
+            timer1.Enabled = false;
+            CanBut.Visible = false;
+            FileBut.Visible = true;
+        }
+
+        private void FileBut_Click(object sender, EventArgs e)
+        { 
+            OpenFileDialog od = new OpenFileDialog();
+
+            if (od.ShowDialog() == DialogResult.OK)
+            {
+                _comPort.SendFileTransferRequest(od.FileName, (byte)tabControl1.SelectedTab.TabIndex);
+            }
+
+            CanBut.Visible = true;
+            FileBut.Visible = false;
+
         }
 
     }

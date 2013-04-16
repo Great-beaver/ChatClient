@@ -33,16 +33,14 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button2 = new System.Windows.Forms.Button();
             this.textBox2 = new System.Windows.Forms.TextBox();
-            this.button3 = new System.Windows.Forms.Button();
+            this.FileBut = new System.Windows.Forms.Button();
             this.writeRichTextBox = new System.Windows.Forms.RichTextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button4 = new System.Windows.Forms.Button();
+            this.CanBut = new System.Windows.Forms.Button();
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.textBox4 = new System.Windows.Forms.TextBox();
-            this.label4 = new System.Windows.Forms.Label();
             this.textBox5 = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.AllowBut = new System.Windows.Forms.Button();
@@ -61,17 +59,17 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(273, 60);
+            this.button1.Location = new System.Drawing.Point(283, 350);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.Size = new System.Drawing.Size(51, 23);
             this.button1.TabIndex = 0;
-            this.button1.Text = "Send text";
+            this.button1.Text = "Text";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(13, 288);
+            this.textBox1.Location = new System.Drawing.Point(12, 425);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(72, 20);
             this.textBox1.TabIndex = 1;
@@ -79,7 +77,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(300, 286);
+            this.button2.Location = new System.Drawing.Point(237, 383);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(56, 23);
             this.button2.TabIndex = 3;
@@ -89,27 +87,27 @@
             // 
             // textBox2
             // 
-            this.textBox2.Location = new System.Drawing.Point(101, 288);
+            this.textBox2.Location = new System.Drawing.Point(100, 425);
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(72, 20);
             this.textBox2.TabIndex = 4;
             this.textBox2.Text = "COM11";
             // 
-            // button3
+            // FileBut
             // 
-            this.button3.Location = new System.Drawing.Point(273, 89);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(75, 23);
-            this.button3.TabIndex = 5;
-            this.button3.Text = "Send file";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
+            this.FileBut.Location = new System.Drawing.Point(227, 350);
+            this.FileBut.Name = "FileBut";
+            this.FileBut.Size = new System.Drawing.Size(51, 23);
+            this.FileBut.TabIndex = 5;
+            this.FileBut.Text = "File";
+            this.FileBut.UseVisualStyleBackColor = true;
+            this.FileBut.Click += new System.EventHandler(this.FileBut_Click);
             // 
             // writeRichTextBox
             // 
-            this.writeRichTextBox.Location = new System.Drawing.Point(12, 159);
+            this.writeRichTextBox.Location = new System.Drawing.Point(12, 234);
             this.writeRichTextBox.Name = "writeRichTextBox";
-            this.writeRichTextBox.Size = new System.Drawing.Size(253, 110);
+            this.writeRichTextBox.Size = new System.Drawing.Size(322, 110);
             this.writeRichTextBox.TabIndex = 6;
             this.writeRichTextBox.Text = "";
             // 
@@ -118,19 +116,20 @@
             this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // button4
+            // CanBut
             // 
-            this.button4.Location = new System.Drawing.Point(273, 118);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(95, 23);
-            this.button4.TabIndex = 7;
-            this.button4.Text = "Cancel s file";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
+            this.CanBut.Location = new System.Drawing.Point(15, 350);
+            this.CanBut.Name = "CanBut";
+            this.CanBut.Size = new System.Drawing.Size(51, 23);
+            this.CanBut.TabIndex = 7;
+            this.CanBut.Text = "Cancel";
+            this.CanBut.UseVisualStyleBackColor = true;
+            this.CanBut.Visible = false;
+            this.CanBut.Click += new System.EventHandler(this.CanBut_Click);
             // 
             // textBox3
             // 
-            this.textBox3.Location = new System.Drawing.Point(183, 288);
+            this.textBox3.Location = new System.Drawing.Point(182, 425);
             this.textBox3.Name = "textBox3";
             this.textBox3.Size = new System.Drawing.Size(35, 20);
             this.textBox3.TabIndex = 9;
@@ -139,7 +138,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 272);
+            this.label1.Location = new System.Drawing.Point(12, 409);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(54, 13);
             this.label1.TabIndex = 10;
@@ -148,7 +147,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(98, 272);
+            this.label2.Location = new System.Drawing.Point(97, 409);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(53, 13);
             this.label2.TabIndex = 11;
@@ -157,32 +156,15 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(180, 272);
+            this.label3.Location = new System.Drawing.Point(179, 409);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(16, 13);
             this.label3.TabIndex = 12;
             this.label3.Text = "Id";
             // 
-            // textBox4
-            // 
-            this.textBox4.Location = new System.Drawing.Point(273, 34);
-            this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(75, 20);
-            this.textBox4.TabIndex = 13;
-            this.textBox4.Text = "0";
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(270, 18);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(48, 13);
-            this.label4.TabIndex = 14;
-            this.label4.Text = "To client";
-            // 
             // textBox5
             // 
-            this.textBox5.Location = new System.Drawing.Point(224, 288);
+            this.textBox5.Location = new System.Drawing.Point(223, 425);
             this.textBox5.Name = "textBox5";
             this.textBox5.Size = new System.Drawing.Size(70, 20);
             this.textBox5.TabIndex = 15;
@@ -191,7 +173,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(221, 272);
+            this.label5.Location = new System.Drawing.Point(220, 409);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(58, 13);
             this.label5.TabIndex = 16;
@@ -199,9 +181,9 @@
             // 
             // AllowBut
             // 
-            this.AllowBut.Location = new System.Drawing.Point(270, 187);
+            this.AllowBut.Location = new System.Drawing.Point(72, 350);
             this.AllowBut.Name = "AllowBut";
-            this.AllowBut.Size = new System.Drawing.Size(75, 23);
+            this.AllowBut.Size = new System.Drawing.Size(51, 23);
             this.AllowBut.TabIndex = 17;
             this.AllowBut.Text = "Allow";
             this.AllowBut.UseVisualStyleBackColor = true;
@@ -210,9 +192,9 @@
             // 
             // DenyBut
             // 
-            this.DenyBut.Location = new System.Drawing.Point(270, 216);
+            this.DenyBut.Location = new System.Drawing.Point(129, 350);
             this.DenyBut.Name = "DenyBut";
-            this.DenyBut.Size = new System.Drawing.Size(75, 23);
+            this.DenyBut.Size = new System.Drawing.Size(51, 23);
             this.DenyBut.TabIndex = 18;
             this.DenyBut.Text = "Deny";
             this.DenyBut.UseVisualStyleBackColor = true;
@@ -225,7 +207,7 @@
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(255, 141);
+            this.tabControl1.Size = new System.Drawing.Size(322, 216);
             this.tabControl1.TabIndex = 19;
             // 
             // statusStrip1
@@ -237,10 +219,10 @@
             this.StatusLabelWritePortValue,
             this.StatusLabelID,
             this.StatusLabelIDValue});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 314);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 453);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.ManagerRenderMode;
-            this.statusStrip1.Size = new System.Drawing.Size(383, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(340, 22);
             this.statusStrip1.TabIndex = 20;
             this.statusStrip1.Text = "statusStrip1";
             this.statusStrip1.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.statusStrip1_ItemClicked);
@@ -281,16 +263,17 @@
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(273, 246);
+            this.progressBar1.Location = new System.Drawing.Point(12, 379);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(100, 23);
+            this.progressBar1.Size = new System.Drawing.Size(215, 23);
             this.progressBar1.TabIndex = 21;
+            this.progressBar1.Visible = false;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(383, 336);
+            this.ClientSize = new System.Drawing.Size(340, 475);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.tabControl1);
@@ -298,15 +281,13 @@
             this.Controls.Add(this.AllowBut);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.textBox5);
-            this.Controls.Add(this.label4);
-            this.Controls.Add(this.textBox4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.textBox3);
-            this.Controls.Add(this.button4);
+            this.Controls.Add(this.CanBut);
             this.Controls.Add(this.writeRichTextBox);
-            this.Controls.Add(this.button3);
+            this.Controls.Add(this.FileBut);
             this.Controls.Add(this.textBox2);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.textBox1);
@@ -328,16 +309,14 @@
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button FileBut;
         private System.Windows.Forms.RichTextBox writeRichTextBox;
         private System.Windows.Forms.Timer timer1;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button CanBut;
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox textBox4;
-        private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox textBox5;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button AllowBut;

@@ -751,6 +751,14 @@ namespace Chat.Main
                            // Событие отказа от приема файла 
                            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferDenied, FileToTransfer.Name, packet.Header.Sender));
                        }
+
+                       if (_waitFileTransferAnswer)
+                       {
+                           _waitFileTransferAnswer = false;
+                           // Отправитель отменил запрос
+                           OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileRequestCanceledRecipientSide, _receivingFileName, packet.Header.Sender));
+                       }
+
                        // Выслать подверждение получения пакета
                        SendAcknowledge(packet);
                        return true;
@@ -849,6 +857,22 @@ namespace Chat.Main
                 Client.CountOfFilePackets = 0;
             }            
         }
+
+       public void CancleFileRequest()
+       {
+           if (Client.AllowSendingFile)
+           {
+               // Запрещает передавать файла до запроса на отправку
+               Client.AllowSendingFile = false;
+
+               // Высылает уведемление о прекращении передачи файла
+               SendFileTransferCancel(Client.FileRecipient);
+
+               // Событие - отмена запроса
+               OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileRequestCanceledSenderSide, FileToTransfer.Name, Client.FileRecipient));
+
+           }
+       }
 
        private bool DeleteFile(string file)
         {

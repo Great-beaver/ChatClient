@@ -23,5 +23,7 @@
         WritePortAvailable,
         WritePortUnavailable,
         WaitFileRecipientAnswer,
+        FileRequestCanceledRecipientSide,
+        FileRequestCanceledSenderSide,
     }
 }
