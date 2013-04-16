@@ -50,7 +50,7 @@ namespace Chat.Main
        // Данные о файле для приема
        private string _receivingFileName = "";
        // Имя учитывая путь к файлу
-       private string _receivingFileFullName = "";
+       public string ReceivingFileFullName = "";
        public long ReceivingFileSize { get; private set; }  
        // Отправитель файла
        private byte _fileSender = 255;
@@ -627,7 +627,7 @@ namespace Chat.Main
                     case DataType.FileData :
                         {
                             // Если совпал номер пакета и разрешено получение файлов и файл существует и id отправителя совпал с id отправителя файла
-                            if (Client.CountOfFilePackets == packet.Data.PacketNumber && IsRecivingFile && File.Exists(_receivingFileFullName) && packet.Header.Sender == _fileSender)
+                            if (Client.CountOfFilePackets == packet.Data.PacketNumber && IsRecivingFile && File.Exists(ReceivingFileFullName) && packet.Header.Sender == _fileSender)
                             {
                                 ProcessedFileSize += _filePacketSize;
                                 // Устанавливает что пакет получен
@@ -637,7 +637,7 @@ namespace Chat.Main
                                 // Разархивация данных
                                 packet.Data.Content = Compressor.Unzip(packet.Data.Content);
                                 // Запись данных в файл
-                                ByteArrayToFile(_receivingFileFullName, packet.Data.Content);
+                                ByteArrayToFile(ReceivingFileFullName, packet.Data.Content);
                                 // Инкрементирует число принятых пакетов
                                 Client.CountOfFilePackets++;
                                 // Если пакет последний в цепочке
@@ -801,7 +801,7 @@ namespace Chat.Main
             try
             {
                 FileStream fs = File.Create(md + fileName);
-                _receivingFileFullName = md + fileName;
+                ReceivingFileFullName = md + fileName;
                 fs.Close();
             }
             catch (Exception _Exception)
@@ -822,7 +822,7 @@ namespace Chat.Main
                 // Запрещает передавать файла до запроса на отправку
                 Client.AllowSendingFile = false;
                 // Удаляет недопринятый файл
-                DeleteFile(_receivingFileFullName);
+                DeleteFile(ReceivingFileFullName);
                 // Обнуляет счетчик
                 Client.CountOfFilePackets = 0;
                 // Высылает уведемление о прекращении передачи файла
@@ -860,7 +860,7 @@ namespace Chat.Main
                 {
                     try
                     {
-                        lock (_receivingFileFullName)
+                        lock (ReceivingFileFullName)
                         {
                             File.Delete(file);
                         }
@@ -888,7 +888,7 @@ namespace Chat.Main
                 }
 
 
-                lock (_receivingFileFullName)
+                lock (ReceivingFileFullName)
                 {
                     // Открывает файл в режими для записи в конец файла
                     FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);

@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Specialized;
 using System.Configuration;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.IO;
 using System.IO.Ports;
 using System.Text;
 using System.Windows.Forms;
@@ -82,9 +85,45 @@ namespace ChatClient
                 case MessageType.FileReceivingComplete:
                     {
                         _richTextBoxs[sender].AppendText(
-                    "Файл " + text + " от клиента " + sender + " получен." + '\n');
+                        "Файл " + text + " от клиента " + sender + " получен." + '\n');
                         progressBar1.Value = 0;
                         timer1.Enabled = false;
+
+                        // Сохраняет содержимое буффера
+                        IDataObject tmp = Clipboard.GetDataObject();
+
+
+                        // Разрешить добавление в richtextbox элементов из буфера
+                        _richTextBoxs[sender].ReadOnly = false; 
+
+                        // Проверка является ли файл изображением
+                        string e = Path.GetExtension(_comPort.ReceivingFileFullName);
+
+                        if (e == ".jpg" || e == ".bmp")
+                        {
+                            // Вывод изображения
+                            Image img = ResizeImg(Image.FromFile(_comPort.ReceivingFileFullName), 80, 60);
+                             
+                            Clipboard.SetImage(img);
+
+                            _richTextBoxs[sender].Paste();
+                        }
+
+                        // Вставляет файл в richtextv
+                        StringCollection paths = new StringCollection();
+                        paths.Add(_comPort.ReceivingFileFullName);
+                        Clipboard.SetFileDropList(paths);
+                        _richTextBoxs[sender].Paste();
+
+                        // Запретить вставку элементов
+                        _richTextBoxs[sender].ReadOnly = true;
+
+                        // Возвращает содерживмое буффера
+                        if (tmp != null)
+                        Clipboard.SetDataObject(tmp); 
+
+                        // Добавляет пустую строку
+                        _richTextBoxs[sender].AppendText(""+'\n');
                     }
                     break;
 
@@ -346,18 +385,12 @@ namespace ChatClient
         private void button4_Click(object sender, EventArgs e)
         {           
             _comPort.CancelSendingFile();
-
-            progressBar1.Value = 0;
-            timer1.Enabled = true;
-        }
-
-        private void button5_Click(object sender, EventArgs e)
-        {
             _comPort.CancelRecivingFile();
-
             progressBar1.Value = 0;
-            timer1.Enabled = true;
+            timer1.Enabled = false;
         }
+
+
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -395,5 +428,18 @@ namespace ChatClient
         {
 
         }
+
+        public Image ResizeImg(Image b, int nWidth, int nHeight)
+        {
+            Image result = new Bitmap(nWidth, nHeight);
+            using (Graphics g = Graphics.FromImage((Image)result))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(b, 0, 0, nWidth, nHeight);
+                g.Dispose();
+            }
+            return result;
+        }
+
     }
 }
