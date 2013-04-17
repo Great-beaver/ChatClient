@@ -105,7 +105,7 @@ namespace ChatServer
                     }
                     break;
 
-                case MessageType.FileTransferCanceled:
+                case MessageType.FileTransferCanceledRecipientSide:
                     {
                         richTextBox1.AppendText(
                         "Прием файла  " + text + " от клиента " + sender + " отменен." + '\n');

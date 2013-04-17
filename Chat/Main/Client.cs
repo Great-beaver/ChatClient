@@ -165,7 +165,7 @@ namespace ChatClient.Main
 
 #if DEBUG
                             // Debug message
-                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Переотправка сообщения попытка № " + attempts, outPacket.Header.Recipient));
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Resend, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
 #endif
                             if (!TryWrite(_comPortWriter, outPacket))
                             {

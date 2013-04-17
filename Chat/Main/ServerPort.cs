@@ -424,7 +424,7 @@ namespace Chat.Main
 
             _waitFileTransferAnswer = false;
             // Событие - прием файла отклонен
-            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));
+            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledRecipientSide, _receivingFileName, _fileSender));
             _isRecivingFile = false;
             //Отказ отправки файла
             SendFileTransferCancel(_fileSender);

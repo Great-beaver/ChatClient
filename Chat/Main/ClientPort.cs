@@ -131,7 +131,7 @@ namespace Chat.Main
             if (_waitFileTransferAnswer)
             {
                 _waitFileTransferAnswer = false;
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));  
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledRecipientSide, _receivingFileName, _fileSender));  
             }
 
         }
@@ -325,8 +325,11 @@ namespace Chat.Main
             }
         }
 
-       public void SendTextMessage(string message, byte toId)
+       public bool SendTextMessage(string message, byte toId)
         {
+           // Если очередь не пуста не позвоялть добавлять в нее новые текстовые сообщения
+            if (!_clientArray[(int)toId].OutMessagesQueue.IsEmpty) return false;
+
             // Структура пакета данных текстового сообщения 
             // | Тип пакета |   Данные   |
             // |   1 байт   | 0 - x байт | 
@@ -354,6 +357,8 @@ namespace Chat.Main
             Array.Copy(messageBody, 0, messagePacket, 1, messageBody.Length);
 
             _clientArray[(int)toId].AddPacketToQueue(messagePacket, ClietnId, option1, option2);
+
+           return true;
         }
 
        public void SendFileTransferRequest(string filePath, byte toId)
@@ -388,7 +393,6 @@ namespace Chat.Main
             // Устанавливает длину конкретного пакета
             byte[] packet = new byte[9 + Encoding.UTF8.GetBytes(FileToTransfer.Name).Length];
 
-
             // Тип сообщения - запрос на передачу файла
             packet[0] = 0x52;
 
@@ -399,7 +403,6 @@ namespace Chat.Main
             Array.Copy(Encoding.UTF8.GetBytes(FileToTransfer.Name), 0, packet, 9, Encoding.UTF8.GetBytes(FileToTransfer.Name).Length);
 
             _clientArray[(int)toId].AddPacketToQueue(packet, ClietnId);
-
 
         }
 
@@ -475,7 +478,7 @@ namespace Chat.Main
 
             _waitFileTransferAnswer = false;
             // Событие - прием файла отклонен
-            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));
+            OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledRecipientSide, _receivingFileName, _fileSender));
             IsRecivingFile = false;
             //Отказ отправки файла
             SendFileTransferCancel(_fileSender);  
@@ -836,7 +839,7 @@ namespace Chat.Main
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(_fileSender);
                 // Событие - прием файла отклонен
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceled, _receivingFileName, _fileSender));
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledRecipientSide, _receivingFileName, _fileSender));
             }           
         }
 
@@ -855,6 +858,9 @@ namespace Chat.Main
                 SendFileTransferCancel(Client.FileRecipient);
                 // Обнуляет счетчик
                 Client.CountOfFilePackets = 0;
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // Событие - передача файла отменена
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledSenderSide, FileToTransfer.Name, Client.FileRecipient));
             }            
         }
 
@@ -892,7 +898,7 @@ namespace Chat.Main
                     }
                     catch (Exception)
                     {  
-                        throw;
+                        // TO DO: do something
                     }
                 }
                 Thread.Sleep(1);

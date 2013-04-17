@@ -13,7 +13,8 @@
         FileTransferAllowed,
         FileTransferDenied,    
         FileReceivingStarted,
-        FileTransferCanceled,     
+        FileTransferCanceledRecipientSide,
+        FileTransferCanceledSenderSide,  
         FileTransferCanceledBySender,
         FileTransferCanceledByRecipient,
         FileReceivingTimeOut,
@@ -25,5 +26,6 @@
         WaitFileRecipientAnswer,
         FileRequestCanceledRecipientSide,
         FileRequestCanceledSenderSide,
+        Resend,
     }
 }
