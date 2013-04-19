@@ -28,19 +28,15 @@ namespace Server
         private ToolStripStatusLabel _iDtatusLabel = new ToolStripStatusLabel("ID");
         private ToolStripStatusLabel _iDtatusLabelValue = new ToolStripStatusLabel("ID Value");
 
-
         int [] _newMessageCount = new int[5];
        
-
         private void Form1_Load(object sender, EventArgs e)
         {
-
             _comPort = new ClientPort(Properties.Settings.Default.readerPortName1, Properties.Settings.Default.readerPortName2, Properties.Settings.Default.readerPortName3,
               Properties.Settings.Default.readerPortName4, Properties.Settings.Default.WriteComPort, Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
             // Подписывание на событие
             _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
             _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);  
-
 
             for (int i = 0; i < _newMessageCount.Length; i++)
             {
@@ -131,24 +127,41 @@ namespace Server
         }
 
         // Делегат обработчика  текстовых сообщений 
-        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender);
+        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender, byte recipient);
 
         // Метод обработки текстовых сообщений 
-        void ReciveMessage(MessageType type, string text, byte sender) 
+        void ReciveMessage(MessageType type, string text, byte sender,byte recipient) 
         {
             switch (type)
             {
                 case MessageType.Text:
                     {
-                        _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Left;
-                        _richTextBoxs[sender].SelectionColor = Color.Black;
-                        _richTextBoxs[sender].AppendText(text + '\n');
+                        if (recipient != _comPort.ClietnId)
+                        {
+                            _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Center;
+                            _richTextBoxs[sender].SelectionFont = new Font("Microsoft Sans Serif", 7);
+                            _richTextBoxs[sender].SelectionColor = Color.SteelBlue;
+                            _richTextBoxs[sender].AppendText("Отправлено клиенту " + recipient + '\n');
+
+                            _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Center;
+                            _richTextBoxs[sender].SelectionFont = new Font("Microsoft Sans Serif", 8);
+                            _richTextBoxs[sender].SelectionColor = Color.SteelBlue;
+                            _richTextBoxs[sender].AppendText(text + '\n');
+
+                        }
+                        else
+                        {
+                            _richTextBoxs[sender].SelectionAlignment = HorizontalAlignment.Left;
+                            _richTextBoxs[sender].SelectionColor = Color.Black;
+                            _richTextBoxs[sender].AppendText(text + '\n');  
+                        }
+
+                        
 
                         if (tabControl1.SelectedTab.TabIndex != sender)
                         {
                             _tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender] ;                                
                         }
-                      
                     }
                     break;
 
@@ -161,7 +174,6 @@ namespace Server
                         _richTextBoxs[sender].SelectionColor = Color.Green;
                         _richTextBoxs[sender].SelectionFont = new Font("Microsoft Sans Serif", 7);
                         _richTextBoxs[sender].AppendText("Доставлено." + '\n');
-
                     }
                     break;
 
@@ -271,9 +283,19 @@ namespace Server
                         // Запретить вставку элементов
                         _richTextBoxs[sender].ReadOnly = true;
 
-                        // Возвращает содерживмое буффера
-                        if (tmp != null)
-                        Clipboard.SetDataObject(tmp); 
+                        try
+                        {
+                            // Возвращает содерживмое буффера
+                            if (tmp != null)
+                                Clipboard.SetDataObject(tmp); 
+                        }
+                        catch (Exception)
+                        {
+                            
+                        }
+
+
+                        
 
                         // Добавляет пустую строку
                         _richTextBoxs[sender].AppendText(""+'\n');
@@ -506,7 +528,7 @@ namespace Server
         {
             try
             {
-                BeginInvoke(new ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender);
+                BeginInvoke(new ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender, e.Recipient);
             }
             catch (Exception)
             {
@@ -572,10 +594,6 @@ namespace Server
             }                        
         }
 
-
-
-
-
         private void timer1_Tick(object sender, EventArgs e)
         {
 
@@ -632,7 +650,6 @@ namespace Server
 
         }
 
-
         public Image ResizeImg(Image b, int nWidth, int nHeight)
         {
             Image result = new Bitmap(nWidth, nHeight);
@@ -644,8 +661,6 @@ namespace Server
             }
             return result;
         }
-
-
 
         private void CanBut_Click(object sender, EventArgs e)
         {

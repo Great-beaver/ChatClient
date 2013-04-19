@@ -74,10 +74,10 @@ namespace ChatClient
         }
 
         // Делегат обработчика  текстовых сообщений 
-        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender);
+        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender, byte recipient);
 
         // Метод обработки текстовых сообщений 
-        void ReciveMessage(MessageType type, string text, byte sender) 
+        void ReciveMessage(MessageType type, string text, byte sender, byte recipient) 
         {
             switch (type)
             {
@@ -214,9 +214,16 @@ namespace ChatClient
                         // Запретить вставку элементов
                         _richTextBoxs[sender].ReadOnly = true;
 
-                        // Возвращает содерживмое буффера
-                        if (tmp != null)
-                        Clipboard.SetDataObject(tmp); 
+                        try
+                        {
+                            // Возвращает содерживмое буффера
+                            if (tmp != null)
+                                Clipboard.SetDataObject(tmp); 
+                        }
+                        catch (Exception)
+                        {
+
+                        }
 
                         // Добавляет пустую строку
                         _richTextBoxs[sender].AppendText(""+'\n');
@@ -449,7 +456,7 @@ namespace ChatClient
         {
             try
             {
-                BeginInvoke(new ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender);
+                BeginInvoke(new ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender, e.Recipient);
             }
             catch (Exception)
             {

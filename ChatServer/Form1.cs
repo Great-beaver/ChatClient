@@ -30,10 +30,10 @@ namespace ChatServer
         }
 
         // Делегат обработчика  текстовых сообщений 
-        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender);
+        public delegate void ReciveMessageDelegate(MessageType type, string text, byte sender, byte recipient);
 
         // Метод обработки текстовых сообщений 
-        void ReciveMessage(MessageType type, string text, byte sender)
+        void ReciveMessage(MessageType type, string text, byte sender, byte recipient)
         {
             switch (type)
             {
@@ -152,7 +152,7 @@ namespace ChatServer
         {
             try
             {
-                BeginInvoke(new ChatClient.Form1.ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender);
+                BeginInvoke(new ChatClient.Form1.ReciveMessageDelegate(ReciveMessage), e.MessageType, e.MessageText, e.Sender , e.Recipient);
             }
             catch (Exception)
             {

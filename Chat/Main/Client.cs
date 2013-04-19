@@ -76,7 +76,7 @@ namespace Chat.Main
                 if (!TryWrite(_comPortWriter, packet))
                 {
                     // Передает событие с текстом ошибки
-                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0));
+                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Error, "Порт " + _comPortWriter.PortName + " недоступен, отправка невозможна.", 0,0));
                 } 
                 return true;
             }
@@ -110,16 +110,16 @@ namespace Chat.Main
                     if (!TryWrite(_comPortWriter, outPacket))
                     {
                         // Событие о недостцуппности порта
-                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient,0));
                         // Событие о недоставки сообщения
-                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
                         continue;
                     }
                     else
                     {
                         if (outPacket.Data.Type == DataType.Text)
                         {
-                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient,0));
                         }
                     }
                     
@@ -131,7 +131,7 @@ namespace Chat.Main
                             if (outPacket.Data.Type == DataType.Text)
                             {
                                 // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения   ORIGINAL 
-                                  OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                                  OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
                                
                                 // TEST
                                 //OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Sender));
@@ -150,37 +150,37 @@ namespace Chat.Main
                                 if (outPacket.Data.Type ==  DataType.FileData)
                                 {
                                     CancelSendingFile();
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient,0));
                                 }
 
                                 if (outPacket.Data.Type ==  DataType.Text)
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
                                 }
                                 else
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
                                 }
                                 break;
                             }
 
 #if DEBUG
                             // Debug message
-                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Resend, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.Resend, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
 #endif
                             if (!TryWrite(_comPortWriter, outPacket))
                             {
                                 // Передает событие с текстом ошибки
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient));
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortUnavailable, _comPortWriter.PortName, outPacket.Header.Recipient,0));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
                                 if (outPacket.Data.Type == DataType.FileData)
                                 {
                                     CancelSendingFile();
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient,0));
                                 }
                                 break;
                             }
-                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient));
+                            OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.WritePortAvailable, _comPortWriter.PortName, outPacket.Header.Recipient,0));
 
                         }
                     } 
@@ -210,7 +210,7 @@ namespace Chat.Main
             }
         }
 
-        private bool TryWrite(SerialPort port, Packet packet)
+        public static bool TryWrite(SerialPort port, Packet packet)
         {
                 try
                 {
