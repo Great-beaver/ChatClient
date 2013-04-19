@@ -1,17 +1,13 @@
 ﻿using System;
 using System.Collections.Specialized;
-using System.Configuration;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.IO.Ports;
-using System.Text;
 using System.Windows.Forms;
 using Chat.Main;
 using ChatClient.Main;
 
-
-namespace ChatClient
+namespace Server
 {
 
     public partial class Form1 : Form
@@ -25,6 +21,13 @@ namespace ChatClient
 
         TabPage[] _tabPages = new TabPage[5];
         RichTextBox[] _richTextBoxs = new RichTextBox[5];
+        private ToolStripStatusLabel[] _readPortsStatusLabels = new ToolStripStatusLabel[4];
+        private ToolStripStatusLabel[] _readPortsStatusLabelsValue = new ToolStripStatusLabel[4];
+        private ToolStripStatusLabel _writePortStatusLabel = new ToolStripStatusLabel("Write port");
+        private ToolStripStatusLabel _writePortStatusLabelValue = new ToolStripStatusLabel("Write port Value");
+        private ToolStripStatusLabel _iDtatusLabel = new ToolStripStatusLabel("ID");
+        private ToolStripStatusLabel _iDtatusLabelValue = new ToolStripStatusLabel("ID Value");
+
 
         int [] _newMessageCount = new int[5];
        
@@ -32,11 +35,33 @@ namespace ChatClient
         private void Form1_Load(object sender, EventArgs e)
         {
 
+            _comPort = new ClientPort(Properties.Settings.Default.readerPortName1, Properties.Settings.Default.readerPortName2, Properties.Settings.Default.readerPortName3,
+              Properties.Settings.Default.readerPortName4, Properties.Settings.Default.WriteComPort, Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
+            // Подписывание на событие
+            _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
+            _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);  
+
+
             for (int i = 0; i < _newMessageCount.Length; i++)
             {
                 _newMessageCount[i] = 0;
             }
 
+            for (int i = 0; i < _readPortsStatusLabels.Length; i++)
+            {
+                _readPortsStatusLabels[i] = new ToolStripStatusLabel("Read Port " + (i+1));
+                statusStrip1.Items.Add(_readPortsStatusLabels[i]);
+
+                _readPortsStatusLabelsValue[i] = new ToolStripStatusLabel("Read Port " + (i + 1)+"Value");
+               // _readPortsStatusLabelsValue[i].Text = "";
+                statusStrip1.Items.Add(_readPortsStatusLabelsValue[i]);
+            }
+
+            statusStrip1.Items.Add(_writePortStatusLabel);
+            statusStrip1.Items.Add(_writePortStatusLabelValue);
+
+            statusStrip1.Items.Add(_iDtatusLabel);
+            statusStrip1.Items.Add(_iDtatusLabelValue);
 
          //  _comPort = new ClientPort(Properties.Settings.Default.ReadComPort, Properties.Settings.Default.WriteComPort, 
          //      Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
@@ -48,6 +73,38 @@ namespace ChatClient
             writeRichTextBox.DragDrop += new DragEventHandler(writeRichTextBox_DragDrop);
             writeRichTextBox.DragEnter += new DragEventHandler(writeRichTextBox_DragEnter);
             writeRichTextBox.DragOver += new DragEventHandler(writeRichTextBox_DragOver);
+
+            // Подписывание на событие
+
+            _iDtatusLabelValue.Text = _comPort.ClietnId.ToString();
+
+            for (int i = 0; i < 5; i++)
+            {
+                _richTextBoxs[i] = new RichTextBox();
+                if (i != _comPort.ClietnId)
+                {
+                    //string title = "TabPage " + (tabControl1.TabCount + 1).ToString();
+                    _tabPages[i] = new TabPage("Клиент " + i);
+                    _tabPages[i].TabIndex = i;
+
+                    _richTextBoxs[i].Name = "ClientRichTextBox" + i;
+                    _richTextBoxs[i].Left = 1;
+                    _richTextBoxs[i].Top = 1;
+                    _richTextBoxs[i].Width = tabControl1.Width - 10;
+                    _richTextBoxs[i].Height = tabControl1.Height - 28;
+                    _richTextBoxs[i].BackColor = Color.Beige;
+                    //  _richTextBoxs[i].Font = new Font("Microsoft Sans Serif", 10);
+
+                    //_richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
+
+                    _richTextBoxs[i].ReadOnly = true;
+
+                    _tabPages[i].Controls.Add(_richTextBoxs[i]);
+
+                    tabControl1.TabPages.Add(_tabPages[i]);
+                }
+            }  
+
         }
 
         private void writeRichTextBox_DragDrop(object sender, DragEventArgs e)
@@ -388,32 +445,32 @@ namespace ChatClient
 
                     case MessageType.ReadPortAvailable:
                     {
-                        StatusLabelReadPortValue.Text = "Online";
-                        StatusLabelReadPortValue.ForeColor = Color.Green;
+                        _readPortsStatusLabelsValue[sender].Text = "Online";
+                        _readPortsStatusLabelsValue[sender].ForeColor = Color.Green;
                         return;
                     }
                     break;
 
                     case MessageType.ReadPortUnavailable:
                     {
-                        StatusLabelReadPortValue.Text = "Offline";
-                        StatusLabelReadPortValue.ForeColor = Color.Red;
+                        _readPortsStatusLabelsValue[sender].Text = "Offline";
+                        _readPortsStatusLabelsValue[sender].ForeColor = Color.Red;
                         return;
                     }
                     break;
 
                     case MessageType.WritePortAvailable:
                     {
-                        StatusLabelWritePortValue.Text = "Online";
-                        StatusLabelWritePortValue.ForeColor = Color.Green;
+                        _writePortStatusLabelValue.Text = "Online";
+                        _writePortStatusLabelValue.ForeColor = Color.Green;
                         return;
                     }
                     break;
 
                     case MessageType.WritePortUnavailable:
                     {
-                        StatusLabelWritePortValue.Text = "Offline";
-                        StatusLabelWritePortValue.ForeColor = Color.Red;
+                        _writePortStatusLabelValue.Text = "Offline";
+                        _writePortStatusLabelValue.ForeColor = Color.Red;
                         return;
                     }
                     break;
@@ -515,44 +572,7 @@ namespace ChatClient
             }                        
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            _comPort = new ClientPort(textBox1.Text, textBox2.Text,
-                 Convert.ToByte(textBox3.Text), Convert.ToInt32(textBox5.Text));
-             // Подписывание на событие
 
-            StatusLabelIDValue.Text = _comPort.ClietnId.ToString();
-
-             _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
-             _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
-
-            for (int i = 0; i < 5; i++)
-            {
-                _richTextBoxs[i] = new RichTextBox();
-                if (i!=_comPort.ClietnId)
-                {
-                    //string title = "TabPage " + (tabControl1.TabCount + 1).ToString();
-                    _tabPages[i] = new TabPage("Клиент " + i);
-                    _tabPages[i].TabIndex = i;
-                    
-                    _richTextBoxs[i].Name = "ClientRichTextBox" + i;
-                    _richTextBoxs[i].Left = 1;
-                    _richTextBoxs[i].Top = 1;
-                    _richTextBoxs[i].Width = tabControl1.Width - 10;
-                    _richTextBoxs[i].Height = tabControl1.Height -28;
-                    _richTextBoxs[i].BackColor = Color.Beige;
-                  //  _richTextBoxs[i].Font = new Font("Microsoft Sans Serif", 10);
-
-                    //_richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
-
-                    _richTextBoxs[i].ReadOnly = true;
-
-                    _tabPages[i].Controls.Add(_richTextBoxs[i]);
-
-                    tabControl1.TabPages.Add(_tabPages[i]);
-                }
-            }       
-        }
 
 
 
@@ -685,6 +705,11 @@ namespace ChatClient
 
             tabControl1.SelectedTab.Text = "Клиент " + tabControl1.SelectedTab.TabIndex;
             _newMessageCount[tabControl1.SelectedTab.TabIndex] = 0;
+
+        }
+
+        private void StatusLabelWritePort_Click(object sender, EventArgs e)
+        {
 
         }
     }

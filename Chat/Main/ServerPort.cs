@@ -15,7 +15,7 @@ namespace Chat.Main
    public class ServerPort : IDisposable
     {
         //private SerialPort _comPortReader;
-        private SerialPort[] _readPorts = new SerialPort[4];
+        private SerialPort[] _readPorts;
         private SerialPort _comPortWriter;
         private Thread _readThread;
         private Thread _fileSenderThread;
@@ -49,6 +49,8 @@ namespace Chat.Main
 
         public ServerPort(string readerPortName1, string readerPortName2, string readerPortName3, string readerPortName4, string writerPortName, byte id, int portSpeed)
         {
+            _readPorts = new SerialPort[4];
+
             _comPortWriter = new SerialPort();
             _comPortWriter.PortName = writerPortName;
             _comPortWriter.BaudRate = portSpeed;
@@ -101,31 +103,19 @@ namespace Chat.Main
                     // Событие - сообщение о ошибке 
                     OnMessageRecived(new MessageRecivedEventArgs(MessageType.ReadPortUnavailable, "Ошибка при попытки открытия порта: " + _readPorts[i].PortName, (byte)i));
                 }
-
                 _readThread = new Thread(Read);
                 _readThread.Start(_readPorts[i]); 
-
             }
-
-            
-
-            
 
             ClietnId = id;
 
             for (int i = 0; i < 5; i++)
             {
                 _clientArray[i] = new Client((byte)i, ClietnId, _outMessageQueueSize, _comPortWriter);
-
                 // Подписывает на события от клиента
                 _clientArray[i].AcknowledgeRecived +=
                     new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
-            }
-
-            
-          
-            
-                      
+            }          
         }
 
         // Делегат обработчика  текстовых сообщений 

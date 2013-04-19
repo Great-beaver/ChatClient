@@ -4,23 +4,24 @@ using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Text;
 using System.Threading;
-using Chat.Main;
+using ChatClient;
+using ChatClient.Main;
 using ChatClient.Main.Packet;
 using ChatClient.Main.Packet.DataTypes;
 
-namespace ChatClient.Main
+namespace Chat.Main
 {
     class Client
     {
         public byte IdToSend { get; private set; }
         public ManualResetEvent AnswerEvent { get; private set; }
-        public ConcurrentQueue<Packet.Packet> OutMessagesQueue { get; private set; }
-        public ConcurrentQueue<Packet.Packet> OutFilePacketsQueue { get;  set; }
+        public ConcurrentQueue<Packet> OutMessagesQueue { get; private set; }
+        public ConcurrentQueue<Packet> OutFilePacketsQueue { get;  set; }
         private Thread _writeThread;
         private int _sleepTime = 1;
         public static bool Continue = false;
         public ushort LastMessageCrc { get; private set; }
-        public Packet.Packet LastPacket { get; private set; }
+        public Packet LastPacket { get; private set; }
         private SerialPort _comPortWriter;
         public Queue InputMessageQueue;
         public static bool IsSendingFile = false;
@@ -36,8 +37,8 @@ namespace ChatClient.Main
             _ownerId = ownerId;
             QueueSize = queueSize;
             AnswerEvent = new ManualResetEvent(false);
-            OutMessagesQueue = new ConcurrentQueue<Packet.Packet>();
-            OutFilePacketsQueue = new ConcurrentQueue<Packet.Packet>();
+            OutMessagesQueue = new ConcurrentQueue<Packet>();
+            OutFilePacketsQueue = new ConcurrentQueue<Packet>();
             Continue = true;
             _writeThread = new Thread(Write);
             _writeThread.Start();
@@ -53,7 +54,7 @@ namespace ChatClient.Main
             if (handler != null) handler(this, e);
         }
 
-        public bool SendPacketNow (Packet.Packet packet)
+        public bool SendPacketNow (Packet packet)
         {
             if (!TryWrite(_comPortWriter, packet))
             {
@@ -66,7 +67,7 @@ namespace ChatClient.Main
 
         public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
-            Packet.Packet packet = new Packet.Packet(new Header(IdToSend, sender, option1, option2), messageBody);
+            Packet packet = new Packet(new Header(IdToSend, sender, option1, option2), messageBody);
 
             // TO DO: Поправить логику условий
             // Валидация данных
@@ -93,7 +94,7 @@ namespace ChatClient.Main
 
         private void Write()
         {
-            Packet.Packet outPacket;
+            Packet outPacket;
             while (Continue)
             {
                 Thread.Sleep(_sleepTime*100);
@@ -201,7 +202,7 @@ namespace ChatClient.Main
                 // Запрещает передавать файла до запроса на отправку
                 AllowSendingFile = false;
                 // Отчищает очередь на отправку файла
-                OutFilePacketsQueue = new ConcurrentQueue<Packet.Packet>();
+                OutFilePacketsQueue = new ConcurrentQueue<Packet>();
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(FileRecipient);
                 // Обнуляет счетчик
@@ -209,7 +210,7 @@ namespace ChatClient.Main
             }
         }
 
-        private bool TryWrite(SerialPort port, Packet.Packet packet)
+        private bool TryWrite(SerialPort port, Packet packet)
         {
                 try
                 {

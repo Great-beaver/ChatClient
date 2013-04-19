@@ -1,4 +1,4 @@
-﻿namespace ChatClient.Main
+﻿namespace Chat.Main
 {
     public enum MessageType
     {

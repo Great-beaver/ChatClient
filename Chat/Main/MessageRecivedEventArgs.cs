@@ -1,4 +1,5 @@
 ﻿using System;
+using Chat.Main;
 
 namespace ChatClient.Main
 {

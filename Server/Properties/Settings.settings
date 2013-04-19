@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Server.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="readerPortName1" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM21</Value>
+    </Setting>
+    <Setting Name="readerPortName2" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM22</Value>
+    </Setting>
+    <Setting Name="readerPortName3" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM23</Value>
+    </Setting>
+    <Setting Name="readerPortName4" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM24</Value>
+    </Setting>
+    <Setting Name="WriteComPort" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM5</Value>
+    </Setting>
+    <Setting Name="ComPortSpeed" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">34800</Value>
+    </Setting>
+    <Setting Name="ClientId" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

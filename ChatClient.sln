@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatClient", "ChatClient\ChatClient.csproj", "{C2BA7653-042A-4A0F-ACA0-B4C82BB240FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServer", "ChatServer\ChatServer.csproj", "{56FC04D4-675A-43C5-90D7-FFDD1D058BCA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServer OLD", "ChatServer\ChatServer OLD.csproj", "{56FC04D4-675A-43C5-90D7-FFDD1D058BCA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chat", "Chat\Chat.csproj", "{BA745D28-0D6B-4C51-AD71-36DFD48A5220}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{025B8766-7960-464D-A522-298B1933D4FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,16 @@ Global
 		{BA745D28-0D6B-4C51-AD71-36DFD48A5220}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{BA745D28-0D6B-4C51-AD71-36DFD48A5220}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{BA745D28-0D6B-4C51-AD71-36DFD48A5220}.Release|x86.ActiveCfg = Release|Any CPU
+		{025B8766-7960-464D-A522-298B1933D4FA}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Debug|x86.ActiveCfg = Debug|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Debug|x86.Build.0 = Debug|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Release|Any CPU.ActiveCfg = Release|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Release|Mixed Platforms.Build.0 = Release|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Release|x86.ActiveCfg = Release|x86
+		{025B8766-7960-464D-A522-298B1933D4FA}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -13,7 +13,7 @@ namespace ChatServer
 {
     public partial class Form1 : Form
     {
-        private ServerPort _comPort;
+        private ClientPort _comPort;
 
         public Form1()
         {
@@ -22,7 +22,7 @@ namespace ChatServer
 
         private void Form1_Load(object sender, EventArgs e)
         {
-           _comPort = new ServerPort(Properties.Settings.Default.readerPortName1,Properties.Settings.Default.readerPortName2,Properties.Settings.Default.readerPortName3,
+            _comPort = new ClientPort(Properties.Settings.Default.readerPortName1, Properties.Settings.Default.readerPortName2, Properties.Settings.Default.readerPortName3,
                Properties.Settings.Default.readerPortName4,Properties.Settings.Default.WriteComPort,Properties.Settings.Default.ClientId,Properties.Settings.Default.ComPortSpeed);
             // Подписывание на событие
               _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
