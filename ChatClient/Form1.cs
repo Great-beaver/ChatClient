@@ -435,6 +435,7 @@ namespace ChatClient
 
                     case MessageType.Error:
                     {
+                        StatusLabelWritePortValue.ForeColor = Color.Red;
                         _richTextBoxs[sender].AppendText(text + '\n');
                     }
                     break;
@@ -561,8 +562,6 @@ namespace ChatClient
             }       
         }
 
-
-
         private void timer1_Tick(object sender, EventArgs e)
         {
 
@@ -619,7 +618,6 @@ namespace ChatClient
 
         }
 
-
         public Image ResizeImg(Image b, int nWidth, int nHeight)
         {
             Image result = new Bitmap(nWidth, nHeight);
@@ -631,8 +629,6 @@ namespace ChatClient
             }
             return result;
         }
-
-
 
         private void CanBut_Click(object sender, EventArgs e)
         {

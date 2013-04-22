@@ -27,6 +27,7 @@ namespace Chat.Main
         private int _outMessageQueueSize = 200;
         private int _filePacketSize = 1024;
         private Client[] _clientArray = new Client[5];
+        private FileStream _fileStream;
 
        private bool _isServer = false;
 
@@ -557,7 +558,7 @@ namespace Chat.Main
 
        private void SendFileTransferAllow(byte toId)
         {
-            _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x41); 
+            _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x41);
         }
 
        public void AllowFileTransfer ()
@@ -579,6 +580,16 @@ namespace Chat.Main
             _waitForFilePacketThread.Start();
             // Создает файл если его еще нет
             CreateFile(_receivingFileName);
+           try
+           {
+               // Открывает файл в режими для записи в конец файла
+               _fileStream = new FileStream(ReceivingFileFullName, FileMode.Append, FileAccess.Write);
+           }
+           catch (Exception exception)
+           {
+               OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, exception.ToString(), _fileSender, 0));
+           }
+
         }
        
        public void DenyFileTransfer ()
@@ -776,8 +787,18 @@ namespace Chat.Main
                                 SendAcknowledge(packet);
                                 // Разархивация данных
                                 packet.Data.Content = Compressor.Unzip(packet.Data.Content);
+
                                 // Запись данных в файл
-                                ByteArrayToFile(ReceivingFileFullName, packet.Data.Content);
+                                if (!ByteArrayToFile(ReceivingFileFullName, packet.Data.Content))
+                                {
+                                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Ошибка при записи в файл", packet.Header.Sender, 0));
+                                    OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledRecipientSide, _receivingFileName, _fileSender, 0));
+                                    CancelRecivingFile();
+                                    break;
+                                }
+
+
+
                                 // Инкрементирует число принятых пакетов
                                 Client.CountOfFilePackets++;
                                 // Если пакет последний в цепочке
@@ -786,6 +807,8 @@ namespace Chat.Main
                                     // Событие о заверщении приема файла 
                                     OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingComplete, _receivingFileName, packet.Header.Sender, packet.Header.Recipient));
                                     SendFileTransferCompleted(packet.Header.Sender);
+                                    // Закрывает поток записи файла
+                                    _fileStream.Close();
                                     IsRecivingFile = false;
                                 }
                             }
@@ -794,7 +817,7 @@ namespace Chat.Main
 #if DEBUG
                                 // Событие - сообщение о ошибке 
                                 OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Пакет файла: не совпал номер пакета, принятый номер " + packet.ByteData[2] + 
-                                    "сохраненый номер " + Client.CountOfFilePackets, 0,0));
+                                    "сохраненый номер " + Client.CountOfFilePackets, packet.Header.Sender,0));
 #endif
                             }
                         }
@@ -975,6 +998,8 @@ namespace Chat.Main
                 Client.CountOfFilePackets = 0;
                 // Высылает уведемление о прекращении передачи файла
                 SendFileTransferCancel(_fileSender);
+                // Закрывает поток записи файла
+                _fileStream.Close();
                 // Событие - прием файла отклонен
                 OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileTransferCanceledRecipientSide, _receivingFileName, _fileSender, ClietnId));
             }           
@@ -1056,22 +1081,18 @@ namespace Chat.Main
 
 
                 lock (ReceivingFileFullName)
-                {
-                    // Открывает файл в режими для записи в конец файла
-                    FileStream _FileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write);
-
+                {              
                     // Записывает блок байтов в поток и следовательно в файл
-                    _FileStream.Write(byteArray, 0, byteArray.Length);
-
-                    // Закрывает поток
-                    _FileStream.Close();
+                    _fileStream.Write(byteArray, 0, byteArray.Length); 
                 }
                 return true;
             }
             catch (Exception _Exception)
             {
                 // Ошибка
-                Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+              //  Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, _Exception.ToString(), _fileSender, 0));
             }
 
             // В случае ошибки возвращает false
