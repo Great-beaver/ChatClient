@@ -16,7 +16,7 @@ namespace ChatClient
 
     public partial class Form1 : Form
     {
-        private ClientPort _comPort;
+        private CommunicationUnit _comPort;
 
         public Form1()
         {
@@ -525,7 +525,7 @@ namespace ChatClient
 
         private void button2_Click(object sender, EventArgs e)
         {
-            _comPort = new ClientPort(textBox1.Text, textBox2.Text,
+            _comPort = new CommunicationUnit(textBox1.Text, textBox2.Text,
                  Convert.ToByte(textBox3.Text), Convert.ToInt32(textBox5.Text));
              // Подписывание на событие
 

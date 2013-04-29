@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatClient", "ChatClient\ChatClient.csproj", "{C2BA7653-042A-4A0F-ACA0-B4C82BB240FF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "ChatClient\Client.csproj", "{C2BA7653-042A-4A0F-ACA0-B4C82BB240FF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chat", "Chat\Chat.csproj", "{BA745D28-0D6B-4C51-AD71-36DFD48A5220}"
 EndProject

@@ -222,8 +222,8 @@ namespace Chat.Main
                 }
                 catch (Exception)
                 {
-                    ClientPort.IsPortAvailable(port);
-                    ClientPort.ReOpenPort(port);
+                    CommunicationUnit.IsPortAvailable(port);
+                    CommunicationUnit.ReOpenPort(port);
                     return false;
                 }
             return false;
