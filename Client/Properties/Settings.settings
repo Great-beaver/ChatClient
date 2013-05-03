@@ -1,0 +1,18 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Client.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ReadPort" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM11</Value>
+    </Setting>
+    <Setting Name="WritePort" Type="System.String" Scope="User">
+      <Value Profile="(Default)">COM21</Value>
+    </Setting>
+    <Setting Name="PortSpeed" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">38400</Value>
+    </Setting>
+    <Setting Name="ClientId" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
