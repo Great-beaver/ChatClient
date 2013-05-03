@@ -57,8 +57,6 @@ namespace Client
 
             barStaticIdValue.Caption = _cu.ClietnId.ToString();
             
-
-
             for (int i = 0; i < 5; i++)
             {
                 _richEditControls[i] = new RichEditControl();
@@ -81,18 +79,13 @@ namespace Client
                     _richEditControls[i].Views.SimpleView.Padding = new Padding(5,4,4,0);
                     _richEditControls[i].ReadOnly = true;
                     _richEditControls[i].ShowCaretInReadOnly = false;
+                    _richEditControls[i].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
                     
                     //_richEditControls[i].BackColor = Color.Beige;
-
-
-
-
 
                     //  _richTextBoxs[i].Font = new Font("Microsoft Sans Serif", 10);
 
                     //_richTextBoxs[i].AppendText(_tabPages[i].TabIndex.ToString());
-
-                    
 
                     _tabPages[i].Controls.Add(_richEditControls[i]);
 
@@ -102,34 +95,10 @@ namespace Client
 
 
 
-            writeRichTextBox.AllowDrop = true;
-            writeRichTextBox.DragDrop += new DragEventHandler(writeRichTextBox_DragDrop);
-            writeRichTextBox.DragEnter += new DragEventHandler(writeRichTextBox_DragEnter);
-            writeRichTextBox.DragOver += new DragEventHandler(writeRichTextBox_DragOver);
-        }
-
-        private void writeRichTextBox_DragDrop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop) && FileBut.Visible)
-            {
-                string[] docPath = (string[])e.Data.GetData(DataFormats.FileDrop);
-
-                _cu.SendFileTransferRequest(docPath[0], Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag));
-                CancelBut.Visible = true;
-                FileBut.Visible = false;
-            }
-            writeRichTextBox.Clear();
-
-        }
-
-        private void writeRichTextBox_DragEnter(object sender, DragEventArgs e)
-        {
-            e.Effect = DragDropEffects.Copy;
-        }
-
-        private void writeRichTextBox_DragOver(object sender, DragEventArgs e)
-        {
-            e.Effect = DragDropEffects.Copy;
+            writeRichEditControl.AllowDrop = true;
+            writeRichEditControl.DragDrop += new DragEventHandler(writeRichEditControl_DragDrop);
+            writeRichEditControl.DragEnter += new DragEventHandler(writeRichEditControl_DragEnter);
+            writeRichEditControl.DragOver += new DragEventHandler(writeRichEditControl_DragOver);
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -679,9 +648,9 @@ namespace Client
 
         private void SendBut_Click(object sender, EventArgs e)
         {
-            if (_cu.SendTextMessage(writeRichTextBox.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
+            if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
             {
-                writeRichTextBox.Clear();
+                writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
             } 
         }
 
@@ -726,25 +695,6 @@ namespace Client
             }
         }
 
-        private void writeRichTextBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Control && e.KeyCode == Keys.Enter)
-            {
-                if (_cu.SendTextMessage(writeRichTextBox.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
-                {
-                    writeRichTextBox.Clear();
-                }
-            }
-        }
-
-        private void writeRichTextBox_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter && writeRichTextBox.Lines[0] == "")
-            {
-                writeRichTextBox.Clear();
-            }
-        }
-
         private void xtraTabControl1_SelectedPageChanged(object sender, TabPageChangedEventArgs e)
         {
 
@@ -752,7 +702,6 @@ namespace Client
             //MessageBox.Show(xtraTabControl1.SelectedTabPage.TabIndex.ToString());
             _newMessageCount[(int)xtraTabControl1.SelectedTabPage.Tag] = 0;
         }
-
 
         private void AppendLine(string text, RichEditControl richEditControl, Font font, Color color, ParagraphAlignment aligment)
         {
@@ -769,6 +718,60 @@ namespace Client
             richEditControl.Document.EndUpdateParagraphs(pp);
 
         }
+
+        private void richEditControl1_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
+        {
+            e.Menu.Items.Clear();
+        }
+
+
+        void HideContextMenu (object sender, PopupMenuShowingEventArgs e)
+        {
+            e.Menu.Items.Clear();
+        }
+
+        private void writeRichEditControl_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && FileBut.Visible)
+            {
+                string[] docPath = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+                _cu.SendFileTransferRequest(docPath[0], Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag));
+                CancelBut.Visible = true;
+                FileBut.Visible = false;
+            }
+            writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
+        }
+
+        private void writeRichEditControl_DragEnter(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Copy;
+        }
+
+        private void writeRichEditControl_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Copy;
+        }
+
+        private void writeRichEditControl_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.Enter)
+            {
+                if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
+                {
+                    writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
+                }
+            }
+        }
+
+        private void writeRichEditControl_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter && writeRichEditControl.Document.Text== "")
+            {
+                writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
+            }
+        }
+
 
 
     }

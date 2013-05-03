@@ -28,10 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel();
+            this.components = new System.ComponentModel.Container();
+            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel(this.components);
             this.xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
-            this.writeRichTextBox = new System.Windows.Forms.RichTextBox();
-            this.barManager1 = new DevExpress.XtraBars.BarManager();
+            this.barManager1 = new DevExpress.XtraBars.BarManager(this.components);
             this.bar3 = new DevExpress.XtraBars.Bar();
             this.barStaticReadPort = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticReadPortValue = new DevExpress.XtraBars.BarStaticItem();
@@ -50,8 +50,8 @@
             this.FileRequestLabel = new DevExpress.XtraEditors.LabelControl();
             this.AllowBut = new DevExpress.XtraEditors.SimpleButton();
             this.DenyBut = new DevExpress.XtraEditors.SimpleButton();
-            this.timer1 = new System.Windows.Forms.Timer();
-            this.richEditControl1 = new DevExpress.XtraRichEdit.RichEditControl();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.writeRichEditControl = new DevExpress.XtraRichEdit.RichEditControl();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.barManager1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.progressBarControl1.Properties)).BeginInit();
@@ -68,17 +68,6 @@
             this.xtraTabControl1.Size = new System.Drawing.Size(346, 234);
             this.xtraTabControl1.TabIndex = 0;
             this.xtraTabControl1.SelectedPageChanged += new DevExpress.XtraTab.TabPageChangedEventHandler(this.xtraTabControl1_SelectedPageChanged);
-            // 
-            // writeRichTextBox
-            // 
-            this.writeRichTextBox.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.writeRichTextBox.Location = new System.Drawing.Point(13, 252);
-            this.writeRichTextBox.Name = "writeRichTextBox";
-            this.writeRichTextBox.Size = new System.Drawing.Size(345, 131);
-            this.writeRichTextBox.TabIndex = 1;
-            this.writeRichTextBox.Text = "";
-            this.writeRichTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.writeRichTextBox_KeyDown);
-            this.writeRichTextBox.KeyUp += new System.Windows.Forms.KeyEventHandler(this.writeRichTextBox_KeyUp);
             // 
             // barManager1
             // 
@@ -165,28 +154,28 @@
             this.barDockControlTop.CausesValidation = false;
             this.barDockControlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.barDockControlTop.Location = new System.Drawing.Point(0, 0);
-            this.barDockControlTop.Size = new System.Drawing.Size(504, 0);
+            this.barDockControlTop.Size = new System.Drawing.Size(360, 0);
             // 
             // barDockControlBottom
             // 
             this.barDockControlBottom.CausesValidation = false;
             this.barDockControlBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.barDockControlBottom.Location = new System.Drawing.Point(0, 695);
-            this.barDockControlBottom.Size = new System.Drawing.Size(504, 26);
+            this.barDockControlBottom.Location = new System.Drawing.Point(0, 457);
+            this.barDockControlBottom.Size = new System.Drawing.Size(360, 26);
             // 
             // barDockControlLeft
             // 
             this.barDockControlLeft.CausesValidation = false;
             this.barDockControlLeft.Dock = System.Windows.Forms.DockStyle.Left;
             this.barDockControlLeft.Location = new System.Drawing.Point(0, 0);
-            this.barDockControlLeft.Size = new System.Drawing.Size(0, 695);
+            this.barDockControlLeft.Size = new System.Drawing.Size(0, 457);
             // 
             // barDockControlRight
             // 
             this.barDockControlRight.CausesValidation = false;
             this.barDockControlRight.Dock = System.Windows.Forms.DockStyle.Right;
-            this.barDockControlRight.Location = new System.Drawing.Point(504, 0);
-            this.barDockControlRight.Size = new System.Drawing.Size(0, 695);
+            this.barDockControlRight.Location = new System.Drawing.Point(360, 0);
+            this.barDockControlRight.Size = new System.Drawing.Size(0, 457);
             // 
             // progressBarControl1
             // 
@@ -259,41 +248,46 @@
             this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // richEditControl1
+            // writeRichEditControl
             // 
-            this.richEditControl1.ActiveViewType = DevExpress.XtraRichEdit.RichEditViewType.Simple;
-            this.richEditControl1.Location = new System.Drawing.Point(13, 447);
-            this.richEditControl1.MenuManager = this.barManager1;
-            this.richEditControl1.Name = "richEditControl1";
-            this.richEditControl1.Options.Fields.UseCurrentCultureDateTimeFormat = false;
-            this.richEditControl1.Options.HorizontalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
-            this.richEditControl1.Options.HorizontalScrollbar.Visibility = DevExpress.XtraRichEdit.RichEditScrollbarVisibility.Hidden;
-            this.richEditControl1.Options.MailMerge.KeepLastParagraph = false;
-            this.richEditControl1.Options.VerticalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
-            this.richEditControl1.Size = new System.Drawing.Size(400, 200);
-            this.richEditControl1.TabIndex = 21;
-            this.richEditControl1.Text = "richEditControl1";
-            this.richEditControl1.Views.SimpleView.Padding = new System.Windows.Forms.Padding(5, 4, 4, 0);
+            this.writeRichEditControl.ActiveViewType = DevExpress.XtraRichEdit.RichEditViewType.Simple;
+            this.writeRichEditControl.Location = new System.Drawing.Point(12, 252);
+            this.writeRichEditControl.MenuManager = this.barManager1;
+            this.writeRichEditControl.Name = "writeRichEditControl";
+            this.writeRichEditControl.Options.Fields.UseCurrentCultureDateTimeFormat = false;
+            this.writeRichEditControl.Options.HorizontalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
+            this.writeRichEditControl.Options.HorizontalScrollbar.Visibility = DevExpress.XtraRichEdit.RichEditScrollbarVisibility.Hidden;
+            this.writeRichEditControl.Options.MailMerge.KeepLastParagraph = false;
+            this.writeRichEditControl.Options.VerticalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
+            this.writeRichEditControl.Size = new System.Drawing.Size(346, 136);
+            this.writeRichEditControl.TabIndex = 21;
+            this.writeRichEditControl.Views.SimpleView.Padding = new System.Windows.Forms.Padding(5, 4, 4, 0);
+            this.writeRichEditControl.PopupMenuShowing += new DevExpress.XtraRichEdit.PopupMenuShowingEventHandler(this.richEditControl1_PopupMenuShowing);
+            this.writeRichEditControl.DragDrop += new System.Windows.Forms.DragEventHandler(this.writeRichEditControl_DragDrop);
+            this.writeRichEditControl.DragEnter += new System.Windows.Forms.DragEventHandler(this.writeRichEditControl_DragEnter);
+            this.writeRichEditControl.DragOver += new System.Windows.Forms.DragEventHandler(this.writeRichEditControl_DragOver);
+            this.writeRichEditControl.KeyDown += new System.Windows.Forms.KeyEventHandler(this.writeRichEditControl_KeyDown);
+            this.writeRichEditControl.KeyUp += new System.Windows.Forms.KeyEventHandler(this.writeRichEditControl_KeyUp);
             // 
             // XtraForm1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(504, 721);
-            this.Controls.Add(this.richEditControl1);
+            this.ClientSize = new System.Drawing.Size(360, 483);
+            this.Controls.Add(this.writeRichEditControl);
             this.Controls.Add(this.DenyBut);
             this.Controls.Add(this.AllowBut);
             this.Controls.Add(this.FileRequestLabel);
             this.Controls.Add(this.FileBut);
             this.Controls.Add(this.SendBut);
             this.Controls.Add(this.progressBarControl1);
-            this.Controls.Add(this.writeRichTextBox);
             this.Controls.Add(this.xtraTabControl1);
             this.Controls.Add(this.CancelBut);
             this.Controls.Add(this.barDockControlLeft);
             this.Controls.Add(this.barDockControlRight);
             this.Controls.Add(this.barDockControlBottom);
             this.Controls.Add(this.barDockControlTop);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.Name = "XtraForm1";
             this.Text = "Mobile unit";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XtraForm1_FormClosing);
@@ -310,7 +304,6 @@
 
         private DevExpress.LookAndFeel.DefaultLookAndFeel defaultLookAndFeel1;
         private DevExpress.XtraTab.XtraTabControl xtraTabControl1;
-        private System.Windows.Forms.RichTextBox writeRichTextBox;
         private DevExpress.XtraBars.BarManager barManager1;
         private DevExpress.XtraBars.Bar bar3;
         private DevExpress.XtraBars.BarDockControl barDockControlTop;
@@ -331,6 +324,6 @@
         private DevExpress.XtraEditors.SimpleButton DenyBut;
         private DevExpress.XtraEditors.SimpleButton AllowBut;
         private System.Windows.Forms.Timer timer1;
-        private DevExpress.XtraRichEdit.RichEditControl richEditControl1;
+        private DevExpress.XtraRichEdit.RichEditControl writeRichEditControl;
     }
 }
