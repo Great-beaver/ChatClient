@@ -75,6 +75,7 @@ namespace Client
                     _richEditControls[i].Options.HorizontalRuler.Visibility = RichEditRulerVisibility.Hidden;
                     _richEditControls[i].Options.HorizontalScrollbar.Visibility = RichEditScrollbarVisibility.Hidden;
                     _richEditControls[i].Options.VerticalRuler.Visibility = RichEditRulerVisibility.Hidden;
+                    _richEditControls[i].Options.Hyperlinks.ModifierKeys = Keys.None;
                     _richEditControls[i].ActiveViewType = RichEditViewType.Simple;
                     _richEditControls[i].Views.SimpleView.Padding = new Padding(5,4,4,0);
                     _richEditControls[i].ReadOnly = true;
@@ -111,10 +112,6 @@ namespace Client
             {
                 case MessageType.Text:
                     {
-                      //  _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                      //  _richEditControls[sender].SelectionColor = Color.Black;
-                      //  _richEditControls[sender].AppendText(text + '\n');
-
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Left);
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
@@ -127,16 +124,7 @@ namespace Client
 
                 case MessageType.TextDelivered:
                     {
-                      // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Right;
-                      // _richEditControls[sender].SelectionColor = Color.Black;
-                      // _richEditControls[sender].AppendText(text + '\n');
-
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Right);
-
-
-                      //  _richEditControls[sender].SelectionColor = Color.Green;
-                      //  _richEditControls[sender].SelectionFont = new Font("Microsoft Sans Serif", 7);
-                      //  _richEditControls[sender].AppendText("Доставлено." + '\n');
 
                         AppendLine("Доставлено.", _richEditControls[sender], _deliveryFont, _positiveColor, ParagraphAlignment.Right);
 
@@ -145,15 +133,7 @@ namespace Client
 
                 case MessageType.TextUndelivered:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Right;
-                       // _richEditControls[sender].SelectionColor = Color.Black;
-                       // _richEditControls[sender].AppendText(text + '\n');
-
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Right);
-
-                       // _richEditControls[sender].SelectionColor = Color.Red;
-                       // _richEditControls[sender].SelectionFont = new Font("Microsoft Sans Serif", 7);
-                       // _richEditControls[sender].AppendText("Не доставлено." + '\n');
 
                         AppendLine("Не доставлено.", _richEditControls[sender], _deliveryFont, _negativeColor, ParagraphAlignment.Right);
 
@@ -186,10 +166,6 @@ namespace Client
 
                 case MessageType.FileUndelivered:
                     {
-                      //  _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                      //  _richEditControls[sender].SelectionColor = Color.DarkRed;
-                      //  _richEditControls[sender].AppendText("Получатель " + sender + " не доступен, отправка файла отменена." + '\n');
-
                         AppendLine("Получатель " + sender + " не доступен, отправка файла отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         CancelBut.Visible = false;
@@ -203,10 +179,6 @@ namespace Client
 
                 case MessageType.MessageUndelivered:
                     {
-                     //  _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                     //  _richEditControls[sender].SelectionColor = Color.DarkRed;
-                     //  _richEditControls[sender].AppendText("Клиента " + sender + " не доступен." + '\n');
-
                         AppendLine("Клиента " + sender + " не доступен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         CancelBut.Visible = false;
@@ -220,11 +192,7 @@ namespace Client
 
                 case MessageType.FileReceivingComplete:
                     {
-                      // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                      // _richEditControls[sender].SelectionColor = Color.DarkGreen;
-                      // _richEditControls[sender].AppendText("Файл " + text + " от клиента " + sender + " получен." + '\n');
-
-                        AppendLine("Файл " + text + " от клиента " + sender + " получен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
+                        AppendLine("Файл " + text + " от клиента " + sender + " получен.", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
                         progressBarControl1.EditValue = 0;
@@ -232,49 +200,25 @@ namespace Client
                         CancelBut.Visible = false;
                         FileBut.Visible = true;
 
-                        // Сохраняет содержимое буффера
-                        IDataObject tmp = Clipboard.GetDataObject();
-
-
-                        // Разрешить добавление в richtextbox элементов из буфера
-                        _richEditControls[sender].ReadOnly = false;
-
                         // Проверка является ли файл изображением
                         string e = Path.GetExtension(_cu.ReceivingFileFullName);
 
-                        if (e == ".jpg" || e == ".bmp")
+                        if (e == ".jpg" || e == ".bmp" || e == ".png" || e == ".jpeg")
                         {
-                            // Вывод изображения
-                            Image img = ResizeImg(Image.FromFile(_cu.ReceivingFileFullName), 80, 60);
+                            // Ресайз картинки 
+                           Image img = ResizeImg(Image.FromFile(_cu.ReceivingFileFullName), 320, 240);
 
-                            Clipboard.SetImage(img);
-
-                            _richEditControls[sender].Paste();
+                            // Вставка картинки
+                            _richEditControls[sender].Document.CaretPosition = _richEditControls[sender].Document.Range.End;
+                            _richEditControls[sender].Document.InsertImage(_richEditControls[sender].Document.CaretPosition, img);
+                            // Добавляет пустую строку для отступа
+                            _richEditControls[sender].Document.AppendText("" + '\n');
                         }
 
-                        // Вставляет файл в richtextv
-                        StringCollection paths = new StringCollection();
-                        paths.Add(_cu.ReceivingFileFullName);
-                        Clipboard.SetFileDropList(paths);
-                        _richEditControls[sender].Paste();
+                        // Вставка ссылки на открытие файла
+                        AddHyperLink("Открыть файл", _cu.ReceivingFileFullName, _richEditControls[sender],_defaultFont);
 
-                        // Запретить вставку элементов
-                        _richEditControls[sender].ReadOnly = true;
-
-                        try
-                        {
-                            // Возвращает содерживмое буффера
-                            if (tmp != null)
-                                Clipboard.SetDataObject(tmp);
-                        }
-                        catch (Exception)
-                        {
-
-                        }
-
-                        // Добавляет пустую строку
-                       // _richEditControls[sender].AppendText("" + '\n');
-
+                        // Добавляет пустую строку для отступа
                         _richEditControls[sender].Document.AppendText(""+'\n');
 
                     }
@@ -282,10 +226,6 @@ namespace Client
 
                 case MessageType.FileSendingComplete:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkGreen;
-                       // _richEditControls[sender].AppendText("Передача файла " + text + " клиенту " + sender + " завершена." + '\n');
-
                         AppendLine("Передача файла " + text + " клиенту " + sender + " завершена.", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -296,10 +236,6 @@ namespace Client
 
                 case MessageType.FileTransferAllowed:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkGreen;
-                       // _richEditControls[sender].AppendText("Клиент одобрил получение файла." + '\n');
-
                         AppendLine("Клиент одобрил получение файла.", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
                         
                         progressBarControl1.Visible = true;
@@ -311,10 +247,6 @@ namespace Client
 
                 case MessageType.FileTransferDenied:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkRed;
-                       // _richEditControls[sender].AppendText("Клиент отклонил получение файла." + '\n');
-
                         AppendLine("Клиент отклонил получение файла.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -327,10 +259,6 @@ namespace Client
 
                 case MessageType.FileReceivingStarted:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkGreen;
-                       // _richEditControls[sender].AppendText("Начат прием файла  " + text + "." + '\n');
-
                         AppendLine("Начат прием файла. ", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = true;
@@ -343,10 +271,6 @@ namespace Client
 
                 case MessageType.FileTransferCanceledRecipientSide:
                     {
-                        //_richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                        //_richEditControls[sender].SelectionColor = Color.DarkRed;
-                        //_richEditControls[sender].AppendText("Прием файла отменен." + '\n');
-
                         AppendLine("Прием файла отменен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         // Функция скрытия элементов приема файла
@@ -363,13 +287,9 @@ namespace Client
 
                 case MessageType.FileTransferCanceledSenderSide:
                     {
-                       //_richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       //_richEditControls[sender].SelectionColor = Color.DarkRed;
-                       //_richEditControls[sender].AppendText( "Передачай файла отменена." + '\n');
+                        AppendLine("Передача файла отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
-                        AppendLine("Передачай файла отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
-
-                        // Функция скрытия элементов приема файла
+                        // Скрытие элементов приема файла
                         AllowBut.Visible = false;
                         DenyBut.Visible = false;
                         CancelBut.Visible = false;
@@ -383,10 +303,6 @@ namespace Client
 
                 case MessageType.FileTransferCanceledBySender:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkRed;
-                       // _richEditControls[sender].AppendText("Передача файла отменена отправителем." + '\n');
-
                         AppendLine("Передача файла отменена отправителем.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -399,10 +315,6 @@ namespace Client
 
                 case MessageType.FileTransferCanceledByRecipient:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkRed;
-                       // _richEditControls[sender].AppendText( "Передача файла отменена получателем." + '\n');
-
                         AppendLine("Передача файла отменена получателем.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.EditValue = 0;
@@ -415,10 +327,6 @@ namespace Client
 
                 case MessageType.FileReceivingTimeOut:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkRed;
-                       // _richEditControls[sender].AppendText("Вышло время ожидания файла " + text + " передача отменена." + '\n');
-
                         AppendLine("Вышло время ожидания файла " + text + " передача отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -434,10 +342,6 @@ namespace Client
 
                 case MessageType.FileRequestCanceledRecipientSide:
                     {
-                       // _richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                       // _richEditControls[sender].SelectionColor = Color.DarkRed;
-                       // _richEditControls[sender].AppendText("Клиент отменил запрос на передачу файла." + '\n');
-
                         AppendLine("Клиент отменил запрос на передачу файла.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         FileRequestLabel.Visible = false;
@@ -449,10 +353,6 @@ namespace Client
 
                 case MessageType.FileRequestCanceledSenderSide:
                     {
-                        //_richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                        //_richEditControls[sender].SelectionColor = Color.DarkRed;
-                        //_richEditControls[sender].AppendText("Запрос на передачу файла отменен." + '\n');
-
                         AppendLine("Запрос на передачу файла отменен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         FileRequestLabel.Visible = false;
@@ -467,7 +367,6 @@ namespace Client
                 case MessageType.ReadPortAvailable:
                     {
                         barStaticReadPortValue.Caption = "Online";
-                      //  StatusLabelReadPortValue.ForeColor = Color.Green;
                         return;
                     }
                     break;
@@ -475,7 +374,6 @@ namespace Client
                 case MessageType.ReadPortUnavailable:
                     {
                         barStaticReadPortValue.Caption = "Offline";
-                     //   StatusLabelReadPortValue.ForeColor = Color.Red;
                         return;
                     }
                     break;
@@ -483,7 +381,6 @@ namespace Client
                 case MessageType.WritePortAvailable:
                     {
                         barStaticWritePortValue.Caption = "Online";
-                     //   StatusLabelWritePortValue.ForeColor = Color.Green;
                         return;
                     }
                     break;
@@ -491,17 +388,12 @@ namespace Client
                 case MessageType.WritePortUnavailable:
                     {
                         barStaticWritePortValue.Caption = "Offline";
-                      //  StatusLabelWritePortValue.ForeColor = Color.Red;
                         return;
                     }
                     break;
 
                 case MessageType.WaitFileRecipientAnswer:
                     {
-                        //_richEditControls[sender].SelectionAlignment = HorizontalAlignment.Left;
-                        //_richEditControls[sender].SelectionColor = Color.SteelBlue;
-                        //_richEditControls[sender].AppendText("Ожидается ответ клиента о передачи файла " + text + "." + '\n');
-
                         AppendLine("Ожидается ответ клиента о передачи файла ", _richEditControls[sender], _defaultFont, _systemColor, ParagraphAlignment.Left);
 
                     }
@@ -509,9 +401,6 @@ namespace Client
 
                 case MessageType.Error:
                     {
-                       // _richEditControls[sender].SelectionColor = Color.Red;
-                       // _richEditControls[sender].AppendText(text + '\n');
-
                         AppendLine(text, _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
                     }
                     break;
@@ -519,6 +408,7 @@ namespace Client
 
             try
             {
+                _richEditControls[sender].Document.CaretPosition = _richEditControls[sender].Document.Range.End;
                 _richEditControls[sender].ScrollToCaret();
             }
             catch (Exception)
@@ -636,6 +526,8 @@ namespace Client
                 g.Dispose();
             }
             return result;
+
+            
         }
 
         private void XtraForm1_FormClosing(object sender, FormClosingEventArgs e)
@@ -705,6 +597,7 @@ namespace Client
 
         private void AppendLine(string text, RichEditControl richEditControl, Font font, Color color, ParagraphAlignment aligment)
         {
+            
             DocumentRange range = richEditControl.Document.AppendText(text + '\n');
 
             CharacterProperties cp = richEditControl.Document.BeginUpdateCharacters(range);
@@ -719,11 +612,23 @@ namespace Client
 
         }
 
+        private void AddHyperLink(string text, string uri, RichEditControl richEditControl, Font font)
+        {
+            DocumentRange range = richEditControl.Document.AppendText(text + '\n');
+
+            CharacterProperties cp = richEditControl.Document.BeginUpdateCharacters(range);
+            cp.FontName = font.Name;
+            cp.FontSize = font.Size;
+            richEditControl.Document.EndUpdateCharacters(cp);
+
+            Hyperlink hyperlink = richEditControl.Document.CreateHyperlink(range);
+            hyperlink.NavigateUri = uri;
+        }
+
         private void richEditControl1_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
         {
             e.Menu.Items.Clear();
         }
-
 
         void HideContextMenu (object sender, PopupMenuShowingEventArgs e)
         {

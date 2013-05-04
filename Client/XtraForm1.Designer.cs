@@ -65,7 +65,7 @@
             // 
             this.xtraTabControl1.Location = new System.Drawing.Point(12, 12);
             this.xtraTabControl1.Name = "xtraTabControl1";
-            this.xtraTabControl1.Size = new System.Drawing.Size(346, 234);
+            this.xtraTabControl1.Size = new System.Drawing.Size(389, 234);
             this.xtraTabControl1.TabIndex = 0;
             this.xtraTabControl1.SelectedPageChanged += new DevExpress.XtraTab.TabPageChangedEventHandler(this.xtraTabControl1_SelectedPageChanged);
             // 
@@ -154,41 +154,41 @@
             this.barDockControlTop.CausesValidation = false;
             this.barDockControlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.barDockControlTop.Location = new System.Drawing.Point(0, 0);
-            this.barDockControlTop.Size = new System.Drawing.Size(360, 0);
+            this.barDockControlTop.Size = new System.Drawing.Size(413, 0);
             // 
             // barDockControlBottom
             // 
             this.barDockControlBottom.CausesValidation = false;
             this.barDockControlBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.barDockControlBottom.Location = new System.Drawing.Point(0, 457);
-            this.barDockControlBottom.Size = new System.Drawing.Size(360, 26);
+            this.barDockControlBottom.Location = new System.Drawing.Point(0, 431);
+            this.barDockControlBottom.Size = new System.Drawing.Size(413, 26);
             // 
             // barDockControlLeft
             // 
             this.barDockControlLeft.CausesValidation = false;
             this.barDockControlLeft.Dock = System.Windows.Forms.DockStyle.Left;
             this.barDockControlLeft.Location = new System.Drawing.Point(0, 0);
-            this.barDockControlLeft.Size = new System.Drawing.Size(0, 457);
+            this.barDockControlLeft.Size = new System.Drawing.Size(0, 431);
             // 
             // barDockControlRight
             // 
             this.barDockControlRight.CausesValidation = false;
             this.barDockControlRight.Dock = System.Windows.Forms.DockStyle.Right;
-            this.barDockControlRight.Location = new System.Drawing.Point(360, 0);
-            this.barDockControlRight.Size = new System.Drawing.Size(0, 457);
+            this.barDockControlRight.Location = new System.Drawing.Point(413, 0);
+            this.barDockControlRight.Size = new System.Drawing.Size(0, 431);
             // 
             // progressBarControl1
             // 
             this.progressBarControl1.Location = new System.Drawing.Point(13, 394);
             this.progressBarControl1.MenuManager = this.barManager1;
             this.progressBarControl1.Name = "progressBarControl1";
-            this.progressBarControl1.Size = new System.Drawing.Size(186, 18);
+            this.progressBarControl1.Size = new System.Drawing.Size(226, 18);
             this.progressBarControl1.TabIndex = 6;
             this.progressBarControl1.Visible = false;
             // 
             // SendBut
             // 
-            this.SendBut.Location = new System.Drawing.Point(286, 394);
+            this.SendBut.Location = new System.Drawing.Point(326, 394);
             this.SendBut.Name = "SendBut";
             this.SendBut.Size = new System.Drawing.Size(75, 23);
             this.SendBut.TabIndex = 7;
@@ -197,7 +197,7 @@
             // 
             // FileBut
             // 
-            this.FileBut.Location = new System.Drawing.Point(205, 394);
+            this.FileBut.Location = new System.Drawing.Point(245, 394);
             this.FileBut.Name = "FileBut";
             this.FileBut.Size = new System.Drawing.Size(75, 23);
             this.FileBut.TabIndex = 8;
@@ -206,7 +206,7 @@
             // 
             // CancelBut
             // 
-            this.CancelBut.Location = new System.Drawing.Point(205, 394);
+            this.CancelBut.Location = new System.Drawing.Point(245, 394);
             this.CancelBut.Name = "CancelBut";
             this.CancelBut.Size = new System.Drawing.Size(75, 23);
             this.CancelBut.TabIndex = 9;
@@ -225,9 +225,9 @@
             // 
             // AllowBut
             // 
-            this.AllowBut.Location = new System.Drawing.Point(12, 418);
+            this.AllowBut.Location = new System.Drawing.Point(109, 394);
             this.AllowBut.Name = "AllowBut";
-            this.AllowBut.Size = new System.Drawing.Size(75, 23);
+            this.AllowBut.Size = new System.Drawing.Size(62, 23);
             this.AllowBut.TabIndex = 15;
             this.AllowBut.Text = "Allow";
             this.AllowBut.Visible = false;
@@ -235,9 +235,9 @@
             // 
             // DenyBut
             // 
-            this.DenyBut.Location = new System.Drawing.Point(93, 418);
+            this.DenyBut.Location = new System.Drawing.Point(177, 394);
             this.DenyBut.Name = "DenyBut";
-            this.DenyBut.Size = new System.Drawing.Size(75, 23);
+            this.DenyBut.Size = new System.Drawing.Size(62, 23);
             this.DenyBut.TabIndex = 16;
             this.DenyBut.Text = "Deny";
             this.DenyBut.Visible = false;
@@ -257,9 +257,10 @@
             this.writeRichEditControl.Options.Fields.UseCurrentCultureDateTimeFormat = false;
             this.writeRichEditControl.Options.HorizontalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
             this.writeRichEditControl.Options.HorizontalScrollbar.Visibility = DevExpress.XtraRichEdit.RichEditScrollbarVisibility.Hidden;
+            this.writeRichEditControl.Options.Hyperlinks.ModifierKeys = System.Windows.Forms.Keys.None;
             this.writeRichEditControl.Options.MailMerge.KeepLastParagraph = false;
             this.writeRichEditControl.Options.VerticalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
-            this.writeRichEditControl.Size = new System.Drawing.Size(346, 136);
+            this.writeRichEditControl.Size = new System.Drawing.Size(389, 136);
             this.writeRichEditControl.TabIndex = 21;
             this.writeRichEditControl.Views.SimpleView.Padding = new System.Windows.Forms.Padding(5, 4, 4, 0);
             this.writeRichEditControl.PopupMenuShowing += new DevExpress.XtraRichEdit.PopupMenuShowingEventHandler(this.richEditControl1_PopupMenuShowing);
@@ -273,7 +274,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(360, 483);
+            this.ClientSize = new System.Drawing.Size(413, 457);
             this.Controls.Add(this.writeRichEditControl);
             this.Controls.Add(this.DenyBut);
             this.Controls.Add(this.AllowBut);
