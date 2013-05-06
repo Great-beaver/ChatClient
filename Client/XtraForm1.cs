@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -42,6 +43,7 @@ namespace Client
 
         private void XtraForm1_Load(object sender, EventArgs e)
         {
+
            for (int i = 0; i < _newMessageCount.Length; i++)
            {
                _newMessageCount[i] = 0;
@@ -55,7 +57,7 @@ namespace Client
             _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
             _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
 
-            barStaticIdValue.Caption = _cu.ClietnId.ToString();
+            IdValueLabelControl.Text = _cu.ClietnId.ToString();
             
             for (int i = 0; i < 5; i++)
             {
@@ -75,11 +77,14 @@ namespace Client
                     _richEditControls[i].Options.HorizontalRuler.Visibility = RichEditRulerVisibility.Hidden;
                     _richEditControls[i].Options.HorizontalScrollbar.Visibility = RichEditScrollbarVisibility.Hidden;
                     _richEditControls[i].Options.VerticalRuler.Visibility = RichEditRulerVisibility.Hidden;
+                    _richEditControls[i].Options.VerticalScrollbar.Visibility = RichEditScrollbarVisibility.Visible;
                     _richEditControls[i].Options.Hyperlinks.ModifierKeys = Keys.None;
                     _richEditControls[i].ActiveViewType = RichEditViewType.Simple;
                     _richEditControls[i].Views.SimpleView.Padding = new Padding(5,4,4,0);
                     _richEditControls[i].ReadOnly = true;
                     _richEditControls[i].ShowCaretInReadOnly = false;
+                    //_richEditControls[i].Anchor = ((AnchorStyles)(((AnchorStyles.Top | AnchorStyles.Left) | AnchorStyles.Right)));
+                    _richEditControls[i].Dock  = DockStyle.Fill;
                     _richEditControls[i].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
                     
                     //_richEditControls[i].BackColor = Color.Beige;
@@ -366,28 +371,29 @@ namespace Client
 
                 case MessageType.ReadPortAvailable:
                     {
-                        barStaticReadPortValue.Caption = "Online";
+                        ReadPortValueLabelControl.Text  = "Online";
+                        
                         return;
                     }
                     break;
 
                 case MessageType.ReadPortUnavailable:
                     {
-                        barStaticReadPortValue.Caption = "Offline";
+                        ReadPortValueLabelControl.Text = "Offline";
                         return;
                     }
                     break;
 
                 case MessageType.WritePortAvailable:
                     {
-                        barStaticWritePortValue.Caption = "Online";
+                        WritePortValueLabelControl.Text = "Online";
                         return;
                     }
                     break;
 
                 case MessageType.WritePortUnavailable:
                     {
-                        barStaticWritePortValue.Caption = "Offline";
+                        WritePortValueLabelControl.Text = "Offline";
                         return;
                     }
                     break;
@@ -675,6 +681,52 @@ namespace Client
             {
                 writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
             }
+        }
+
+        private void writeRichEditControl_Click(object sender, EventArgs e)
+        {            
+            Process.Start(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe");
+        }
+
+        static void StartOSK()
+        {
+            string windir = Environment.GetEnvironmentVariable("WINDIR");
+            string osk = null;
+
+            if (osk == null)
+            {
+                osk = Path.Combine(Path.Combine(windir, "sysnative"), "osk.exe");
+                if (!File.Exists(osk))
+                {
+                    osk = null;
+                }
+            }
+
+            if (osk == null)
+            {
+                osk = Path.Combine(Path.Combine(windir, "system32"), "osk.exe");
+                if (!File.Exists(osk))
+                {
+                    osk = null;
+                }
+            }
+
+            if (osk == null)
+            {
+                osk = "osk.exe";
+            }
+
+            Process.Start(osk);
+        }
+
+        private void barStaticId_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+
+        }
+
+        private void barStaticWritePort_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+
         }
 
 
