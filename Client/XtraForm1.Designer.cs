@@ -42,6 +42,8 @@
             this.barStaticItem2 = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticItem1 = new DevExpress.XtraBars.BarStaticItem();
             this.panelControl1 = new DevExpress.XtraEditors.PanelControl();
+            this.ButMin = new DevExpress.XtraEditors.SimpleButton();
+            this.ButClose = new DevExpress.XtraEditors.SimpleButton();
             this.IdValueLabelControl = new DevExpress.XtraEditors.LabelControl();
             this.IdLabelControl = new DevExpress.XtraEditors.LabelControl();
             this.WritePortValueLabelControl = new DevExpress.XtraEditors.LabelControl();
@@ -76,18 +78,20 @@
             // 
             this.progressBarControl1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBarControl1.Location = new System.Drawing.Point(5, 213);
+            this.progressBarControl1.Location = new System.Drawing.Point(5, 203);
             this.progressBarControl1.Name = "progressBarControl1";
-            this.progressBarControl1.Size = new System.Drawing.Size(377, 23);
+            this.progressBarControl1.Size = new System.Drawing.Size(377, 33);
             this.progressBarControl1.TabIndex = 6;
             this.progressBarControl1.Visible = false;
             // 
             // SendBut
             // 
             this.SendBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SendBut.Location = new System.Drawing.Point(469, 213);
+            this.SendBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
+            this.SendBut.Appearance.Options.UseFont = true;
+            this.SendBut.Location = new System.Drawing.Point(469, 203);
             this.SendBut.Name = "SendBut";
-            this.SendBut.Size = new System.Drawing.Size(75, 23);
+            this.SendBut.Size = new System.Drawing.Size(75, 33);
             this.SendBut.TabIndex = 7;
             this.SendBut.Text = "Send";
             this.SendBut.Click += new System.EventHandler(this.SendBut_Click);
@@ -95,9 +99,11 @@
             // FileBut
             // 
             this.FileBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.FileBut.Location = new System.Drawing.Point(388, 213);
+            this.FileBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
+            this.FileBut.Appearance.Options.UseFont = true;
+            this.FileBut.Location = new System.Drawing.Point(388, 203);
             this.FileBut.Name = "FileBut";
-            this.FileBut.Size = new System.Drawing.Size(75, 23);
+            this.FileBut.Size = new System.Drawing.Size(75, 33);
             this.FileBut.TabIndex = 8;
             this.FileBut.Text = "File";
             this.FileBut.Click += new System.EventHandler(this.FileBut_Click);
@@ -105,9 +111,11 @@
             // CancelBut
             // 
             this.CancelBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.CancelBut.Location = new System.Drawing.Point(388, 213);
+            this.CancelBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
+            this.CancelBut.Appearance.Options.UseFont = true;
+            this.CancelBut.Location = new System.Drawing.Point(388, 203);
             this.CancelBut.Name = "CancelBut";
-            this.CancelBut.Size = new System.Drawing.Size(75, 23);
+            this.CancelBut.Size = new System.Drawing.Size(75, 33);
             this.CancelBut.TabIndex = 9;
             this.CancelBut.Text = "Cancel";
             this.CancelBut.Visible = false;
@@ -116,10 +124,11 @@
             // FileRequestLabel
             // 
             this.FileRequestLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.FileRequestLabel.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.FileRequestLabel.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.FileRequestLabel.Location = new System.Drawing.Point(115, 219);
+            this.FileRequestLabel.Location = new System.Drawing.Point(145, 211);
             this.FileRequestLabel.Name = "FileRequestLabel";
-            this.FileRequestLabel.Size = new System.Drawing.Size(77, 13);
+            this.FileRequestLabel.Size = new System.Drawing.Size(101, 16);
             this.FileRequestLabel.TabIndex = 10;
             this.FileRequestLabel.Text = "Принять файл?";
             this.FileRequestLabel.Visible = false;
@@ -127,9 +136,11 @@
             // AllowBut
             // 
             this.AllowBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.AllowBut.Location = new System.Drawing.Point(320, 213);
+            this.AllowBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
+            this.AllowBut.Appearance.Options.UseFont = true;
+            this.AllowBut.Location = new System.Drawing.Point(320, 203);
             this.AllowBut.Name = "AllowBut";
-            this.AllowBut.Size = new System.Drawing.Size(62, 23);
+            this.AllowBut.Size = new System.Drawing.Size(62, 33);
             this.AllowBut.TabIndex = 15;
             this.AllowBut.Text = "Allow";
             this.AllowBut.Visible = false;
@@ -138,9 +149,11 @@
             // DenyBut
             // 
             this.DenyBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DenyBut.Location = new System.Drawing.Point(252, 213);
+            this.DenyBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
+            this.DenyBut.Appearance.Options.UseFont = true;
+            this.DenyBut.Location = new System.Drawing.Point(252, 203);
             this.DenyBut.Name = "DenyBut";
-            this.DenyBut.Size = new System.Drawing.Size(62, 23);
+            this.DenyBut.Size = new System.Drawing.Size(62, 33);
             this.DenyBut.TabIndex = 16;
             this.DenyBut.Text = "Deny";
             this.DenyBut.Visible = false;
@@ -157,7 +170,7 @@
             this.writeRichEditControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.writeRichEditControl.Location = new System.Drawing.Point(5, 25);
+            this.writeRichEditControl.Location = new System.Drawing.Point(5, 29);
             this.writeRichEditControl.Name = "writeRichEditControl";
             this.writeRichEditControl.Options.Fields.UseCurrentCultureDateTimeFormat = false;
             this.writeRichEditControl.Options.HorizontalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
@@ -165,7 +178,7 @@
             this.writeRichEditControl.Options.Hyperlinks.ModifierKeys = System.Windows.Forms.Keys.None;
             this.writeRichEditControl.Options.MailMerge.KeepLastParagraph = false;
             this.writeRichEditControl.Options.VerticalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
-            this.writeRichEditControl.Size = new System.Drawing.Size(544, 182);
+            this.writeRichEditControl.Size = new System.Drawing.Size(544, 168);
             this.writeRichEditControl.TabIndex = 21;
             this.writeRichEditControl.Views.SimpleView.Padding = new System.Windows.Forms.Padding(5, 4, 4, 0);
             this.writeRichEditControl.PopupMenuShowing += new DevExpress.XtraRichEdit.PopupMenuShowingEventHandler(this.richEditControl1_PopupMenuShowing);
@@ -174,6 +187,7 @@
             this.writeRichEditControl.DragEnter += new System.Windows.Forms.DragEventHandler(this.writeRichEditControl_DragEnter);
             this.writeRichEditControl.DragOver += new System.Windows.Forms.DragEventHandler(this.writeRichEditControl_DragOver);
             this.writeRichEditControl.KeyDown += new System.Windows.Forms.KeyEventHandler(this.writeRichEditControl_KeyDown);
+            this.writeRichEditControl.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.writeRichEditControl_KeyPress);
             this.writeRichEditControl.KeyUp += new System.Windows.Forms.KeyEventHandler(this.writeRichEditControl_KeyUp);
             // 
             // barStaticItem2
@@ -203,74 +217,103 @@
             this.panelControl1.Controls.Add(this.WritePortLabelControl);
             this.panelControl1.Controls.Add(this.ReadPortValueLabelControl);
             this.panelControl1.Controls.Add(this.ReadPortLabelControl);
-            this.panelControl1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelControl1.Location = new System.Drawing.Point(2, 2);
             this.panelControl1.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Office2003;
             this.panelControl1.LookAndFeel.UseDefaultLookAndFeel = false;
             this.panelControl1.Name = "panelControl1";
-            this.panelControl1.Size = new System.Drawing.Size(545, 19);
+            this.panelControl1.Size = new System.Drawing.Size(447, 19);
             this.panelControl1.TabIndex = 31;
+            // 
+            // ButMin
+            // 
+            this.ButMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ButMin.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
+            this.ButMin.Appearance.Options.UseFont = true;
+            this.ButMin.Location = new System.Drawing.Point(471, -3);
+            this.ButMin.Name = "ButMin";
+            this.ButMin.Size = new System.Drawing.Size(39, 30);
+            this.ButMin.TabIndex = 6;
+            this.ButMin.Text = "-";
+            this.ButMin.Click += new System.EventHandler(this.ButMin_Click);
+            // 
+            // ButClose
+            // 
+            this.ButClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ButClose.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
+            this.ButClose.Appearance.Options.UseFont = true;
+            this.ButClose.Location = new System.Drawing.Point(513, -3);
+            this.ButClose.Name = "ButClose";
+            this.ButClose.Size = new System.Drawing.Size(39, 30);
+            this.ButClose.TabIndex = 1;
+            this.ButClose.Text = "X";
+            this.ButClose.Click += new System.EventHandler(this.ButClose_Click);
             // 
             // IdValueLabelControl
             // 
+            this.IdValueLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
             this.IdValueLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.IdValueLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.IdValueLabelControl.Location = new System.Drawing.Point(224, 2);
+            this.IdValueLabelControl.Location = new System.Drawing.Point(373, 2);
             this.IdValueLabelControl.Name = "IdValueLabelControl";
-            this.IdValueLabelControl.Size = new System.Drawing.Size(39, 13);
+            this.IdValueLabelControl.Size = new System.Drawing.Size(68, 19);
             this.IdValueLabelControl.TabIndex = 5;
             this.IdValueLabelControl.Text = "Id Value";
             // 
             // IdLabelControl
             // 
+            this.IdLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
             this.IdLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.IdLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.IdLabelControl.Location = new System.Drawing.Point(204, 2);
+            this.IdLabelControl.Location = new System.Drawing.Point(343, 2);
             this.IdLabelControl.Name = "IdLabelControl";
             this.IdLabelControl.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.IdLabelControl.Size = new System.Drawing.Size(20, 13);
+            this.IdLabelControl.Size = new System.Drawing.Size(30, 19);
             this.IdLabelControl.TabIndex = 4;
             this.IdLabelControl.Text = "ID:";
             // 
             // WritePortValueLabelControl
             // 
+            this.WritePortValueLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12.25F, System.Drawing.FontStyle.Bold);
             this.WritePortValueLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.WritePortValueLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.WritePortValueLabelControl.Location = new System.Drawing.Point(159, 2);
+            this.WritePortValueLabelControl.Location = new System.Drawing.Point(265, 2);
             this.WritePortValueLabelControl.Name = "WritePortValueLabelControl";
-            this.WritePortValueLabelControl.Size = new System.Drawing.Size(45, 13);
+            this.WritePortValueLabelControl.Size = new System.Drawing.Size(78, 19);
             this.WritePortValueLabelControl.TabIndex = 3;
             this.WritePortValueLabelControl.Text = "WP Value";
             // 
             // WritePortLabelControl
             // 
+            this.WritePortLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
             this.WritePortLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.WritePortLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.WritePortLabelControl.Location = new System.Drawing.Point(101, 2);
+            this.WritePortLabelControl.Location = new System.Drawing.Point(169, 2);
             this.WritePortLabelControl.Name = "WritePortLabelControl";
             this.WritePortLabelControl.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.WritePortLabelControl.Size = new System.Drawing.Size(58, 13);
+            this.WritePortLabelControl.Size = new System.Drawing.Size(96, 19);
             this.WritePortLabelControl.TabIndex = 2;
             this.WritePortLabelControl.Text = "Write Port:";
             // 
             // ReadPortValueLabelControl
             // 
+            this.ReadPortValueLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
             this.ReadPortValueLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.ReadPortValueLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.ReadPortValueLabelControl.Location = new System.Drawing.Point(59, 2);
+            this.ReadPortValueLabelControl.Location = new System.Drawing.Point(95, 2);
             this.ReadPortValueLabelControl.Name = "ReadPortValueLabelControl";
-            this.ReadPortValueLabelControl.Size = new System.Drawing.Size(42, 13);
+            this.ReadPortValueLabelControl.Size = new System.Drawing.Size(74, 19);
             this.ReadPortValueLabelControl.TabIndex = 1;
             this.ReadPortValueLabelControl.Text = "RP Value";
             // 
             // ReadPortLabelControl
             // 
+            this.ReadPortLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
             this.ReadPortLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.ReadPortLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
             this.ReadPortLabelControl.Location = new System.Drawing.Point(2, 2);
             this.ReadPortLabelControl.Name = "ReadPortLabelControl";
             this.ReadPortLabelControl.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.ReadPortLabelControl.Size = new System.Drawing.Size(57, 13);
+            this.ReadPortLabelControl.Size = new System.Drawing.Size(93, 19);
             this.ReadPortLabelControl.TabIndex = 0;
             this.ReadPortLabelControl.Text = "Read Port:";
             // 
@@ -297,7 +340,9 @@
             this.panelControl2.Appearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.panelControl2.Appearance.Options.UseBackColor = true;
             this.panelControl2.Appearance.Options.UseBorderColor = true;
+            this.panelControl2.Controls.Add(this.ButMin);
             this.panelControl2.Controls.Add(this.panelControl1);
+            this.panelControl2.Controls.Add(this.ButClose);
             this.panelControl2.Controls.Add(this.writeRichEditControl);
             this.panelControl2.Controls.Add(this.FileRequestLabel);
             this.panelControl2.Controls.Add(this.CancelBut);
@@ -320,11 +365,12 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1110, 242);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "XtraForm1";
             this.Text = "Mobile unit";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XtraForm1_FormClosing);
             this.Load += new System.EventHandler(this.XtraForm1_Load);
+            this.Resize += new System.EventHandler(this.XtraForm1_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.progressBarControl1.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).EndInit();
@@ -362,5 +408,7 @@
         private DevExpress.XtraEditors.LabelControl ReadPortValueLabelControl;
         private DevExpress.XtraEditors.LabelControl IdValueLabelControl;
         private DevExpress.XtraEditors.PanelControl panelControl2;
+        private DevExpress.XtraEditors.SimpleButton ButClose;
+        private DevExpress.XtraEditors.SimpleButton ButMin;
     }
 }

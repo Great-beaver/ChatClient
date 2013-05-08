@@ -7,14 +7,18 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using Chat.Main;
 using ChatClient.Main;
+using DevExpress.Office.PInvoke;
 using DevExpress.XtraEditors;
 using DevExpress.XtraRichEdit;
 using DevExpress.XtraRichEdit.API.Native;
 using DevExpress.XtraTab;
+
 
 namespace Client
 {
@@ -25,6 +29,9 @@ namespace Client
             InitializeComponent();
         }
 
+        [DllImport("user32.dll")]
+        public static extern bool PostMessage(int hWnd, uint Msg, int wParam, Int64 lParam);
+
         CommunicationUnit _cu;
         XtraTabPage[] _tabPages = new XtraTabPage[5];
         RichEditControl[] _richEditControls = new RichEditControl[5];
@@ -32,6 +39,7 @@ namespace Client
         Font _defaultFont = new Font("Tahoma",8);
         Font _deliveryFont = new Font("Microsoft Sans Serif", 7);
 
+        Font _headerFont = new Font("Tahoma", 12,FontStyle.Bold);
 
         Color _positiveColor = Color.Green;
         Color _negativeColor = Color.Red;
@@ -42,7 +50,15 @@ namespace Client
 
 
         private void XtraForm1_Load(object sender, EventArgs e)
-        {
+        {           
+           MaximizedBounds = Screen.GetWorkingArea(this);
+           WindowState = FormWindowState.Maximized;
+
+           ShowKeyboard();
+
+          // this.TopMost = true;
+        //   this.FormBorderStyle = FormBorderStyle.None;
+        //   this.WindowState = FormWindowState.Maximized;
 
            for (int i = 0; i < _newMessageCount.Length; i++)
            {
@@ -68,6 +84,7 @@ namespace Client
                     _tabPages[i] = new XtraTabPage();
                     _tabPages[i].Text = "Клиент " + i;
                     _tabPages[i].Tag = i;
+                    _tabPages[i].Appearance.Header.Font = _headerFont;
 
                     _richEditControls[i].Name = "ClientRichEditControl" + i;
                     _richEditControls[i].Left = 1;
@@ -542,6 +559,9 @@ namespace Client
             {
                 _cu.Dispose();
             }
+
+           HideKeyBoard();
+
         }
 
         private void SendBut_Click(object sender, EventArgs e)
@@ -666,7 +686,21 @@ namespace Client
 
         private void writeRichEditControl_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control && e.KeyCode == Keys.Enter)
+
+        }
+
+        private void writeRichEditControl_KeyUp(object sender, KeyEventArgs e)
+        {
+        }
+
+        private void writeRichEditControl_Click(object sender, EventArgs e)
+        {            
+             ShowKeyboard ();
+        }
+
+        private void writeRichEditControl_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Return)
             {
                 if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
                 {
@@ -675,61 +709,45 @@ namespace Client
             }
         }
 
-        private void writeRichEditControl_KeyUp(object sender, KeyEventArgs e)
+        private void XtraForm1_Resize(object sender, EventArgs e)
         {
-            if (e.KeyCode == Keys.Enter && writeRichEditControl.Document.Text== "")
+            if (WindowState == FormWindowState.Minimized)
             {
-                writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
+                HideKeyBoard();
             }
+            
         }
 
-        private void writeRichEditControl_Click(object sender, EventArgs e)
-        {            
+        private void ButClose_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void ButMin_Click(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Minimized;
+        }
+
+
+        private void ShowKeyboard ()
+        {
             Process.Start(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe");
+
         }
 
-        static void StartOSK()
+        private void HideKeyBoard ()
         {
-            string windir = Environment.GetEnvironmentVariable("WINDIR");
-            string osk = null;
+            Process[] processlist = Process.GetProcesses();
 
-            if (osk == null)
+            foreach (Process process in processlist)
             {
-                osk = Path.Combine(Path.Combine(windir, "sysnative"), "osk.exe");
-                if (!File.Exists(osk))
+                if (process.ProcessName == "TabTip")
                 {
-                    osk = null;
+                    process.Kill();
+                    break;
                 }
             }
-
-            if (osk == null)
-            {
-                osk = Path.Combine(Path.Combine(windir, "system32"), "osk.exe");
-                if (!File.Exists(osk))
-                {
-                    osk = null;
-                }
-            }
-
-            if (osk == null)
-            {
-                osk = "osk.exe";
-            }
-
-            Process.Start(osk);
         }
-
-        private void barStaticId_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
-        {
-
-        }
-
-        private void barStaticWritePort_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
-        {
-
-        }
-
-
 
     }
 }
