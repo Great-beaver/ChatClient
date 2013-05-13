@@ -29,18 +29,21 @@ namespace Client
             InitializeComponent();
         }
 
-        [DllImport("user32.dll")]
-        public static extern bool PostMessage(int hWnd, uint Msg, int wParam, Int64 lParam);
+        
 
         CommunicationUnit _cu;
         XtraTabPage[] _tabPages = new XtraTabPage[5];
         RichEditControl[] _richEditControls = new RichEditControl[5];
 
-        Font _defaultFont = new Font("Tahoma",8);
-        Font _deliveryFont = new Font("Microsoft Sans Serif", 7);
+        Font _defaultFont = new Font("Tahoma",14);
+        Font _deliveryFont = new Font("Microsoft Sans Serif", 9);
 
         Font _headerFont = new Font("Tahoma", 12,FontStyle.Bold);
 
+        Font _buttonFont = new Font("Tahoma", 10, FontStyle.Bold);
+
+        private Boolean _needClearWriteRichEditControl = false;
+            
         Color _positiveColor = Color.Green;
         Color _negativeColor = Color.Red;
         Color _neutralColor = Color.Black;
@@ -48,13 +51,38 @@ namespace Client
 
         int[] _newMessageCount = new int[5];
 
+        string[] _quickCommands = new string[] { "Так точно", "Никак нет", "Принял", "Повторите", "Выполняю", "На позиции", "Вижу цель", "Открываю огонь", "Прекращаю огонь", "Возвращаюсь" };
 
         private void XtraForm1_Load(object sender, EventArgs e)
         {           
            MaximizedBounds = Screen.GetWorkingArea(this);
            WindowState = FormWindowState.Maximized;
-
+           writeRichEditControl.Font = _defaultFont;
            ShowKeyboard();
+
+           foreach (string command in _quickCommands)
+            {
+                var b = new SimpleButton();
+                b.Text = command;
+                b.Font = _buttonFont;
+                //b.Size = new Size(0, 33);
+                Size size = b.CalcBestSize();
+                size.Width = Math.Max(size.Width, b.Width);
+               // size.Height = Math.Max(size.Height, 33);
+                size.Height = 43; 
+               b.Size = size;
+                b.Click += (s, ea) =>
+                               {
+                                    if (s is SimpleButton)
+                                    {
+                                        var button = s as SimpleButton;
+                                        writeRichEditControl.Document.AppendText(button.Text);
+                                        writeRichEditControl.Focus();
+                                    }
+                               };
+                flowLayoutPanel1.Controls.Add(b);
+            }
+
 
           // this.TopMost = true;
         //   this.FormBorderStyle = FormBorderStyle.None;
@@ -103,6 +131,11 @@ namespace Client
                     //_richEditControls[i].Anchor = ((AnchorStyles)(((AnchorStyles.Top | AnchorStyles.Left) | AnchorStyles.Right)));
                     _richEditControls[i].Dock  = DockStyle.Fill;
                     _richEditControls[i].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
+                    _richEditControls[i].Click += (s, ea) =>
+                    {
+                        writeRichEditControl.Focus();
+                    };
+                    
                     
                     //_richEditControls[i].BackColor = Color.Beige;
 
@@ -227,21 +260,23 @@ namespace Client
 
                         if (e == ".jpg" || e == ".bmp" || e == ".png" || e == ".jpeg")
                         {
-                            // Ресайз картинки 
-                           Image img = ResizeImg(Image.FromFile(_cu.ReceivingFileFullName), 320, 240);
-
-                            // Вставка картинки
-                            _richEditControls[sender].Document.CaretPosition = _richEditControls[sender].Document.Range.End;
-                            _richEditControls[sender].Document.InsertImage(_richEditControls[sender].Document.CaretPosition, img);
-                            // Добавляет пустую строку для отступа
-                            _richEditControls[sender].Document.AppendText("" + '\n');
+                          // Ресайз картинки 
+                         Image img = ResizeImg(Image.FromFile(_cu.ReceivingFileFullName), 320, 240);
+                         
+                          // Вставка картинки
+                          _richEditControls[sender].Document.CaretPosition = _richEditControls[sender].Document.Range.End;
+                          _richEditControls[sender].Document.InsertImage(_richEditControls[sender].Document.CaretPosition, img);
+                          // Добавляет пустую строку для отступа
+                          _richEditControls[sender].Document.AppendText("" + '\n');
                         }
-
+                        else
                         // Вставка ссылки на открытие файла
                         AddHyperLink("Открыть файл", _cu.ReceivingFileFullName, _richEditControls[sender],_defaultFont);
 
                         // Добавляет пустую строку для отступа
                         _richEditControls[sender].Document.AppendText(""+'\n');
+
+                        
 
                     }
                     break;
@@ -388,7 +423,7 @@ namespace Client
 
                 case MessageType.ReadPortAvailable:
                     {
-                        ReadPortValueLabelControl.Text  = "Online";
+                        ReadPortValueLabelControl.Text  = "Доступен";
                         
                         return;
                     }
@@ -396,21 +431,21 @@ namespace Client
 
                 case MessageType.ReadPortUnavailable:
                     {
-                        ReadPortValueLabelControl.Text = "Offline";
+                        ReadPortValueLabelControl.Text = "Не доступен";
                         return;
                     }
                     break;
 
                 case MessageType.WritePortAvailable:
                     {
-                        WritePortValueLabelControl.Text = "Online";
+                        WritePortValueLabelControl.Text = "Доступна";
                         return;
                     }
                     break;
 
                 case MessageType.WritePortUnavailable:
                     {
-                        WritePortValueLabelControl.Text = "Offline";
+                        WritePortValueLabelControl.Text = "Не доступна";
                         return;
                     }
                     break;
@@ -568,12 +603,14 @@ namespace Client
         {
             if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
             {
-                writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
-            } 
+                writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range); 
+            }
+            writeRichEditControl.Focus();
         }
 
         private void AllowBut_Click(object sender, EventArgs e)
         {
+            writeRichEditControl.Focus();
             AllowBut.Visible = false;
             DenyBut.Visible = false;
             FileRequestLabel.Visible = false;
@@ -584,6 +621,7 @@ namespace Client
 
         private void DenyBut_Click(object sender, EventArgs e)
         {
+            writeRichEditControl.Focus();
             AllowBut.Visible = false;
             DenyBut.Visible = false;
             FileRequestLabel.Visible = false;
@@ -592,6 +630,7 @@ namespace Client
 
         private void CancelBut_Click(object sender, EventArgs e)
         {
+            writeRichEditControl.Focus();
             _cu.CancelSendingFile();
             _cu.CancelRecivingFile();
             _cu.CancleFileRequest();
@@ -611,6 +650,7 @@ namespace Client
                 CancelBut.Visible = true;
                 FileBut.Visible = false;
             }
+            writeRichEditControl.Focus();
         }
 
         private void xtraTabControl1_SelectedPageChanged(object sender, TabPageChangedEventArgs e)
@@ -651,6 +691,36 @@ namespace Client
             hyperlink.NavigateUri = uri;
         }
 
+       // Не работает
+       // private void AddImageHyperLink(string uri, RichEditControl richEditControl)
+       // {
+       //
+       //         // Ресайз картинки 
+       //         Image img = ResizeImg(Image.FromFile(uri), 320, 240);
+       //     
+       //         int startPos = richEditControl.Document.Range.End.ToInt();
+       //     
+       //         richEditControl.Document.InsertImage(richEditControl.Document.Range.End, img);
+       //     
+       //         int endPos = richEditControl.Document.Range.End.ToInt();
+       //     
+       //         DocumentRange range = richEditControl.Document.CreateRange(startPos, endPos);
+       //     
+       //         var images = richEditControl.Document.GetImages(range);
+       //         
+       //         
+       //     
+       //     
+       //         // Добавляет пустую строку для отступа
+       //         richEditControl.Document.AppendText("" + '\n');
+       //     
+       //     
+       //     
+       //         Hyperlink hyperlink = richEditControl.Document.CreateHyperlink(images[0].Range);
+       //         hyperlink.NavigateUri = uri;
+       //
+       // }
+
         private void richEditControl1_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
         {
             e.Menu.Items.Clear();
@@ -686,11 +756,18 @@ namespace Client
 
         private void writeRichEditControl_KeyDown(object sender, KeyEventArgs e)
         {
-
+            if (e.KeyCode == Keys.Enter)
+            {
+                if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
+                {
+                    _needClearWriteRichEditControl = true;
+                }
+            }
         }
 
         private void writeRichEditControl_KeyUp(object sender, KeyEventArgs e)
         {
+
         }
 
         private void writeRichEditControl_Click(object sender, EventArgs e)
@@ -700,13 +777,13 @@ namespace Client
 
         private void writeRichEditControl_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == (char)Keys.Return)
+            if (e.KeyChar == (char)Keys.Return && _needClearWriteRichEditControl)
             {
-                if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
-                {
-                    writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
-                }
+                writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
+                _needClearWriteRichEditControl = false;
             }
+            
+
         }
 
         private void XtraForm1_Resize(object sender, EventArgs e)
@@ -728,11 +805,47 @@ namespace Client
             WindowState = FormWindowState.Minimized;
         }
 
+       
+        [DllImport("user32.dll")]
+        static extern bool PostMessage(IntPtr hWnd, uint Msg, int wParam, int lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        private const uint WM_COMMAND = 0x0111;
 
         private void ShowKeyboard ()
         {
-            Process.Start(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe");
+            Boolean KeyboardOpen = false;
 
+            foreach (Process process in Process.GetProcessesByName("TabTip"))
+            {
+                KeyboardOpen = true;
+            }
+
+            if (KeyboardOpen)
+            {
+                KeybordBottomDock();
+            }
+            else
+            {
+                if (File.Exists(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe"))
+                {
+                    Process.Start(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe");
+                    KeybordBottomDock();
+                }
+                else
+                {
+                    MessageBox.Show("Приложение клавиатуры не найдено.");
+                }
+            }
+        }
+
+        private void KeybordBottomDock ()
+        {
+            var wKB = FindWindow("IPTip_Main_Window", null);
+
+            PostMessage(wKB, WM_COMMAND, 10021, 0);
         }
 
         private void HideKeyBoard ()
@@ -748,6 +861,16 @@ namespace Client
                 }
             }
         }
+
+        private void xtraTabControl1_Click(object sender, EventArgs e)
+        {
+            writeRichEditControl.Focus();
+        }
+
+  
+
+
+
 
     }
 }
