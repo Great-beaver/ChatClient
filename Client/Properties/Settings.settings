@@ -14,5 +14,8 @@
     <Setting Name="ClientId" Type="System.Byte" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
+    <Setting Name="QucikCommands" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Так точно|Никак нет|Принял|Повторите|Выполняю|На позиции|Вижу цель|Открываю огонь|Прекращаю огонь|Возвращаюсь</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

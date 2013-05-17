@@ -23,5 +23,8 @@
     <Setting Name="ClientId" Type="System.Byte" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
+    <Setting Name="QucikCommands" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Принял|Повторите|Выйти на позицию|Ждать команды|Открыть огонь|Прекратить огонь</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

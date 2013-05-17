@@ -106,5 +106,17 @@ namespace Server.Properties {
                 this["ClientId"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Принял|Повторите|Выйти на позицию|Ждать команды|Открыть огонь|Прекратить огонь")]
+        public string QucikCommands {
+            get {
+                return ((string)(this["QucikCommands"]));
+            }
+            set {
+                this["QucikCommands"] = value;
+            }
+        }
     }
 }

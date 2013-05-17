@@ -70,5 +70,18 @@ namespace Client.Properties {
                 this["ClientId"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Так точно|Никак нет|Принял|Повторите|Выполняю|На позиции|Вижу цель|Открываю огонь" +
+            "|Прекращаю огонь|Возвращаюсь")]
+        public string QucikCommands {
+            get {
+                return ((string)(this["QucikCommands"]));
+            }
+            set {
+                this["QucikCommands"] = value;
+            }
+        }
     }
 }

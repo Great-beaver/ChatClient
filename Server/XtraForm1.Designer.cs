@@ -1,4 +1,4 @@
-﻿namespace Client
+﻿namespace Server
 {
     partial class XtraForm1
     {
@@ -40,24 +40,21 @@
             this.DenyBut = new DevExpress.XtraEditors.SimpleButton();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.writeRichEditControl = new DevExpress.XtraRichEdit.RichEditControl();
+            this.barManager1 = new DevExpress.XtraBars.BarManager(this.components);
+            this.bar1 = new DevExpress.XtraBars.Bar();
+            this.barDockControlTop = new DevExpress.XtraBars.BarDockControl();
+            this.barDockControlBottom = new DevExpress.XtraBars.BarDockControl();
+            this.barDockControlLeft = new DevExpress.XtraBars.BarDockControl();
+            this.barDockControlRight = new DevExpress.XtraBars.BarDockControl();
+            this.barStaticItem3 = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticItem2 = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticItem1 = new DevExpress.XtraBars.BarStaticItem();
-            this.panelControl1 = new DevExpress.XtraEditors.PanelControl();
-            this.IdValueLabelControl = new DevExpress.XtraEditors.LabelControl();
-            this.IdLabelControl = new DevExpress.XtraEditors.LabelControl();
-            this.WritePortValueLabelControl = new DevExpress.XtraEditors.LabelControl();
-            this.WritePortLabelControl = new DevExpress.XtraEditors.LabelControl();
-            this.ReadPortValueLabelControl = new DevExpress.XtraEditors.LabelControl();
-            this.ReadPortLabelControl = new DevExpress.XtraEditors.LabelControl();
-            this.ButMin = new DevExpress.XtraEditors.SimpleButton();
-            this.ButClose = new DevExpress.XtraEditors.SimpleButton();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panelControl2 = new DevExpress.XtraEditors.PanelControl();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.progressBarControl1.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).BeginInit();
-            this.panelControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.barManager1)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.panelControl2)).BeginInit();
             this.panelControl2.SuspendLayout();
@@ -72,7 +69,7 @@
             this.xtraTabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.xtraTabControl1.Location = new System.Drawing.Point(3, 3);
             this.xtraTabControl1.Name = "xtraTabControl1";
-            this.xtraTabControl1.Size = new System.Drawing.Size(698, 270);
+            this.xtraTabControl1.Size = new System.Drawing.Size(706, 582);
             this.xtraTabControl1.TabIndex = 0;
             this.xtraTabControl1.SelectedPageChanged += new DevExpress.XtraTab.TabPageChangedEventHandler(this.xtraTabControl1_SelectedPageChanged);
             this.xtraTabControl1.Click += new System.EventHandler(this.xtraTabControl1_Click);
@@ -83,7 +80,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBarControl1.Location = new System.Drawing.Point(5, 143);
             this.progressBarControl1.Name = "progressBarControl1";
-            this.progressBarControl1.Size = new System.Drawing.Size(507, 33);
+            this.progressBarControl1.Size = new System.Drawing.Size(515, 33);
             this.progressBarControl1.TabIndex = 6;
             this.progressBarControl1.Visible = false;
             // 
@@ -92,7 +89,7 @@
             this.SendBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.SendBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.SendBut.Appearance.Options.UseFont = true;
-            this.SendBut.Location = new System.Drawing.Point(607, 143);
+            this.SendBut.Location = new System.Drawing.Point(615, 143);
             this.SendBut.Name = "SendBut";
             this.SendBut.Size = new System.Drawing.Size(91, 33);
             this.SendBut.TabIndex = 7;
@@ -104,7 +101,7 @@
             this.FileBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.FileBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.FileBut.Appearance.Options.UseFont = true;
-            this.FileBut.Location = new System.Drawing.Point(518, 143);
+            this.FileBut.Location = new System.Drawing.Point(526, 143);
             this.FileBut.Name = "FileBut";
             this.FileBut.Size = new System.Drawing.Size(83, 33);
             this.FileBut.TabIndex = 8;
@@ -116,7 +113,7 @@
             this.CancelBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.CancelBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.CancelBut.Appearance.Options.UseFont = true;
-            this.CancelBut.Location = new System.Drawing.Point(518, 143);
+            this.CancelBut.Location = new System.Drawing.Point(526, 143);
             this.CancelBut.Name = "CancelBut";
             this.CancelBut.Size = new System.Drawing.Size(83, 33);
             this.CancelBut.TabIndex = 9;
@@ -129,7 +126,7 @@
             this.FileRequestLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.FileRequestLabel.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.FileRequestLabel.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.FileRequestLabel.Location = new System.Drawing.Point(223, 151);
+            this.FileRequestLabel.Location = new System.Drawing.Point(231, 151);
             this.FileRequestLabel.Name = "FileRequestLabel";
             this.FileRequestLabel.Size = new System.Drawing.Size(101, 16);
             this.FileRequestLabel.TabIndex = 10;
@@ -141,7 +138,7 @@
             this.AllowBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.AllowBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.AllowBut.Appearance.Options.UseFont = true;
-            this.AllowBut.Location = new System.Drawing.Point(446, 143);
+            this.AllowBut.Location = new System.Drawing.Point(454, 143);
             this.AllowBut.Name = "AllowBut";
             this.AllowBut.Size = new System.Drawing.Size(66, 33);
             this.AllowBut.TabIndex = 15;
@@ -154,7 +151,7 @@
             this.DenyBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.DenyBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.DenyBut.Appearance.Options.UseFont = true;
-            this.DenyBut.Location = new System.Drawing.Point(336, 143);
+            this.DenyBut.Location = new System.Drawing.Point(344, 143);
             this.DenyBut.Name = "DenyBut";
             this.DenyBut.Size = new System.Drawing.Size(104, 33);
             this.DenyBut.TabIndex = 16;
@@ -173,6 +170,7 @@
             this.writeRichEditControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.writeRichEditControl.Location = new System.Drawing.Point(5, 29);
+            this.writeRichEditControl.MenuManager = this.barManager1;
             this.writeRichEditControl.Name = "writeRichEditControl";
             this.writeRichEditControl.Options.Fields.UseCurrentCultureDateTimeFormat = false;
             this.writeRichEditControl.Options.HorizontalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
@@ -180,7 +178,7 @@
             this.writeRichEditControl.Options.Hyperlinks.ModifierKeys = System.Windows.Forms.Keys.None;
             this.writeRichEditControl.Options.MailMerge.KeepLastParagraph = false;
             this.writeRichEditControl.Options.VerticalRuler.Visibility = DevExpress.XtraRichEdit.RichEditRulerVisibility.Hidden;
-            this.writeRichEditControl.Size = new System.Drawing.Size(693, 108);
+            this.writeRichEditControl.Size = new System.Drawing.Size(701, 108);
             this.writeRichEditControl.TabIndex = 21;
             this.writeRichEditControl.Views.SimpleView.Padding = new System.Windows.Forms.Padding(5, 4, 4, 0);
             this.writeRichEditControl.PopupMenuShowing += new DevExpress.XtraRichEdit.PopupMenuShowingEventHandler(this.richEditControl1_PopupMenuShowing);
@@ -191,6 +189,67 @@
             this.writeRichEditControl.KeyDown += new System.Windows.Forms.KeyEventHandler(this.writeRichEditControl_KeyDown);
             this.writeRichEditControl.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.writeRichEditControl_KeyPress);
             this.writeRichEditControl.KeyUp += new System.Windows.Forms.KeyEventHandler(this.writeRichEditControl_KeyUp);
+            // 
+            // barManager1
+            // 
+            this.barManager1.Bars.AddRange(new DevExpress.XtraBars.Bar[] {
+            this.bar1});
+            this.barManager1.DockControls.Add(this.barDockControlTop);
+            this.barManager1.DockControls.Add(this.barDockControlBottom);
+            this.barManager1.DockControls.Add(this.barDockControlLeft);
+            this.barManager1.DockControls.Add(this.barDockControlRight);
+            this.barManager1.Form = this;
+            this.barManager1.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
+            this.barStaticItem3});
+            this.barManager1.MaxItemId = 1;
+            // 
+            // bar1
+            // 
+            this.bar1.BarName = "StatusBar";
+            this.bar1.DockCol = 0;
+            this.bar1.DockRow = 0;
+            this.bar1.DockStyle = DevExpress.XtraBars.BarDockStyle.Bottom;
+            this.bar1.OptionsBar.AllowQuickCustomization = false;
+            this.bar1.OptionsBar.DisableClose = true;
+            this.bar1.OptionsBar.DisableCustomization = true;
+            this.bar1.OptionsBar.DrawDragBorder = false;
+            this.bar1.OptionsBar.UseWholeRow = true;
+            this.bar1.Text = "StatusBar";
+            // 
+            // barDockControlTop
+            // 
+            this.barDockControlTop.CausesValidation = false;
+            this.barDockControlTop.Dock = System.Windows.Forms.DockStyle.Top;
+            this.barDockControlTop.Location = new System.Drawing.Point(0, 0);
+            this.barDockControlTop.Size = new System.Drawing.Size(1424, 0);
+            // 
+            // barDockControlBottom
+            // 
+            this.barDockControlBottom.CausesValidation = false;
+            this.barDockControlBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.barDockControlBottom.Location = new System.Drawing.Point(0, 588);
+            this.barDockControlBottom.Size = new System.Drawing.Size(1424, 26);
+            // 
+            // barDockControlLeft
+            // 
+            this.barDockControlLeft.CausesValidation = false;
+            this.barDockControlLeft.Dock = System.Windows.Forms.DockStyle.Left;
+            this.barDockControlLeft.Location = new System.Drawing.Point(0, 0);
+            this.barDockControlLeft.Size = new System.Drawing.Size(0, 588);
+            // 
+            // barDockControlRight
+            // 
+            this.barDockControlRight.CausesValidation = false;
+            this.barDockControlRight.Dock = System.Windows.Forms.DockStyle.Right;
+            this.barDockControlRight.Location = new System.Drawing.Point(1424, 0);
+            this.barDockControlRight.Size = new System.Drawing.Size(0, 588);
+            // 
+            // barStaticItem3
+            // 
+            this.barStaticItem3.Caption = "barStaticItem3";
+            this.barStaticItem3.Id = 0;
+            this.barStaticItem3.Name = "barStaticItem3";
+            this.barStaticItem3.TextAlignment = System.Drawing.StringAlignment.Near;
             // 
             // barStaticItem2
             // 
@@ -206,119 +265,6 @@
             this.barStaticItem1.Name = "barStaticItem1";
             this.barStaticItem1.TextAlignment = System.Drawing.StringAlignment.Near;
             // 
-            // panelControl1
-            // 
-            this.panelControl1.Appearance.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
-            this.panelControl1.Appearance.BackColor2 = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
-            this.panelControl1.Appearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
-            this.panelControl1.Appearance.Options.UseBackColor = true;
-            this.panelControl1.Appearance.Options.UseBorderColor = true;
-            this.panelControl1.Controls.Add(this.IdValueLabelControl);
-            this.panelControl1.Controls.Add(this.IdLabelControl);
-            this.panelControl1.Controls.Add(this.WritePortValueLabelControl);
-            this.panelControl1.Controls.Add(this.WritePortLabelControl);
-            this.panelControl1.Controls.Add(this.ReadPortValueLabelControl);
-            this.panelControl1.Controls.Add(this.ReadPortLabelControl);
-            this.panelControl1.Location = new System.Drawing.Point(2, 2);
-            this.panelControl1.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Office2003;
-            this.panelControl1.LookAndFeel.UseDefaultLookAndFeel = false;
-            this.panelControl1.Name = "panelControl1";
-            this.panelControl1.Size = new System.Drawing.Size(540, 23);
-            this.panelControl1.TabIndex = 31;
-            // 
-            // IdValueLabelControl
-            // 
-            this.IdValueLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
-            this.IdValueLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.IdValueLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.IdValueLabelControl.Location = new System.Drawing.Point(343, 2);
-            this.IdValueLabelControl.Name = "IdValueLabelControl";
-            this.IdValueLabelControl.Size = new System.Drawing.Size(68, 19);
-            this.IdValueLabelControl.TabIndex = 5;
-            this.IdValueLabelControl.Text = "Id Value";
-            // 
-            // IdLabelControl
-            // 
-            this.IdLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
-            this.IdLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.IdLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.IdLabelControl.Location = new System.Drawing.Point(313, 2);
-            this.IdLabelControl.Name = "IdLabelControl";
-            this.IdLabelControl.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.IdLabelControl.Size = new System.Drawing.Size(30, 19);
-            this.IdLabelControl.TabIndex = 4;
-            this.IdLabelControl.Text = "ID:";
-            // 
-            // WritePortValueLabelControl
-            // 
-            this.WritePortValueLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12.25F, System.Drawing.FontStyle.Bold);
-            this.WritePortValueLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.WritePortValueLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.WritePortValueLabelControl.Location = new System.Drawing.Point(235, 2);
-            this.WritePortValueLabelControl.Name = "WritePortValueLabelControl";
-            this.WritePortValueLabelControl.Size = new System.Drawing.Size(78, 19);
-            this.WritePortValueLabelControl.TabIndex = 3;
-            this.WritePortValueLabelControl.Text = "WP Value";
-            // 
-            // WritePortLabelControl
-            // 
-            this.WritePortLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
-            this.WritePortLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.WritePortLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.WritePortLabelControl.Location = new System.Drawing.Point(141, 2);
-            this.WritePortLabelControl.Name = "WritePortLabelControl";
-            this.WritePortLabelControl.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.WritePortLabelControl.Size = new System.Drawing.Size(94, 19);
-            this.WritePortLabelControl.TabIndex = 2;
-            this.WritePortLabelControl.Text = "Передача:";
-            // 
-            // ReadPortValueLabelControl
-            // 
-            this.ReadPortValueLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
-            this.ReadPortValueLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.ReadPortValueLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.ReadPortValueLabelControl.Location = new System.Drawing.Point(67, 2);
-            this.ReadPortValueLabelControl.Name = "ReadPortValueLabelControl";
-            this.ReadPortValueLabelControl.Size = new System.Drawing.Size(74, 19);
-            this.ReadPortValueLabelControl.TabIndex = 1;
-            this.ReadPortValueLabelControl.Text = "RP Value";
-            // 
-            // ReadPortLabelControl
-            // 
-            this.ReadPortLabelControl.Appearance.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold);
-            this.ReadPortLabelControl.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.ReadPortLabelControl.Dock = System.Windows.Forms.DockStyle.Left;
-            this.ReadPortLabelControl.Location = new System.Drawing.Point(2, 2);
-            this.ReadPortLabelControl.Name = "ReadPortLabelControl";
-            this.ReadPortLabelControl.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.ReadPortLabelControl.Size = new System.Drawing.Size(65, 19);
-            this.ReadPortLabelControl.TabIndex = 0;
-            this.ReadPortLabelControl.Text = "Прием:";
-            // 
-            // ButMin
-            // 
-            this.ButMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButMin.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
-            this.ButMin.Appearance.Options.UseFont = true;
-            this.ButMin.Location = new System.Drawing.Point(620, -3);
-            this.ButMin.Name = "ButMin";
-            this.ButMin.Size = new System.Drawing.Size(39, 30);
-            this.ButMin.TabIndex = 6;
-            this.ButMin.Text = "-";
-            this.ButMin.Click += new System.EventHandler(this.ButMin_Click);
-            // 
-            // ButClose
-            // 
-            this.ButClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButClose.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
-            this.ButClose.Appearance.Options.UseFont = true;
-            this.ButClose.Location = new System.Drawing.Point(662, -3);
-            this.ButClose.Name = "ButClose";
-            this.ButClose.Size = new System.Drawing.Size(39, 30);
-            this.ButClose.TabIndex = 1;
-            this.ButClose.Text = "X";
-            this.ButClose.Click += new System.EventHandler(this.ButClose_Click);
-            // 
             // tableLayoutPanel1
             // 
             this.tableLayoutPanel1.ColumnCount = 2;
@@ -332,8 +278,9 @@
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1408, 276);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1424, 588);
             this.tableLayoutPanel1.TabIndex = 31;
+            this.tableLayoutPanel1.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel1_Paint);
             // 
             // panelControl2
             // 
@@ -343,9 +290,6 @@
             this.panelControl2.Appearance.Options.UseBackColor = true;
             this.panelControl2.Appearance.Options.UseBorderColor = true;
             this.panelControl2.Controls.Add(this.flowLayoutPanel1);
-            this.panelControl2.Controls.Add(this.ButMin);
-            this.panelControl2.Controls.Add(this.panelControl1);
-            this.panelControl2.Controls.Add(this.ButClose);
             this.panelControl2.Controls.Add(this.writeRichEditControl);
             this.panelControl2.Controls.Add(this.FileRequestLabel);
             this.panelControl2.Controls.Add(this.DenyBut);
@@ -355,12 +299,13 @@
             this.panelControl2.Controls.Add(this.progressBarControl1);
             this.panelControl2.Controls.Add(this.CancelBut);
             this.panelControl2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelControl2.Location = new System.Drawing.Point(707, 3);
+            this.panelControl2.Location = new System.Drawing.Point(715, 3);
             this.panelControl2.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Office2003;
             this.panelControl2.LookAndFeel.UseDefaultLookAndFeel = false;
             this.panelControl2.Name = "panelControl2";
-            this.panelControl2.Size = new System.Drawing.Size(698, 270);
+            this.panelControl2.Size = new System.Drawing.Size(706, 582);
             this.panelControl2.TabIndex = 1;
+            this.panelControl2.Paint += new System.Windows.Forms.PaintEventHandler(this.panelControl2_Paint);
             // 
             // flowLayoutPanel1
             // 
@@ -369,27 +314,27 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.flowLayoutPanel1.Location = new System.Drawing.Point(5, 182);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(688, 84);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(696, 396);
             this.flowLayoutPanel1.TabIndex = 42;
-            this.flowLayoutPanel1.Paint += new System.Windows.Forms.PaintEventHandler(this.flowLayoutPanel1_Paint);
             // 
             // XtraForm1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1408, 276);
+            this.ClientSize = new System.Drawing.Size(1424, 614);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Controls.Add(this.barDockControlLeft);
+            this.Controls.Add(this.barDockControlRight);
+            this.Controls.Add(this.barDockControlBottom);
+            this.Controls.Add(this.barDockControlTop);
             this.Name = "XtraForm1";
-            this.Text = "Mobile unit";
+            this.Text = "Командный центр";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XtraForm1_FormClosing);
             this.Load += new System.EventHandler(this.XtraForm1_Load);
             this.Resize += new System.EventHandler(this.XtraForm1_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.progressBarControl1.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).EndInit();
-            this.panelControl1.ResumeLayout(false);
-            this.panelControl1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.barManager1)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.panelControl2)).EndInit();
             this.panelControl2.ResumeLayout(false);
@@ -413,17 +358,15 @@
         private DevExpress.XtraRichEdit.RichEditControl writeRichEditControl;
         private DevExpress.XtraBars.BarStaticItem barStaticItem2;
         private DevExpress.XtraBars.BarStaticItem barStaticItem1;
-        private DevExpress.XtraEditors.PanelControl panelControl1;
-        private DevExpress.XtraEditors.LabelControl ReadPortLabelControl;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private DevExpress.XtraEditors.LabelControl IdLabelControl;
-        private DevExpress.XtraEditors.LabelControl WritePortValueLabelControl;
-        private DevExpress.XtraEditors.LabelControl WritePortLabelControl;
-        private DevExpress.XtraEditors.LabelControl ReadPortValueLabelControl;
-        private DevExpress.XtraEditors.LabelControl IdValueLabelControl;
         private DevExpress.XtraEditors.PanelControl panelControl2;
-        private DevExpress.XtraEditors.SimpleButton ButClose;
-        private DevExpress.XtraEditors.SimpleButton ButMin;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private DevExpress.XtraBars.BarManager barManager1;
+        private DevExpress.XtraBars.Bar bar1;
+        private DevExpress.XtraBars.BarDockControl barDockControlTop;
+        private DevExpress.XtraBars.BarDockControl barDockControlBottom;
+        private DevExpress.XtraBars.BarDockControl barDockControlLeft;
+        private DevExpress.XtraBars.BarDockControl barDockControlRight;
+        private DevExpress.XtraBars.BarStaticItem barStaticItem3;
     }
 }

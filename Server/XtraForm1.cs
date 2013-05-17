@@ -1,26 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
 using Chat.Main;
 using ChatClient.Main;
-using DevExpress.Office.PInvoke;
+using DevExpress.XtraBars;
 using DevExpress.XtraEditors;
 using DevExpress.XtraRichEdit;
 using DevExpress.XtraRichEdit.API.Native;
 using DevExpress.XtraTab;
 
-
-namespace Client
+namespace Server
 {
     public partial class XtraForm1 : XtraForm
     {
@@ -50,6 +43,45 @@ namespace Client
         int[] _newMessageCount = new int[5];
 
         string[] _quickCommands = Properties.Settings.Default.QucikCommands.Split('|');
+
+        BarStaticItem[] _readPortsValuesStaticItems = new BarStaticItem[4];
+
+        BarStaticItem _writePortValueStaticitem = new BarStaticItem();
+
+        BarStaticItem _IdValueStaticitem = new BarStaticItem();
+
+        private BarStaticItem NewBarStaticItem (string caption)
+        {
+            BarStaticItem item = new BarStaticItem();
+            item.Caption = caption;
+            return item;
+        }
+
+        private void StatusBarInitialize()
+        {
+            bar1.AddItem(NewBarStaticItem("Прием:"));
+
+            for (int i = 0; i < _readPortsValuesStaticItems.Length; i++)
+            {
+                bar1.AddItem(NewBarStaticItem("Порт " + (i + 1)));
+                _readPortsValuesStaticItems[i] = NewBarStaticItem("Value" + (i + 1));
+                bar1.AddItem(_readPortsValuesStaticItems[i]);
+            }
+
+            bar1.AddItem(NewBarStaticItem("Передача:"));
+
+            _writePortValueStaticitem.Caption = "Value";
+            bar1.AddItem(_writePortValueStaticitem);
+
+
+            bar1.AddItem(NewBarStaticItem("ID:"));
+            _IdValueStaticitem.Caption = "Value";
+            bar1.AddItem(_IdValueStaticitem);
+            
+            if (_cu != null && _cu.ClietnId != null)
+                
+            _IdValueStaticitem.Caption = _cu.ClietnId.ToString();
+        }
 
 
         private void QuickCommandsInitialize()
@@ -117,47 +149,37 @@ namespace Client
                     xtraTabControl1.TabPages.Add(_tabPages[i]);
                 }
             }
-
-
             writeRichEditControl.AllowDrop = true;
             writeRichEditControl.DragDrop += new DragEventHandler(writeRichEditControl_DragDrop);
             writeRichEditControl.DragEnter += new DragEventHandler(writeRichEditControl_DragEnter);
             writeRichEditControl.DragOver += new DragEventHandler(writeRichEditControl_DragOver);
         }
 
-
         private void XtraForm1_Load(object sender, EventArgs e)
         {           
-
-           MaximizedBounds = Screen.GetWorkingArea(this);
            WindowState = FormWindowState.Maximized;
            writeRichEditControl.Font = _defaultFont;
-           ShowKeyboard();
-
-
-            QuickCommandsInitialize();
-
 
            for (int i = 0; i < _newMessageCount.Length; i++)
            {
                _newMessageCount[i] = 0;
            }
-          
 
-            _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort, Properties.Settings.Default.WritePort, 
-                  Properties.Settings.Default.ClientId, Properties.Settings.Default.PortSpeed);
-              // Подписывание на событие
-
+           
+           
+           _cu = new CommunicationUnit(Properties.Settings.Default.readerPortName1, Properties.Settings.Default.readerPortName2, Properties.Settings.Default.readerPortName3,
+             Properties.Settings.Default.readerPortName4, Properties.Settings.Default.WriteComPort, Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
+              
+            // Подписывание на событие
             _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
             _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
 
-            IdValueLabelControl.Text = _cu.ClietnId.ToString();
-
-
+            StatusBarInitialize();
+            QuickCommandsInitialize();
             RichEditControlsInitialize();
 
+            
 
-           
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -170,7 +192,20 @@ namespace Client
             {
                 case MessageType.Text:
                     {
-                        AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Left);
+
+                        if (recipient != _cu.ClietnId)
+                        {
+                            AppendLine("Отправлено клиенту " + recipient, _richEditControls[sender], _defaultFont, _systemColor, ParagraphAlignment.Center);
+
+                            AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Center);
+
+                        }
+                        else
+                        {
+                            AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Left);
+                        }
+
+                        
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
                         {
@@ -426,7 +461,7 @@ namespace Client
 
                 case MessageType.ReadPortAvailable:
                     {
-                        ReadPortValueLabelControl.Text  = "Доступен";
+                        _readPortsValuesStaticItems[sender].Caption = "Доступен";
                         
                         return;
                     }
@@ -434,21 +469,21 @@ namespace Client
 
                 case MessageType.ReadPortUnavailable:
                     {
-                        ReadPortValueLabelControl.Text = "Не доступен";
+                        _readPortsValuesStaticItems[sender].Caption = "Не доступен";
                         return;
                     }
                     break;
 
                 case MessageType.WritePortAvailable:
                     {
-                        WritePortValueLabelControl.Text = "Доступна";
+                        _writePortValueStaticitem.Caption = "Доступна";
                         return;
                     }
                     break;
 
                 case MessageType.WritePortUnavailable:
                     {
-                        WritePortValueLabelControl.Text = "Не доступна";
+                        _writePortValueStaticitem.Caption = "Не доступна";
                         return;
                     }
                     break;
@@ -597,12 +632,11 @@ namespace Client
             {
                 _cu.Dispose();
             }
-
-           HideKeyBoard();
         }
 
         private void SendBut_Click(object sender, EventArgs e)
         {
+
             if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
             {
                 writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range); 
@@ -774,7 +808,6 @@ namespace Client
 
         private void writeRichEditControl_Click(object sender, EventArgs e)
         {            
-             ShowKeyboard ();
         }
 
         private void writeRichEditControl_KeyPress(object sender, KeyPressEventArgs e)
@@ -784,98 +817,11 @@ namespace Client
                 writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range);
                 _needClearWriteRichEditControl = false;
             }
-            
-
         }
 
         private void XtraForm1_Resize(object sender, EventArgs e)
         {
-            if (WindowState == FormWindowState.Minimized)
-            {
-                HideKeyBoard();
-            }           
-        }
-
-        private void ButClose_Click(object sender, EventArgs e)
-        {
-            Close();
-        }
-
-        private void ButMin_Click(object sender, EventArgs e)
-        {
-            WindowState = FormWindowState.Minimized;
-        }
-      
-        [DllImport("user32.dll")]
-        static extern bool PostMessage(IntPtr hWnd, uint Msg, int wParam, int lParam);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
-        private const uint WM_COMMAND = 0x0111;
-
-        private void ShowKeyboard ()
-        {
-            Boolean KeyboardOpen = false;
-
-            foreach (Process process in Process.GetProcessesByName("TabTip"))
-            {
-                KeyboardOpen = true;
-            }
-
-            if (KeyboardOpen)
-            {
-                KeybordBottomDock();
-            }
-            else
-            {
-                if (File.Exists(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe"))
-                {
-                    Process.Start(@"C:\Program Files\Common Files\microsoft shared\ink\tabtip.exe");
-                    KeybordBottomDock();
-                }
-                else
-                {
-                    MessageBox.Show("Приложение клавиатуры не найдено.");
-                }
-            }
-        }
-
-        private void KeybordBottomDock ()
-        {
-            var wKB = FindWindow("IPTip_Main_Window", null);
-
-            PostMessage(wKB, WM_COMMAND, 10021, 0);
-        }
-
-        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern uint RegisterWindowMessage(string lpString);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool IsWindowVisible(IntPtr hWnd);
-
-        private void HideKeyBoard ()
-        {
-           // Process[] processlist = Process.GetProcesses();
-           //
-           // foreach (Process process in processlist)
-           // {
-           //     if (process.ProcessName == "TabTip")
-           //     {
-           //         process.Kill();
-           //         break;
-           //     }
-           // }
-
-            var WM_DESKBAND_CLICKED = RegisterWindowMessage("TabletInputPanelDeskBandClicked");
-
-            var wKB = FindWindow("IPTip_Main_Window", null);
-            if( wKB != null && IsWindowVisible(wKB))
-            {
-               PostMessage(wKB, WM_DESKBAND_CLICKED, 0, 0);
-            }
-
+            
         }
 
         private void xtraTabControl1_Click(object sender, EventArgs e)
@@ -883,13 +829,20 @@ namespace Client
             writeRichEditControl.Focus();
         }
 
-        private void flowLayoutPanel1_Paint(object sender, PaintEventArgs e)
+        private void panelControl2_Paint(object sender, PaintEventArgs e)
         {
 
         }
 
+        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
+        {
 
-       
+        }
+
+  
+
+
+
 
     }
 }
