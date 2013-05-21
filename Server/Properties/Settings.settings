@@ -2,29 +2,50 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Server.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="readerPortName1" Type="System.String" Scope="User">
+    <Setting Name="ReadPort1" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM21</Value>
     </Setting>
-    <Setting Name="readerPortName2" Type="System.String" Scope="User">
+    <Setting Name="ReadPort2" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM22</Value>
     </Setting>
-    <Setting Name="readerPortName3" Type="System.String" Scope="User">
+    <Setting Name="ReadPort3" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM23</Value>
     </Setting>
-    <Setting Name="readerPortName4" Type="System.String" Scope="User">
+    <Setting Name="ReadPort4" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM24</Value>
     </Setting>
-    <Setting Name="WriteComPort" Type="System.String" Scope="User">
+    <Setting Name="WritePort" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM5</Value>
     </Setting>
-    <Setting Name="ComPortSpeed" Type="System.Int32" Scope="User">
+    <Setting Name="PortsSpeed" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">34800</Value>
     </Setting>
-    <Setting Name="ClientId" Type="System.Byte" Scope="User">
+    <Setting Name="ClientID" Type="System.Byte" Scope="Application">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="QucikCommands" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Принял|Повторите|Выйти на позицию|Ждать команды|Открыть огонь|Прекратить огонь</Value>
+    <Setting Name="QucikCommands" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Принял|Повторите|Выйти на позицию|Вернутся|Ждать команды|Открыть огонь|Прекратить огонь</Value>
+    </Setting>
+    <Setting Name="VideoURL1" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.207.59</Value>
+    </Setting>
+    <Setting Name="VideoURL2" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.207.59</Value>
+    </Setting>
+    <Setting Name="VideoURL3" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.207.59</Value>
+    </Setting>
+    <Setting Name="VideoURL4" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.207.59</Value>
+    </Setting>
+    <Setting Name="VideoUser" Type="System.String" Scope="User">
+      <Value Profile="(Default)">root</Value>
+    </Setting>
+    <Setting Name="VideoPass" Type="System.String" Scope="User">
+      <Value Profile="(Default)">pass</Value>
+    </Setting>
+    <Setting Name="VideoType" Type="System.String" Scope="User">
+      <Value Profile="(Default)">mjpeg</Value>
     </Setting>
   </Settings>
 </SettingsFile>

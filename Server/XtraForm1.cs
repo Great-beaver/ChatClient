@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Configuration;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using AxAXISMEDIACONTROLLib;
 using Chat.Main;
 using ChatClient.Main;
 using DevExpress.XtraBars;
@@ -25,11 +27,14 @@ namespace Server
         CommunicationUnit _cu;
         XtraTabPage[] _tabPages = new XtraTabPage[5];
         RichEditControl[] _richEditControls = new RichEditControl[5];
+        AxAxisMediaControl[] AMCs  = new AxAxisMediaControl[4];
+        PanelControl[] VideoPanels = new PanelControl[4]; 
+
 
         Font _defaultFont = new Font("Tahoma",14);
         Font _deliveryFont = new Font("Microsoft Sans Serif", 9);
 
-        Font _headerFont = new Font("Tahoma", 12,FontStyle.Bold);
+        Font _headerFont = new Font("Tahoma", 11,FontStyle.Bold);
 
         Font _buttonFont = new Font("Tahoma", 10, FontStyle.Bold);
 
@@ -156,8 +161,8 @@ namespace Server
         }
 
         private void XtraForm1_Load(object sender, EventArgs e)
-        {           
-           WindowState = FormWindowState.Maximized;
+        {
+            WindowState = FormWindowState.Maximized;
            writeRichEditControl.Font = _defaultFont;
 
            for (int i = 0; i < _newMessageCount.Length; i++)
@@ -165,10 +170,8 @@ namespace Server
                _newMessageCount[i] = 0;
            }
 
-           
-           
-           _cu = new CommunicationUnit(Properties.Settings.Default.readerPortName1, Properties.Settings.Default.readerPortName2, Properties.Settings.Default.readerPortName3,
-             Properties.Settings.Default.readerPortName4, Properties.Settings.Default.WriteComPort, Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
+           _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort1, Properties.Settings.Default.ReadPort2, Properties.Settings.Default.ReadPort3,
+             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed);
               
             // Подписывание на событие
             _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
@@ -177,9 +180,6 @@ namespace Server
             StatusBarInitialize();
             QuickCommandsInitialize();
             RichEditControlsInitialize();
-
-            
-
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -636,7 +636,6 @@ namespace Server
 
         private void SendBut_Click(object sender, EventArgs e)
         {
-
             if (_cu.SendTextMessage(writeRichEditControl.Text, Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag)))
             {
                 writeRichEditControl.Document.Delete(writeRichEditControl.Document.Range); 
@@ -839,9 +838,145 @@ namespace Server
 
         }
 
-  
+        private void AMCInitialize()
+        {
+            for (int i = 0; i < AMCs.Length; i++)
+            {
+                AMCs[i] = new AxAxisMediaControl();
+                VideoPanels[i] = new PanelControl();
+                VideoPanels[i].Controls.Add(AMCs[i]);
+                VideoPanels[i].Visible = false;
+
+            }
+            VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+        }
 
 
+        private void XtraForm1_Shown(object sender, EventArgs e)
+        {
+            AMCInitialize();
+
+            int videoWindowsCount = 0;
+
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            for (int i = 0; i < 4; i++)
+            {
+                if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i+1)].Value))
+                {
+                    videoWindowsCount++;
+                }
+            }
+
+           switch (videoWindowsCount)
+           {
+               case 1 :
+                   {
+                       VideoWindowsLayoutPanel.ColumnCount = 1;
+                       VideoWindowsLayoutPanel.RowCount = 1;
+                   }
+                   break;
+       
+               case 2 :
+                   {
+                       VideoWindowsLayoutPanel.ColumnCount = 1;
+                       VideoWindowsLayoutPanel.RowCount = 2;
+       
+                   }
+                   break;
+       
+               case 3-4:
+                   {
+                       VideoWindowsLayoutPanel.ColumnCount = 2;
+                       VideoWindowsLayoutPanel.RowCount = 2;
+                   }
+                   break;
+       
+               default:
+                   {
+       
+                   }
+                   break;
+      
+           }
+
+            VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+
+
+           for (int i = 0; i < 4; i++)
+           {
+               if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
+               {
+                   VideoPanels[i].Visible = true;
+                   VideoPanels[i].Dock = DockStyle.Fill;
+                   AMCs[i].MediaURL = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
+                   AMCs[i].MediaType = Properties.Settings.Default.VideoType;
+                   AMCs[i].MediaUsername = Properties.Settings.Default.VideoUser;
+                   AMCs[i].MediaPassword = Properties.Settings.Default.VideoPass;
+                   AMCs[i].StretchToFit = true;
+                   AMCs[i].ShowStatusBar = true;
+                   AMCs[i].Dock = DockStyle.Fill;
+               }
+           }
+
+        }
+
+
+        private string CompleteURL(string theMediaURL, string theMediaType)
+        {
+            string anURL = theMediaURL;
+            if (!anURL.EndsWith("/")) anURL += "/";
+
+            if (theMediaType == "mjpeg")
+            {
+                anURL += "axis-cgi/mjpg/video.cgi";
+            }
+            else if (theMediaType == "mpeg4")
+            {
+                anURL += "mpeg4/media.amp";
+            }
+            else if (theMediaType == "h264")
+            {
+                anURL += "axis-media/media.amp?videocodec=h264";
+            }
+            else if (theMediaType == "mpeg2-unicast")
+            {
+                anURL += "axis-cgi/mpeg2/video.cgi";
+            }
+            else if (theMediaType == "mpeg2-multicast")
+            {
+                anURL += "axis-cgi/mpeg2/video.cgi";
+            }
+
+            anURL = CompleteProtocol(anURL, theMediaType);
+            return anURL;
+        }
+
+        private string CompleteProtocol(string theMediaURL, string theMediaType)
+        {
+            if (theMediaURL.IndexOf("://") >= 0) return theMediaURL;
+
+            string anURL = theMediaURL;
+
+            if (theMediaType == "mjpeg")
+            {
+                anURL = "http://" + anURL;
+            }
+            else if (theMediaType == "mpeg4" || theMediaType == "h264")
+            {
+                anURL = "axrtsphttp://" + anURL;
+            }
+            else if (theMediaType == "mpeg2-unicast")
+            {
+                anURL = "http://" + anURL;
+            }
+            else if (theMediaType == "mpeg2-multicast")
+            {
+                anURL = "axsdp" + anURL;
+            }
+
+            return anURL;
+        }
 
 
     }

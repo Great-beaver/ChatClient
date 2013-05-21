@@ -2,19 +2,19 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Client.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="ReadPort" Type="System.String" Scope="User">
+    <Setting Name="ReadPort" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM11</Value>
     </Setting>
-    <Setting Name="WritePort" Type="System.String" Scope="User">
+    <Setting Name="WritePort" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM21</Value>
     </Setting>
-    <Setting Name="PortSpeed" Type="System.Int32" Scope="User">
+    <Setting Name="PortSpeed" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">38400</Value>
     </Setting>
-    <Setting Name="ClientId" Type="System.Byte" Scope="User">
+    <Setting Name="ClientId" Type="System.Byte" Scope="Application">
       <Value Profile="(Default)">1</Value>
     </Setting>
-    <Setting Name="QucikCommands" Type="System.String" Scope="User">
+    <Setting Name="QucikCommands" Type="System.String" Scope="Application">
       <Value Profile="(Default)">Так точно|Никак нет|Принял|Повторите|Выполняю|На позиции|Вижу цель|Открываю огонь|Прекращаю огонь|Возвращаюсь</Value>
     </Setting>
   </Settings>

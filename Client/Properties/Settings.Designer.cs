@@ -23,64 +23,49 @@ namespace Client.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM11")]
         public string ReadPort {
             get {
                 return ((string)(this["ReadPort"]));
             }
-            set {
-                this["ReadPort"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM21")]
         public string WritePort {
             get {
                 return ((string)(this["WritePort"]));
             }
-            set {
-                this["WritePort"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("38400")]
         public int PortSpeed {
             get {
                 return ((int)(this["PortSpeed"]));
             }
-            set {
-                this["PortSpeed"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public byte ClientId {
             get {
                 return ((byte)(this["ClientId"]));
             }
-            set {
-                this["ClientId"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Так точно|Никак нет|Принял|Повторите|Выполняю|На позиции|Вижу цель|Открываю огонь" +
             "|Прекращаю огонь|Возвращаюсь")]
         public string QucikCommands {
             get {
                 return ((string)(this["QucikCommands"]));
-            }
-            set {
-                this["QucikCommands"] = value;
             }
         }
     }

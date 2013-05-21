@@ -23,99 +23,148 @@ namespace Server.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM21")]
-        public string readerPortName1 {
+        public string ReadPort1 {
             get {
-                return ((string)(this["readerPortName1"]));
-            }
-            set {
-                this["readerPortName1"] = value;
+                return ((string)(this["ReadPort1"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM22")]
-        public string readerPortName2 {
+        public string ReadPort2 {
             get {
-                return ((string)(this["readerPortName2"]));
-            }
-            set {
-                this["readerPortName2"] = value;
+                return ((string)(this["ReadPort2"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM23")]
-        public string readerPortName3 {
+        public string ReadPort3 {
             get {
-                return ((string)(this["readerPortName3"]));
-            }
-            set {
-                this["readerPortName3"] = value;
+                return ((string)(this["ReadPort3"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM24")]
-        public string readerPortName4 {
+        public string ReadPort4 {
             get {
-                return ((string)(this["readerPortName4"]));
-            }
-            set {
-                this["readerPortName4"] = value;
+                return ((string)(this["ReadPort4"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM5")]
-        public string WriteComPort {
+        public string WritePort {
             get {
-                return ((string)(this["WriteComPort"]));
-            }
-            set {
-                this["WriteComPort"] = value;
+                return ((string)(this["WritePort"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("34800")]
-        public int ComPortSpeed {
+        public int PortsSpeed {
             get {
-                return ((int)(this["ComPortSpeed"]));
-            }
-            set {
-                this["ComPortSpeed"] = value;
+                return ((int)(this["PortsSpeed"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public byte ClientId {
+        public byte ClientID {
             get {
-                return ((byte)(this["ClientId"]));
-            }
-            set {
-                this["ClientId"] = value;
+                return ((byte)(this["ClientID"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Принял|Повторите|Выйти на позицию|Ждать команды|Открыть огонь|Прекратить огонь")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Принял|Повторите|Выйти на позицию|Вернутся|Ждать команды|Открыть огонь|Прекратить" +
+            " огонь")]
         public string QucikCommands {
             get {
                 return ((string)(this["QucikCommands"]));
             }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.207.59")]
+        public string VideoURL1 {
+            get {
+                return ((string)(this["VideoURL1"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.207.59")]
+        public string VideoURL2 {
+            get {
+                return ((string)(this["VideoURL2"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.207.59")]
+        public string VideoURL3 {
+            get {
+                return ((string)(this["VideoURL3"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.207.59")]
+        public string VideoURL4 {
+            get {
+                return ((string)(this["VideoURL4"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("root")]
+        public string VideoUser {
+            get {
+                return ((string)(this["VideoUser"]));
+            }
             set {
-                this["QucikCommands"] = value;
+                this["VideoUser"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("pass")]
+        public string VideoPass {
+            get {
+                return ((string)(this["VideoPass"]));
+            }
+            set {
+                this["VideoPass"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("mjpeg")]
+        public string VideoType {
+            get {
+                return ((string)(this["VideoType"]));
+            }
+            set {
+                this["VideoType"] = value;
             }
         }
     }

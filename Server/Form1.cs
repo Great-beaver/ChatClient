@@ -32,8 +32,8 @@ namespace Server
        
         private void Form1_Load(object sender, EventArgs e)
         {
-            _comPort = new CommunicationUnit(Properties.Settings.Default.readerPortName1, Properties.Settings.Default.readerPortName2, Properties.Settings.Default.readerPortName3,
-              Properties.Settings.Default.readerPortName4, Properties.Settings.Default.WriteComPort, Properties.Settings.Default.ClientId, Properties.Settings.Default.ComPortSpeed);
+            _comPort = new CommunicationUnit(Properties.Settings.Default.ReadPort1, Properties.Settings.Default.ReadPort2, Properties.Settings.Default.ReadPort3,
+              Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed);
             // Подписывание на событие
             _comPort.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
             _comPort.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);  
