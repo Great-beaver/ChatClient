@@ -32,6 +32,7 @@ namespace Server
 
 
         Font _defaultFont = new Font("Tahoma",14);
+
         Font _deliveryFont = new Font("Microsoft Sans Serif", 9);
 
         Font _headerFont = new Font("Tahoma", 11,FontStyle.Bold);
@@ -55,14 +56,15 @@ namespace Server
 
         BarStaticItem _IdValueStaticitem = new BarStaticItem();
 
-        private BarStaticItem NewBarStaticItem (string caption)
+        private BarStaticItem NewBarStaticItem (string caption, BarItemLinkAlignment aligment = BarItemLinkAlignment.Left)
         {
             BarStaticItem item = new BarStaticItem();
             item.Caption = caption;
+            item.Alignment = aligment;
             return item;
         }
 
-        private void StatusBarInitialize()
+        private void StatusBarInitialize() 
         {
             bar1.AddItem(NewBarStaticItem("Прием:"));
 
@@ -82,12 +84,38 @@ namespace Server
             bar1.AddItem(NewBarStaticItem("ID:"));
             _IdValueStaticitem.Caption = "Value";
             bar1.AddItem(_IdValueStaticitem);
+
+            BarButtonItem settingsButton = new BarButtonItem();
+            settingsButton.Caption = "Настройки";
+            settingsButton.Alignment = BarItemLinkAlignment.Right;
+            settingsButton.ItemClick += (ea, s) =>
+                                            {
+                                                Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                                                using (var settingsForm = new SettingsForm(Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow1"].Value),Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow2"].Value),
+                                                    Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow3"].Value),Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow4"].Value)))
+                                                {
+                                                    if (settingsForm.ShowDialog(this) == DialogResult.OK)
+                                                    {
+
+                                                        config.AppSettings.Settings["EnabledVideoWindow1"].Value = settingsForm.WindowStateCheckEdit1.Checked.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow2"].Value = settingsForm.WindowStateCheckEdit2.Checked.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow3"].Value = settingsForm.WindowStateCheckEdit3.Checked.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow4"].Value = settingsForm.WindowStateCheckEdit4.Checked.ToString();
+                                                        config.Save(ConfigurationSaveMode.Modified);
+                                                        ConfigurationManager.RefreshSection("appSettings");
+                                                        ShowVideoWindows();
+                                                    }
+                                                    
+                                                }
+                                            };
+           
+
+            bar1.AddItem(settingsButton);
             
             if (_cu != null && _cu.ClietnId != null)
                 
             _IdValueStaticitem.Caption = _cu.ClietnId.ToString();
-        }
-
+        } 
 
         private void QuickCommandsInitialize()
         {
@@ -845,16 +873,27 @@ namespace Server
                 AMCs[i] = new AxAxisMediaControl();
                 VideoPanels[i] = new PanelControl();
                 VideoPanels[i].Controls.Add(AMCs[i]);
-                VideoPanels[i].Visible = false;
+             //   VideoPanels[i].Visible = false;
 
             }
-            VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+           // VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
         }
 
-
-        private void XtraForm1_Shown(object sender, EventArgs e)
+        private void ShowVideoWindows ()
         {
-            AMCInitialize();
+            VideoWindowsLayoutPanel.SuspendLayout();
+
+            VideoWindowsLayoutPanel.ColumnCount = 2;
+            VideoWindowsLayoutPanel.RowCount = 2;
+
+            VideoWindowsLayoutPanel.Controls.Clear();
+
+        //    AMCInitialize();
+
+            foreach (var panelControl in VideoPanels)
+            {
+                panelControl.Visible = false;
+            }
 
             int videoWindowsCount = 0;
 
@@ -862,65 +901,80 @@ namespace Server
 
             for (int i = 0; i < 4; i++)
             {
-                if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i+1)].Value))
+                if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
                 {
                     videoWindowsCount++;
                 }
             }
 
-           switch (videoWindowsCount)
-           {
-               case 1 :
-                   {
-                       VideoWindowsLayoutPanel.ColumnCount = 1;
-                       VideoWindowsLayoutPanel.RowCount = 1;
-                   }
-                   break;
-       
-               case 2 :
-                   {
-                       VideoWindowsLayoutPanel.ColumnCount = 1;
-                       VideoWindowsLayoutPanel.RowCount = 2;
-       
-                   }
-                   break;
-       
-               case 3-4:
-                   {
-                       VideoWindowsLayoutPanel.ColumnCount = 2;
-                       VideoWindowsLayoutPanel.RowCount = 2;
-                   }
-                   break;
-       
-               default:
-                   {
-       
-                   }
-                   break;
-      
-           }
 
-            VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+            switch (videoWindowsCount)
+            {
+                case 1:
+                    {
+                        VideoWindowsLayoutPanel.ColumnCount = 1;
+                        VideoWindowsLayoutPanel.RowCount = 1;
+                    }
+                    break;
 
+                case 2:
+                    {
+                        VideoWindowsLayoutPanel.ColumnCount = 1;
+                        VideoWindowsLayoutPanel.RowCount = 2;
 
-           for (int i = 0; i < 4; i++)
-           {
-               if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
-               {
-                   VideoPanels[i].Visible = true;
-                   VideoPanels[i].Dock = DockStyle.Fill;
-                   AMCs[i].MediaURL = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
-                   AMCs[i].MediaType = Properties.Settings.Default.VideoType;
-                   AMCs[i].MediaUsername = Properties.Settings.Default.VideoUser;
-                   AMCs[i].MediaPassword = Properties.Settings.Default.VideoPass;
-                   AMCs[i].StretchToFit = true;
-                   AMCs[i].ShowStatusBar = true;
-                   AMCs[i].Dock = DockStyle.Fill;
-               }
-           }
+                    }
+                    break;
+
+                case 3 - 4:
+                    {
+                        VideoWindowsLayoutPanel.ColumnCount = 2;
+                        VideoWindowsLayoutPanel.RowCount = 2;
+                    }
+                    break;
+
+                default:
+                    {
+
+                    }
+                    break;
+
+            }
+
+             VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+            
+            
+            
+            for (int i = 0; i < 4; i++)
+            {
+                if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
+                {
+                    VideoPanels[i].Visible = true;
+                    VideoPanels[i].Dock = DockStyle.Fill;
+                    AMCs[i].MediaURL = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
+                    AMCs[i].MediaType = Properties.Settings.Default.VideoType;
+                    AMCs[i].MediaUsername = Properties.Settings.Default.VideoUser;
+                    AMCs[i].MediaPassword = Properties.Settings.Default.VideoPass;
+                    AMCs[i].StretchToFit = true;
+                    //   AMCs[i].ShowStatusBar = true;
+                    AMCs[i].MaintainAspectRatio = true;
+                    AMCs[i].BackgroundColor = 2960685;
+                    AMCs[i].EnableReconnect = true;
+                    AMCs[i].SetReconnectionStrategy(300000, 20000, 1800000, 60000, 10800000, 300000, true);
+                    AMCs[i].Dock = DockStyle.Fill;
+                    AMCs[i].Play();
+                }
+            
+            }
+
+            VideoWindowsLayoutPanel.ResumeLayout();
 
         }
 
+        private void XtraForm1_Shown(object sender, EventArgs e)
+        {
+            AMCInitialize();
+            ShowVideoWindows();
+        }
 
         private string CompleteURL(string theMediaURL, string theMediaType)
         {
