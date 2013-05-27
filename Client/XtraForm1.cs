@@ -175,6 +175,7 @@ namespace Client
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
                         {
                             _tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
+                            return;
                         }
 
                     }
@@ -884,6 +885,11 @@ namespace Client
         }
 
         private void flowLayoutPanel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void panelControl1_Paint(object sender, PaintEventArgs e)
         {
 
         }

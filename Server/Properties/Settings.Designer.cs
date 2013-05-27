@@ -25,7 +25,7 @@ namespace Server.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("COM21")]
+        [global::System.Configuration.DefaultSettingValueAttribute("COM1")]
         public string ReadPort1 {
             get {
                 return ((string)(this["ReadPort1"]));
@@ -70,7 +70,7 @@ namespace Server.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("34800")]
+        [global::System.Configuration.DefaultSettingValueAttribute("38400")]
         public int PortsSpeed {
             get {
                 return ((int)(this["PortsSpeed"]));

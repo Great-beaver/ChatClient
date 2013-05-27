@@ -28,8 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel(this.components);
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(XtraForm1));
+            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel();
             this.xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
             this.progressBarControl1 = new DevExpress.XtraEditors.ProgressBarControl();
             this.SendBut = new DevExpress.XtraEditors.SimpleButton();
@@ -38,7 +38,7 @@
             this.FileRequestLabel = new DevExpress.XtraEditors.LabelControl();
             this.AllowBut = new DevExpress.XtraEditors.SimpleButton();
             this.DenyBut = new DevExpress.XtraEditors.SimpleButton();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.timer1 = new System.Windows.Forms.Timer();
             this.writeRichEditControl = new DevExpress.XtraRichEdit.RichEditControl();
             this.barStaticItem2 = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticItem1 = new DevExpress.XtraBars.BarStaticItem();
@@ -129,7 +129,7 @@
             this.FileRequestLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.FileRequestLabel.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.FileRequestLabel.Appearance.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.FileRequestLabel.Location = new System.Drawing.Point(223, 151);
+            this.FileRequestLabel.Location = new System.Drawing.Point(136, 151);
             this.FileRequestLabel.Name = "FileRequestLabel";
             this.FileRequestLabel.Size = new System.Drawing.Size(101, 16);
             this.FileRequestLabel.TabIndex = 10;
@@ -141,9 +141,9 @@
             this.AllowBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.AllowBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.AllowBut.Appearance.Options.UseFont = true;
-            this.AllowBut.Location = new System.Drawing.Point(446, 143);
+            this.AllowBut.Location = new System.Drawing.Point(428, 143);
             this.AllowBut.Name = "AllowBut";
-            this.AllowBut.Size = new System.Drawing.Size(66, 33);
+            this.AllowBut.Size = new System.Drawing.Size(84, 33);
             this.AllowBut.TabIndex = 15;
             this.AllowBut.Text = "Принять";
             this.AllowBut.Visible = false;
@@ -154,9 +154,9 @@
             this.DenyBut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.DenyBut.Appearance.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold);
             this.DenyBut.Appearance.Options.UseFont = true;
-            this.DenyBut.Location = new System.Drawing.Point(336, 143);
+            this.DenyBut.Location = new System.Drawing.Point(297, 143);
             this.DenyBut.Name = "DenyBut";
-            this.DenyBut.Size = new System.Drawing.Size(104, 33);
+            this.DenyBut.Size = new System.Drawing.Size(125, 33);
             this.DenyBut.TabIndex = 16;
             this.DenyBut.Text = "Не принимать";
             this.DenyBut.Visible = false;
@@ -225,6 +225,7 @@
             this.panelControl1.Name = "panelControl1";
             this.panelControl1.Size = new System.Drawing.Size(540, 23);
             this.panelControl1.TabIndex = 31;
+            this.panelControl1.Paint += new System.Windows.Forms.PaintEventHandler(this.panelControl1_Paint);
             // 
             // IdValueLabelControl
             // 
@@ -380,6 +381,7 @@
             this.ClientSize = new System.Drawing.Size(1408, 276);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "XtraForm1";
             this.Text = "Mobile unit";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XtraForm1_FormClosing);

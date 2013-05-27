@@ -9,21 +9,21 @@ using DevExpress.XtraEditors;
 
 namespace Server
 {
+   
     public partial class SettingsForm : DevExpress.XtraEditors.XtraForm
     {
-        public SettingsForm(Boolean windowState1, Boolean windowState2, Boolean windowState3, Boolean windowState4)
+        public SettingsForm()
         {
             InitializeComponent();
-            WindowStateCheckEdit1.Checked = windowState1;
-            WindowStateCheckEdit2.Checked = windowState2;
-            WindowStateCheckEdit3.Checked = windowState3;
-            WindowStateCheckEdit4.Checked = windowState4;
         }
 
-        public bool WindowEnabled1 { get; private set; }
-        public bool WindowEnabled2 { get; private set; }
-        public bool WindowEnabled3 { get; private set; }
-        public bool WindowEnabled4 { get; private set; }
+        public SettingsForm(Setting setting) : this()
+        {
+            Setting = setting;
+            settingBindingSource.DataSource = Setting;
+        }
+
+        public Setting Setting { get; private set; }
 
         private void SettingsForm_Load(object sender, EventArgs e)
         {
@@ -35,4 +35,13 @@ namespace Server
             
         }
     }
+
+    public class Setting
+    {
+        public bool WindowEnabled1 { get; set; }
+        public bool WindowEnabled2 { get; set; }
+        public bool WindowEnabled3 { get; set; }
+        public bool WindowEnabled4 { get; set; }
+    }
+
 }

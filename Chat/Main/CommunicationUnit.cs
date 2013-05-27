@@ -148,6 +148,7 @@ namespace Chat.Main
 
            _readPorts[0] = new SerialPort();
            _readPorts[0].PortName = readerPortName1;
+         
 
            _readPorts[1] = new SerialPort();
            _readPorts[1].PortName = readerPortName2;
@@ -177,8 +178,8 @@ namespace Chat.Main
 
                ReOpenPort(_readPorts[i]);  
        
-               _readThread = new Thread(Read);
-               _readThread.Start(_readPorts[i]);
+              _readThread = new Thread(Read);
+              _readThread.Start(_readPorts[i]);
            }
 
            ProcessedFileSize = 0;
@@ -332,7 +333,10 @@ namespace Chat.Main
                if (value == port.PortName) portExist = true;
            }
 
-           if (portExist && port.IsOpen) return true;
+           if (portExist && port.IsOpen)
+           {
+               return true;
+           }
 
            return false;
        }
@@ -440,7 +444,14 @@ namespace Chat.Main
            // Если очередь не пуста не позвоялть добавлять в нее новые текстовые сообщения
             if (!_clientArray[(int)toId].OutMessagesQueue.IsEmpty) return false;
 
-            // Структура пакета данных текстового сообщения 
+           if (message.Length > 1000)
+           {
+               // Событие - сообщение о ошибке 
+               OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Слишком длинное сообщение", toId, 0));
+               return false;
+           }
+
+           // Структура пакета данных текстового сообщения 
             // | Тип пакета |   Данные   |
             // |   1 байт   | 0 - x байт | 
 
@@ -486,17 +497,24 @@ namespace Chat.Main
             // Устанавливает кому будет передаваться файл
             Client.FileRecipient = toId;
 
+            if (FileToTransfer.Length > 10485760)
+           {
+               // Событие - сообщение о ошибке 
+               OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Размер файла не должен привышать 10 мегабайт.", toId, 0));
+               return;
+           }
+
             if (Encoding.UTF8.GetBytes(FileToTransfer.Name).Length >= 1023)
             {
                 // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Слишком длинное имя файла", 0,0));
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Слишком длинное имя файла", toId, 0));
                 return;
             }
 
             if (!(File.Exists(filePath)))
             {
                 // Событие - сообщение о ошибке 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Файла не существует", 0,0));
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Файла не существует", toId, 0));
                 return;
             }
 
@@ -564,9 +582,17 @@ namespace Chat.Main
        public void AllowFileTransfer ()
         {
             if (!_waitFileTransferAnswer) return;
-
+            // Создает файл если его еще нет
+            if (!CreateFile(ref _receivingFileName))
+           {
+               OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Не удалось создать файл", _fileSender, 0));
+               CancelRecivingFile();
+               return;
+           }
            ProcessedFileSize = 0;
             _waitFileTransferAnswer = false;
+            
+            
             // Событие - начат прием файла
             OnMessageRecived(new MessageRecivedEventArgs(MessageType.FileReceivingStarted, _receivingFileName, _fileSender,0));
             // Выставляет флаг приема 
@@ -578,8 +604,6 @@ namespace Chat.Main
             // Запускает поток ожидания пакетов файла
             _waitForFilePacketThread = new Thread(WaitForFilePacket);
             _waitForFilePacketThread.Start();
-            // Создает файл если его еще нет
-            CreateFile(_receivingFileName);
            try
            {
                // Открывает файл в режими для записи в конец файла
@@ -762,14 +786,13 @@ namespace Chat.Main
                         }
                         else
                         {
-#if DEBUG
                             SendFileTransferCancel(packet.Header.Sender);
 
                             // Событие - сообщение о ошибке 
                             OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, "Клиенту № " + packet.Header.Sender + " Было отказано в передачи файла "
                                 + packet.Data.FileName + " размером " + packet.Data.FileLenght / 1024 / 1024
                                 + "МБ, так как в данный момент уже осуществляется прием другого файла ", 0,0));
-#endif                                                                      
+                                                             
                         }
                     }
                         break;
@@ -945,14 +968,32 @@ namespace Chat.Main
            return false;
         }
 
-       public bool CreateFile (string fileName) 
-        {
+       public bool CreateFile (ref string fileName)
+       {
+            string FileName = fileName;
             // Создает папку в "Мои документы" если ее нет
             string md = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + "\\ChatRecivedFiles\\";
             if (Directory.Exists(md ) == false)
             {
                 Directory.CreateDirectory(md);
             }
+
+           if ((File.Exists(md+fileName)))
+           {
+               string justName = Path.GetFileNameWithoutExtension(md + fileName);
+               string fileExtinsion = Path.GetExtension(md + fileName);
+
+               int i = 0;
+               while ((File.Exists(md + FileName)))
+               {
+                   FileName = String.Format(justName + "({0})" + fileExtinsion, ++i);
+               }
+
+               fileName = FileName;
+
+           }
+
+
 
             // TO DO: Вернуть код диалога о перезаписи файла
             // Проверяет наличие файла
@@ -971,9 +1012,10 @@ namespace Chat.Main
 
             try
             {
-                FileStream fs = File.Create(md + fileName);
-                ReceivingFileFullName = md + fileName;
+                FileStream fs = File.Create(md + FileName);
+                ReceivingFileFullName = md + FileName;
                 fs.Close();
+                return true;
             }
             catch (Exception _Exception)
             {
@@ -1103,7 +1145,11 @@ namespace Chat.Main
         {
             try
             {
-                port.Close();
+                if (port.IsOpen)
+                {
+                    port.Close();
+                }
+                
                 port.Open();
 
                 return port.IsOpen;

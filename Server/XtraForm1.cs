@@ -31,9 +31,9 @@ namespace Server
         PanelControl[] VideoPanels = new PanelControl[4]; 
 
 
-        Font _defaultFont = new Font("Tahoma",14);
+        Font _defaultFont = new Font("Tahoma",12);
 
-        Font _deliveryFont = new Font("Microsoft Sans Serif", 9);
+        Font _deliveryFont = new Font("Microsoft Sans Serif", 8);
 
         Font _headerFont = new Font("Tahoma", 11,FontStyle.Bold);
 
@@ -64,6 +64,15 @@ namespace Server
             return item;
         }
 
+        private LabelControl NewVideoWindowLabelControl (string text)
+        {
+            LabelControl item = new LabelControl();
+            item.Text = text;
+            item.BackColor = Color.FromArgb( 45, 45, 45);
+            item.Font = new Font("Tahoma", 15, FontStyle.Bold);
+            return item;
+        }
+
         private void StatusBarInitialize() 
         {
             bar1.AddItem(NewBarStaticItem("Прием:"));
@@ -91,21 +100,24 @@ namespace Server
             settingsButton.ItemClick += (ea, s) =>
                                             {
                                                 Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                                                using (var settingsForm = new SettingsForm(Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow1"].Value),Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow2"].Value),
-                                                    Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow3"].Value),Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow4"].Value)))
+                                                using (var settingsForm = new SettingsForm(new Setting
+                                                    {
+                                                        WindowEnabled1 = Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow1"].Value),
+                                                        WindowEnabled2 = Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow2"].Value),
+                                                        WindowEnabled3 = Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow3"].Value),
+                                                        WindowEnabled4 = Convert.ToBoolean(config.AppSettings.Settings["EnabledVideoWindow4"].Value)
+                                                    }))
                                                 {
                                                     if (settingsForm.ShowDialog(this) == DialogResult.OK)
                                                     {
-
-                                                        config.AppSettings.Settings["EnabledVideoWindow1"].Value = settingsForm.WindowStateCheckEdit1.Checked.ToString();
-                                                        config.AppSettings.Settings["EnabledVideoWindow2"].Value = settingsForm.WindowStateCheckEdit2.Checked.ToString();
-                                                        config.AppSettings.Settings["EnabledVideoWindow3"].Value = settingsForm.WindowStateCheckEdit3.Checked.ToString();
-                                                        config.AppSettings.Settings["EnabledVideoWindow4"].Value = settingsForm.WindowStateCheckEdit4.Checked.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow1"].Value = settingsForm.Setting.WindowEnabled1.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow2"].Value = settingsForm.Setting.WindowEnabled2.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow3"].Value = settingsForm.Setting.WindowEnabled3.ToString();
+                                                        config.AppSettings.Settings["EnabledVideoWindow4"].Value = settingsForm.Setting.WindowEnabled4.ToString();
                                                         config.Save(ConfigurationSaveMode.Modified);
                                                         ConfigurationManager.RefreshSection("appSettings");
                                                         ShowVideoWindows();
-                                                    }
-                                                    
+                                                    }   
                                                 }
                                             };
            
@@ -181,6 +193,12 @@ namespace Server
 
                     xtraTabControl1.TabPages.Add(_tabPages[i]);
                 }
+                else
+                {
+                    _tabPages[i] = new XtraTabPage();
+                    _tabPages[i].Tag = i;
+                }
+                
             }
             writeRichEditControl.AllowDrop = true;
             writeRichEditControl.DragDrop += new DragEventHandler(writeRichEditControl_DragDrop);
@@ -190,7 +208,9 @@ namespace Server
 
         private void XtraForm1_Load(object sender, EventArgs e)
         {
-            WindowState = FormWindowState.Maximized;
+           MinimumSize = Size;
+
+           WindowState = FormWindowState.Maximized;
            writeRichEditControl.Font = _defaultFont;
 
            for (int i = 0; i < _newMessageCount.Length; i++)
@@ -198,16 +218,7 @@ namespace Server
                _newMessageCount[i] = 0;
            }
 
-           _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort1, Properties.Settings.Default.ReadPort2, Properties.Settings.Default.ReadPort3,
-             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed);
-              
-            // Подписывание на событие
-            _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
-            _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
-
-            StatusBarInitialize();
-            QuickCommandsInitialize();
-            RichEditControlsInitialize();
+           
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -225,7 +236,7 @@ namespace Server
                         {
                             AppendLine("Отправлено клиенту " + recipient, _richEditControls[sender], _defaultFont, _systemColor, ParagraphAlignment.Center);
 
-                            AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Center);
+                            AppendLine(text, _richEditControls[sender], _defaultFont, _systemColor, ParagraphAlignment.Left);
 
                         }
                         else
@@ -238,6 +249,7 @@ namespace Server
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
                         {
                             _tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
+                            return;
                         }
 
                     }
@@ -718,10 +730,10 @@ namespace Server
 
         private void xtraTabControl1_SelectedPageChanged(object sender, TabPageChangedEventArgs e)
         {
-
             xtraTabControl1.SelectedTabPage.Text = "Клиент " + xtraTabControl1.SelectedTabPage.Tag;
             //MessageBox.Show(xtraTabControl1.SelectedTabPage.TabIndex.ToString());
             _newMessageCount[(int)xtraTabControl1.SelectedTabPage.Tag] = 0;
+    
         }
 
         private void AppendLine(string text, RichEditControl richEditControl, Font font, Color color, ParagraphAlignment aligment)
@@ -871,9 +883,39 @@ namespace Server
             for (int i = 0; i < AMCs.Length; i++)
             {
                 AMCs[i] = new AxAxisMediaControl();
+                AMCs[i].Tag = i;
+                AMCs[i].OnDoubleClick += (s, ea) =>
+                {
+                    if (s is AxAxisMediaControl)
+                    {
+                        var amc = s as AxAxisMediaControl;
+                        amc.FullScreen = !amc.FullScreen;
+                    }
+                };
+
+                AMCs[i].OnClick += (s, ea) =>
+                                       {
+                                           if (s is AxAxisMediaControl)
+                                           {
+                                               var amc = s as AxAxisMediaControl;
+
+                                               foreach (var page in _tabPages)
+                                               {
+                                                   if (Convert.ToInt16(page.Tag) == Convert.ToInt16(amc.Tag)+1)
+                                                   {
+                                                       xtraTabControl1.SelectedTabPage = page;
+                                                       writeRichEditControl.Focus();
+                                                   }
+                                               }
+                                           }                                         
+                                        };
+
+
+
                 VideoPanels[i] = new PanelControl();
                 VideoPanels[i].Controls.Add(AMCs[i]);
-             //   VideoPanels[i].Visible = false;
+                AMCs[i].Controls.Add(NewVideoWindowLabelControl(String.Format("{0}",i+1)));
+                //   VideoPanels[i].Visible = false;
 
             }
            // VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
@@ -972,6 +1014,20 @@ namespace Server
 
         private void XtraForm1_Shown(object sender, EventArgs e)
         {
+            ////
+            _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort1, Properties.Settings.Default.ReadPort2, Properties.Settings.Default.ReadPort3,
+             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed);
+
+            // Подписывание на событие
+            _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
+            _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
+
+            StatusBarInitialize();
+            QuickCommandsInitialize();
+            RichEditControlsInitialize();
+
+
+            ////
             AMCInitialize();
             ShowVideoWindows();
         }

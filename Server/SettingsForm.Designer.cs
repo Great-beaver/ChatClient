@@ -34,10 +34,13 @@
             this.WindowStateCheckEdit2 = new DevExpress.XtraEditors.CheckEdit();
             this.WindowStateCheckEdit3 = new DevExpress.XtraEditors.CheckEdit();
             this.WindowStateCheckEdit4 = new DevExpress.XtraEditors.CheckEdit();
+            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel();
+            this.settingBindingSource = new System.Windows.Forms.BindingSource();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit1.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit2.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit3.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit4.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // OkButton
@@ -60,6 +63,7 @@
             // 
             // WindowStateCheckEdit1
             // 
+            this.WindowStateCheckEdit1.DataBindings.Add(new System.Windows.Forms.Binding("EditValue", this.settingBindingSource, "WindowEnabled1", true));
             this.WindowStateCheckEdit1.Location = new System.Drawing.Point(34, 25);
             this.WindowStateCheckEdit1.Name = "WindowStateCheckEdit1";
             this.WindowStateCheckEdit1.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
@@ -70,6 +74,7 @@
             // 
             // WindowStateCheckEdit2
             // 
+            this.WindowStateCheckEdit2.DataBindings.Add(new System.Windows.Forms.Binding("EditValue", this.settingBindingSource, "WindowEnabled2", true));
             this.WindowStateCheckEdit2.Location = new System.Drawing.Point(34, 52);
             this.WindowStateCheckEdit2.Name = "WindowStateCheckEdit2";
             this.WindowStateCheckEdit2.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
@@ -80,6 +85,7 @@
             // 
             // WindowStateCheckEdit3
             // 
+            this.WindowStateCheckEdit3.DataBindings.Add(new System.Windows.Forms.Binding("EditValue", this.settingBindingSource, "WindowEnabled3", true));
             this.WindowStateCheckEdit3.Location = new System.Drawing.Point(34, 77);
             this.WindowStateCheckEdit3.Name = "WindowStateCheckEdit3";
             this.WindowStateCheckEdit3.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
@@ -90,6 +96,7 @@
             // 
             // WindowStateCheckEdit4
             // 
+            this.WindowStateCheckEdit4.DataBindings.Add(new System.Windows.Forms.Binding("EditValue", this.settingBindingSource, "WindowEnabled4", true));
             this.WindowStateCheckEdit4.Location = new System.Drawing.Point(34, 102);
             this.WindowStateCheckEdit4.Name = "WindowStateCheckEdit4";
             this.WindowStateCheckEdit4.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 13F, System.Drawing.FontStyle.Bold);
@@ -98,12 +105,20 @@
             this.WindowStateCheckEdit4.Size = new System.Drawing.Size(146, 26);
             this.WindowStateCheckEdit4.TabIndex = 5;
             // 
+            // defaultLookAndFeel1
+            // 
+            this.defaultLookAndFeel1.LookAndFeel.SkinName = "Darkroom";
+            // 
+            // settingBindingSource
+            // 
+            this.settingBindingSource.DataSource = typeof(Server.Setting);
+            // 
             // SettingsForm
             // 
             this.AcceptButton = this.OkButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(219, 183);
+            this.ClientSize = new System.Drawing.Size(217, 179);
             this.Controls.Add(this.WindowStateCheckEdit4);
             this.Controls.Add(this.WindowStateCheckEdit3);
             this.Controls.Add(this.WindowStateCheckEdit2);
@@ -121,6 +136,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit2.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit3.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit4.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -133,5 +149,7 @@
         public DevExpress.XtraEditors.CheckEdit WindowStateCheckEdit3;
         public DevExpress.XtraEditors.CheckEdit WindowStateCheckEdit4;
         public DevExpress.XtraEditors.CheckEdit WindowStateCheckEdit2;
+        private DevExpress.LookAndFeel.DefaultLookAndFeel defaultLookAndFeel1;
+        private System.Windows.Forms.BindingSource settingBindingSource;
     }
 }
