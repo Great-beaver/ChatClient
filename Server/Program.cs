@@ -51,7 +51,7 @@ namespace Server
             Application.SetCompatibleTextRenderingDefault(false);
             DevExpress.Skins.SkinManager.EnableFormSkins();
             DevExpress.UserSkins.BonusSkins.Register();
-            Application.Run(new XtraForm1());
+            Application.Run(new ServerMainForm());
         }
     }
 }

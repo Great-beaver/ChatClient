@@ -1,4 +1,4 @@
-﻿namespace ChatClient.Main.Packet
+﻿namespace Chat.Main.Packet
 {
     public enum PacketOption1
     {

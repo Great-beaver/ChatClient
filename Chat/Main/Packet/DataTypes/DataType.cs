@@ -1,8 +1,9 @@
-﻿namespace ChatClient.Main.Packet.DataTypes
+﻿namespace Chat.Main.Packet.DataTypes
 {
     public enum DataType
     {
         Text,
+        BroadcastText,
         FileRequest,
         FileData,
         Error,

@@ -52,7 +52,7 @@ static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
             Application.SetCompatibleTextRenderingDefault(false);
             DevExpress.Skins.SkinManager.EnableFormSkins();
             DevExpress.UserSkins.BonusSkins.Register();
-            Application.Run(new XtraForm1());
+            Application.Run(new ClientMainForm());
 
         }
     }

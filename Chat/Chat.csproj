@@ -107,11 +107,13 @@
   <ItemGroup>
     <Compile Include="Helpers\Compressor.cs" />
     <Compile Include="Helpers\Crc16.cs" />
+    <Compile Include="Main\BroadcastManager.cs" />
     <Compile Include="Main\Client.cs" />
     <Compile Include="Main\CommunicationUnit.cs" />
     <Compile Include="Main\FileRequestRecivedEventArgs.cs" />
     <Compile Include="Main\MessageRecivedEventArgs.cs" />
     <Compile Include="Main\MessageType.cs" />
+    <Compile Include="Main\Packet\DataTypes\BroadcastText.cs" />
     <Compile Include="Main\Packet\DataTypes\DataError.cs" />
     <Compile Include="Main\Packet\DataTypes\DataType.cs" />
     <Compile Include="Main\Packet\DataTypes\FileData.cs" />

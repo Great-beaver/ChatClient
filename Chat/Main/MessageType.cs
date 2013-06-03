@@ -4,6 +4,9 @@
     {
         SystemMessage,
         Text,
+        BroadcastText,
+        BroadcastTextDelivered,
+        BroadcastTextUndelivered,
         TextDelivered,
         TextUndelivered,
         FileUndelivered,

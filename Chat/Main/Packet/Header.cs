@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ChatClient.Main.Packet
+namespace Chat.Main.Packet
 {
     public struct Header
     {

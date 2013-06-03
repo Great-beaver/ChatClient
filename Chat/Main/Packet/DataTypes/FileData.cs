@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ChatClient.Main.Packet.DataTypes
+namespace Chat.Main.Packet.DataTypes
 {
     public struct FileData : IData
 

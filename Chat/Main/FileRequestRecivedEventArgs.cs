@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ChatClient.Main
+namespace Chat.Main
 {
     public class FileRequestRecivedEventArgs : EventArgs
     {

@@ -1,7 +1,6 @@
 ﻿using System;
-using Chat.Main;
 
-namespace ChatClient.Main
+namespace Chat.Main
 {
     public class MessageRecivedEventArgs : EventArgs
     {

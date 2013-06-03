@@ -25,7 +25,7 @@ namespace Server.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("COM1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("COM21")]
         public string ReadPort1 {
             get {
                 return ((string)(this["ReadPort1"]));

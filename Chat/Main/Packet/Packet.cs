@@ -1,7 +1,8 @@
 ﻿using System;
-using ChatClient.Main.Packet.DataTypes;
+using Chat.Helpers;
+using Chat.Main.Packet.DataTypes;
 
-namespace ChatClient.Main.Packet
+namespace Chat.Main.Packet
 {
     public struct Packet
     {
@@ -34,6 +35,13 @@ namespace ChatClient.Main.Packet
             if (data[0] == 0x54 && data.Length >= 1)
             {
                     Data = new TextData(data);
+            }
+
+            // | Тип пакета |   Данные   |
+            // |   1 байт   | 0 - x байт | 
+            if (data[0] == 0x42 && data.Length >= 1)
+            {
+                Data = new BroadcastText(data);
             }
             
             // | Тип пакета |  Длина файла   | Имя файла |

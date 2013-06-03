@@ -5,7 +5,6 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows.Forms;
 using Chat.Main;
-using ChatClient.Main;
 
 namespace Server
 {

@@ -8,7 +8,6 @@ using System.IO.Ports;
 using System.Text;
 using System.Windows.Forms;
 using Chat.Main;
-using ChatClient.Main;
 
 
 namespace ChatClient
