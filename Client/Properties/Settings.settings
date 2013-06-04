@@ -3,10 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="ReadPort" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">COM11</Value>
+      <Value Profile="(Default)">COM12</Value>
     </Setting>
     <Setting Name="WritePort" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">COM21</Value>
+      <Value Profile="(Default)">COM22</Value>
     </Setting>
     <Setting Name="PortSpeed" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">38400</Value>

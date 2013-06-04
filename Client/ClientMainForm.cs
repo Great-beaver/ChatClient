@@ -213,6 +213,7 @@ namespace Client
             {
                 case MessageType.Text:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Left);
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
@@ -220,12 +221,12 @@ namespace Client
                             _tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
                             return;
                         }
-
                     }
                     break;
 
                 case MessageType.TextDelivered:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Right);
 
                         AppendLine("Доставлено.", _richEditControls[sender], _deliveryFont, _positiveColor, ParagraphAlignment.Right);
@@ -235,6 +236,7 @@ namespace Client
 
                 case MessageType.TextUndelivered:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Right);
 
                         AppendLine("Не доставлено.", _richEditControls[sender], _deliveryFont, _negativeColor, ParagraphAlignment.Right);
@@ -244,8 +246,7 @@ namespace Client
 
                 case MessageType.BroadcastText:
                     {
-
-                        AppendLine(String.Format("Клиент {0}:", sender), _richEditControls[_broadcastId], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + " Клиент {0}:", sender), _richEditControls[_broadcastId], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine(text, _richEditControls[_broadcastId], _defaultFont, _neutralColor, ParagraphAlignment.Left);
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != _broadcastId)
@@ -295,6 +296,7 @@ namespace Client
 
                 case MessageType.FileUndelivered:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Получатель " + sender + " не доступен, отправка файла отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         CancelBut.Visible = false;
@@ -308,6 +310,7 @@ namespace Client
 
                 case MessageType.MessageUndelivered:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Клиент " + sender + " не доступен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         CancelBut.Visible = false;
@@ -321,6 +324,7 @@ namespace Client
 
                 case MessageType.FileReceivingComplete:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Файл " + text + " от клиента " + sender + " получен.", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -357,6 +361,7 @@ namespace Client
 
                 case MessageType.FileSendingComplete:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Передача файла " + text + " клиенту " + sender + " завершена.", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -367,6 +372,7 @@ namespace Client
 
                 case MessageType.FileTransferAllowed:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Клиент одобрил получение файла.", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
                         
                         progressBarControl1.Visible = true;
@@ -378,6 +384,7 @@ namespace Client
 
                 case MessageType.FileTransferDenied:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Клиент отклонил получение файла.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -390,6 +397,7 @@ namespace Client
 
                 case MessageType.FileReceivingStarted:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Начат прием файла. ", _richEditControls[sender], _defaultFont, _positiveColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = true;
@@ -402,6 +410,7 @@ namespace Client
 
                 case MessageType.FileTransferCanceledRecipientSide:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Прием файла отменен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         // Функция скрытия элементов приема файла
@@ -418,6 +427,7 @@ namespace Client
 
                 case MessageType.FileTransferCanceledSenderSide:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Передача файла отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         // Скрытие элементов приема файла
@@ -434,6 +444,7 @@ namespace Client
 
                 case MessageType.FileTransferCanceledBySender:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Передача файла отменена отправителем.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -446,6 +457,7 @@ namespace Client
 
                 case MessageType.FileTransferCanceledByRecipient:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Передача файла отменена получателем.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.EditValue = 0;
@@ -458,6 +470,7 @@ namespace Client
 
                 case MessageType.FileReceivingTimeOut:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Вышло время ожидания файла " + text + " передача отменена.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         progressBarControl1.Visible = false;
@@ -473,6 +486,7 @@ namespace Client
 
                 case MessageType.FileRequestCanceledRecipientSide:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Клиент отменил запрос на передачу файла.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         FileRequestLabel.Visible = false;
@@ -484,6 +498,7 @@ namespace Client
 
                 case MessageType.FileRequestCanceledSenderSide:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Запрос на передачу файла отменен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
                         FileRequestLabel.Visible = false;
@@ -526,6 +541,7 @@ namespace Client
 
                 case MessageType.WaitFileRecipientAnswer:
                     {
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Ожидается ответ клиента о передачи файла ", _richEditControls[sender], _defaultFont, _systemColor, ParagraphAlignment.Left);
 
                     }

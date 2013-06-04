@@ -25,7 +25,7 @@ namespace Client.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("COM11")]
+        [global::System.Configuration.DefaultSettingValueAttribute("COM12")]
         public string ReadPort {
             get {
                 return ((string)(this["ReadPort"]));
@@ -34,7 +34,7 @@ namespace Client.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("COM21")]
+        [global::System.Configuration.DefaultSettingValueAttribute("COM22")]
         public string WritePort {
             get {
                 return ((string)(this["WritePort"]));
