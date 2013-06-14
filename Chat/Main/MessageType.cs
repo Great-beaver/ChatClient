@@ -4,6 +4,8 @@
     {
         SystemMessage,
         Text,
+        InitializationRequest,
+        InitializationAnswer,
         BroadcastText,
         BroadcastTextDelivered,
         BroadcastTextUndelivered,

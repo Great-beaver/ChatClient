@@ -350,7 +350,7 @@
             this.VideoWindowsLayoutPanel.Size = new System.Drawing.Size(868, 689);
             this.VideoWindowsLayoutPanel.TabIndex = 1;
             // 
-            // XtraForm1
+            // ServerMainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -361,7 +361,7 @@
             this.Controls.Add(this.barDockControlBottom);
             this.Controls.Add(this.barDockControlTop);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "XtraForm1";
+            this.Name = "ServerMainForm";
             this.Text = "Командный центр";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XtraForm1_FormClosing);
             this.Load += new System.EventHandler(this.XtraForm1_Load);

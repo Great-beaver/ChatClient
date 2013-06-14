@@ -374,6 +374,7 @@ namespace Server
 
                 case MessageType.MessageUndelivered:
                     {
+                        // BUG here 
                         AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Left);
                         AppendLine("Клиента " + sender + " не доступен.", _richEditControls[sender], _defaultFont, _negativeColor, ParagraphAlignment.Left);
 
@@ -1116,9 +1117,15 @@ namespace Server
 
         private void XtraForm1_Shown(object sender, EventArgs e)
         {
-            ////
+            // Получения конфигурации програмы
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            // Преобразование ID клиентов в int[] для передачи в конструктор серверной части
+            int[] enabledIDs = Array.ConvertAll(config.AppSettings.Settings["EnabledClientIDs"].Value.Split('|'), int.Parse);
+
+            //// Создание объекта серверной части
             _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort1, Properties.Settings.Default.ReadPort2, Properties.Settings.Default.ReadPort3,
-             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed);
+             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed, enabledIDs);
 
             //  Присвает ID широковещательных сообщений ID клиента
             _broadcastId = _cu.ClietnId;
@@ -1130,8 +1137,6 @@ namespace Server
             StatusBarInitialize();
             QuickCommandsInitialize();
             RichEditControlsInitialize();
-
-
             ////
             AMCInitialize();
             ShowVideoWindows();

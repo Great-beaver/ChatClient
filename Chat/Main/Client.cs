@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using Chat.Helpers;
 using Chat.Main.Packet;
+using Chat.Main.Packet.DataStructs;
 using Chat.Main.Packet.DataTypes;
 
 namespace Chat.Main
@@ -75,9 +76,9 @@ namespace Chat.Main
             return true;
         }
 
-        public bool AddPacketToQueue(byte[] messageBody, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
+        public bool AddPacketToQueue(object data, byte sender, byte option1 = 0x00, byte option2 = 0x00, bool sendPacketImmediately = false)
         {
-            Packet.Packet packet = new Packet.Packet(new Header(Id, sender, option1, option2), messageBody);
+            Packet.Packet packet = new Packet.Packet(new Header(Id, sender, option1, option2), data);
 
             // TO DO: Поправить логику условий
             // Валидация данных
@@ -113,7 +114,6 @@ namespace Chat.Main
                 while (OutMessagesQueue.TryDequeue(out outPacket) || OutFilePacketsQueue.TryDequeue(out outPacket))
                 {
                     AnswerEvent.Reset();
-
                     LastMessageCrc = Crc16.ComputeChecksum(outPacket.ByteData);
                     LastPacket = outPacket;   
 
@@ -167,10 +167,12 @@ namespace Chat.Main
                             // Если количество попыток переотправки Больше 3 то прекращаются попытки переотправки и пользователю высылается уведомление о не доставке 
                             if (++attempts > 3)
                             {
+                                // Если не доставлен пакет файла 
                                 if (outPacket.Data.Type ==  DataType.FileData)
                                 {
                                     CancelSendingFile();
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.FileUndelivered, "Получатель не доступен доставка файла отменена", outPacket.Header.Recipient,0));
+                                    break;
                                 }
 
                                 // Если не доставлен широковещательный пакет
@@ -178,17 +180,19 @@ namespace Chat.Main
                                 {
                                     // Генерация события о не доставке
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.BroadcastTextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Sender, outPacket.Header.Recipient));
+                                    break;
                                 }
 
+                                // Еслит не доставлен текстовый пакет
                                 if ((outPacket.Data.Type == DataType.Text))
                                 {
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
+                                    break;
                                 }
-                                    else
-                                    {
-                                        OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
-                                    }
-
+                                    
+                                // Если пакет не подходит не под один критерий
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.MessageUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
+                                    
                                 break;
                             }
                             // иначе продолжаются попытки переотправки пакета

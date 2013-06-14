@@ -19,7 +19,6 @@ namespace Chat.Main.Packet
         public PacketOption2 Option2;
         public ushort Crc;
 
-
         public Header(byte[] header)
         {
                     // Считывание данных для создания пакета

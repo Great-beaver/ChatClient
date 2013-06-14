@@ -96,6 +96,9 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="protobuf-net">
+      <HintPath>..\..\..\..\..\Desktop\net30\protobuf-net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -107,19 +110,22 @@
   <ItemGroup>
     <Compile Include="Helpers\Compressor.cs" />
     <Compile Include="Helpers\Crc16.cs" />
+    <Compile Include="Helpers\StructConvertor.cs" />
     <Compile Include="Main\BroadcastManager.cs" />
     <Compile Include="Main\Client.cs" />
     <Compile Include="Main\CommunicationUnit.cs" />
     <Compile Include="Main\FileRequestRecivedEventArgs.cs" />
     <Compile Include="Main\MessageRecivedEventArgs.cs" />
     <Compile Include="Main\MessageType.cs" />
-    <Compile Include="Main\Packet\DataTypes\BroadcastText.cs" />
-    <Compile Include="Main\Packet\DataTypes\DataError.cs" />
+    <Compile Include="Main\Packet\DataStructs\Acknowledge.cs" />
+    <Compile Include="Main\Packet\DataStructs\ClientInitialization.cs" />
+    <Compile Include="Main\Packet\DataStructs\BroadcastText.cs" />
+    <Compile Include="Main\Packet\DataStructs\Error.cs" />
     <Compile Include="Main\Packet\DataTypes\DataType.cs" />
-    <Compile Include="Main\Packet\DataTypes\FileData.cs" />
-    <Compile Include="Main\Packet\DataTypes\FileRequest.cs" />
-    <Compile Include="Main\Packet\DataTypes\IData.cs" />
-    <Compile Include="Main\Packet\DataTypes\TextData.cs" />
+    <Compile Include="Main\Packet\DataStructs\FileData.cs" />
+    <Compile Include="Main\Packet\DataStructs\FileRequest.cs" />
+    <Compile Include="Main\Packet\DataStructs\Data.cs" />
+    <Compile Include="Main\Packet\DataStructs\Text.cs" />
     <Compile Include="Main\Packet\Header.cs" />
     <Compile Include="Main\Packet\Packet.cs" />
     <Compile Include="Main\Packet\PacketOption1.cs" />

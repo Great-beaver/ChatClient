@@ -1,5 +1,6 @@
 ﻿using System;
 using Chat.Helpers;
+using Chat.Main.Packet.DataStructs;
 using Chat.Main.Packet.DataTypes;
 
 namespace Chat.Main.Packet
@@ -13,7 +14,7 @@ namespace Chat.Main.Packet
 
         public Header Header;
         public readonly byte[] ByteData;
-        public readonly IData Data;
+        public readonly Data Data;
 
         // Массив в котором собирается завершенный пакет
         private byte[] _packet;
@@ -21,47 +22,70 @@ namespace Chat.Main.Packet
         //Массив содержаший данные для вычисления CRC
         private byte[] _packetForCrc;
 
-        public Packet(Header header, byte[] data)
+     // Конуструктор приемник
+     public Packet(Header header, byte[] data)
+     {
+         //TO DO: Валидация входных данных
+         Header = header;
+
+         Header.DataLenght = (ushort)data.Length;
+
+         // Разархивирование данных
+         var unZipData = Compressor.Unzip(data);
+
+         // Создание объекта данных 
+         Data = StructConvertor.FromBytes<Data>(unZipData);
+            
+         // Запись архивированных данных для отправки подверждения
+         ByteData = data;
+         
+         // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   | + Данные
+         // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
+         
+         _packetForCrc = new byte[6 + Header.DataLenght];
+         _packetForCrc[0] = Header.Recipient;
+         _packetForCrc[1] = Header.Sender;
+         Array.Copy(BitConverter.GetBytes(Header.DataLenght), 0, _packetForCrc, 2, 2);
+         _packetForCrc[4] = Header.Option1Byte;
+         _packetForCrc[5] = Header.Option2Byte;
+         Array.Copy(ByteData, 0, _packetForCrc, 6, Header.DataLenght);
+         
+         Header.Crc = Crc16.ComputeChecksum(_packetForCrc);
+         
+         // Массив для отправки
+         _packet = new byte[10 + Header.DataLenght];          
+     }
+
+     // Конструктор передатчик
+        public Packet(Header header, object data)
         {
-            //TO DO: Валидация входных данных
+            Data = new Data(DataType.Error, StructConvertor.GetBytes(data));
+
+            if (data is Text)
+            {
+                Data.Type = DataType.Text;
+            }
+
+            if (data is BroadcastText)
+            {
+                Data.Type = DataType.BroadcastText;
+            }
+
+            if (data is FileRequest)
+            {
+                Data.Type = DataType.FileRequest;
+            }
+
+            if (data is FileData)
+            {
+                Data.Type = DataType.FileData;
+            }
+
+            ByteData = Compressor.Zip(StructConvertor.GetBytes(Data));
+
             Header = header;
 
-            Header.DataLenght = (ushort)data.Length;
-            // Значение по умолчанию
-            Data = new DataError(data);
-
-            // | Тип пакета |   Данные   |
-            // |   1 байт   | 0 - x байт | 
-            if (data[0] == 0x54 && data.Length >= 1)
-            {
-                    Data = new TextData(data);
-            }
-
-            // | Тип пакета |   Данные   |
-            // |   1 байт   | 0 - x байт | 
-            if (data[0] == 0x42 && data.Length >= 1)
-            {
-                Data = new BroadcastText(data);
-            }
-            
-            // | Тип пакета |  Длина файла   | Имя файла |
-            // |   1 байт   |     8 байт     |  0 - 1024 |
-            if (data[0] == 0x52 && data.Length >= 9)
-            {
-                Data = new FileRequest(data);
-            }
-
-            // | Тип пакета | Последний пакет | Номер пакета |  Данные  |
-            // |   1 байт   |      1 байт     |    1 байт    |  0 - ... |
-            if (data[0] == 0x46 && data.Length >= 3)
-            {
-                Data = new FileData(data);
-            }
-           
-            ByteData = new byte[data.Length];
-
-            // Копирует данные
-            Array.Copy(data, 0, ByteData, 0, data.Length);
+            Header.DataLenght = (ushort)ByteData.Length;
 
             // Контрольная сумма высчитывется по  | Получатель | Отправитель | Длинна данных |  Опции   | + Данные
             // Без учета сигнатуры                |   1 байт   |   1 байт    |    2 байта    | 2 байта  |
@@ -77,19 +101,18 @@ namespace Chat.Main.Packet
             Header.Crc = Crc16.ComputeChecksum(_packetForCrc);
 
             // Массив для отправки
-            _packet = new byte[10 + data.Length];          
+            _packet = new byte[10 + Header.DataLenght];
         }
 
         public string PacketInfo ()
         {
             return "Packet info:" + '\n' +
-                   " Получатель: " + Header.Recipient + '\n' +
+                   "Получатель: " + Header.Recipient + '\n' +
                    "Отправитель :" + Header.Sender + '\n' +
                    "Длинна данных: " + Header.DataLenght + '\n' +
                    "Опция 1: " + Header.Option1 + '\n' +
                    "Опция 2: " + Header.Option2 + '\n' +
-                   "CRC пакета: " + Header.Crc + '\n' +
-                   "Данные: " + Data.FileLenght;
+                   "CRC пакета: " + Header.Crc + '\n';
         }
 
         public byte[] ToByte()
