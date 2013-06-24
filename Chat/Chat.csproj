@@ -96,11 +96,17 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\Projects\RDS\rds.core\src\Rds.Core\Lib\Log4Net\log4net-1.2.10\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\..\..\..\..\Desktop\net30\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -111,6 +117,9 @@
     <Compile Include="Helpers\Compressor.cs" />
     <Compile Include="Helpers\Crc16.cs" />
     <Compile Include="Helpers\StructConvertor.cs" />
+    <Compile Include="LogHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Main\BroadcastManager.cs" />
     <Compile Include="Main\Client.cs" />
     <Compile Include="Main\CommunicationUnit.cs" />
@@ -118,7 +127,7 @@
     <Compile Include="Main\MessageRecivedEventArgs.cs" />
     <Compile Include="Main\MessageType.cs" />
     <Compile Include="Main\Packet\DataStructs\Acknowledge.cs" />
-    <Compile Include="Main\Packet\DataStructs\ClientInitialization.cs" />
+    <Compile Include="Main\Packet\DataStructs\InitializationData.cs" />
     <Compile Include="Main\Packet\DataStructs\BroadcastText.cs" />
     <Compile Include="Main\Packet\DataStructs\Error.cs" />
     <Compile Include="Main\Packet\DataTypes\DataType.cs" />

@@ -34,6 +34,11 @@ namespace Server
         {
             
         }
+
+        private void OkButton_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 
     public class Setting

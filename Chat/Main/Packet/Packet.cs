@@ -81,6 +81,11 @@ namespace Chat.Main.Packet
                 Data.Type = DataType.FileData;
             }
 
+            if (data is InitializationData)
+            {
+                Data.Type = DataType.Initialization;
+            }
+
             ByteData = Compressor.Zip(StructConvertor.GetBytes(Data));
 
             Header = header;

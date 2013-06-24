@@ -113,6 +113,12 @@ namespace Chat.Main.Packet
                     }
                     break;
 
+                case 0x49:
+                    {
+                        Option1 = PacketOption1.InitializationRequest;
+                    }
+                    break;
+
             }
 
             switch (option2)

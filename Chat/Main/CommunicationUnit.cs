@@ -15,7 +15,36 @@ using Chat.Main.Packet.DataTypes;
 namespace Chat.Main
 {
    public class CommunicationUnit : IDisposable
-    {
+   {
+       private static CommunicationUnit _unit;
+       public static CommunicationUnit Unit
+       {
+           get 
+           {
+               if (_unit == null)
+               {
+                   throw new Exception("Поле не инициализировано");
+               }
+               else
+               {
+                   return _unit;  
+               }
+               
+           }
+           set
+           {
+               if (_unit == null)
+               {
+                   _unit = value;  
+               }
+               else
+               {
+                   throw new Exception("Поле уже инициализировано");
+               }
+               
+           }
+       }
+
        private SerialPort[] _readPorts;
        private SerialPort _comPortWriter;
        private Thread _readThread;
@@ -34,6 +63,8 @@ namespace Chat.Main
        private FileStream _fileStream;
        
        private bool _isServer = false;
+
+       private int[] _enabledClientIDs;
 
        // Событие при получении пакета файла
        private ManualResetEvent _waitForFilePacketEvent = new ManualResetEvent(false);
@@ -113,35 +144,71 @@ namespace Chat.Main
 
             ClietnId = id;
 
-          
-           // TODO: Создавать клиентов по количеству доступных клиентов
-          _broadcastManager = new BroadcastManager(4);
+            Client.Continue = true;
 
-           // Создание объекто для каждого клиента, обхект с номер равным номеру текущего клиента используется для широковещательных сообщений 
-            for (int i = 0; i < 5; i++)
-            {
-                //  _clientArray[i] = new Client((byte)i,ClietnId, _outMessageQueueSize, _comPortWriter);
-                _clientArray.Add(i, new Client((byte)i, ClietnId, _outMessageQueueSize, _comPortWriter));
 
-                // Подписывает на обработку события получения состояния  доставки пакета
-                _clientArray[i].AcknowledgeRecived +=
-                    new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
+            // Добавление клиента "Сервер" с id 0 для получения информации для инициализации и дальнейших коммуникаций
+            _clientArray.Add(0, new Client((byte)0, ClietnId, _outMessageQueueSize, _comPortWriter));
 
-                _clientArray[i].AcknowledgeRecived +=
-                    new EventHandler<MessageRecivedEventArgs>(_broadcastManager.ReceiveAcknowledge);
-            }
-
-            _waitFileTransferAnswerTimer = new Timer(WaitFileAnswerTransfer);
+            
 
             ReOpenPort(_readPorts[0]);
             ReOpenPort(_comPortWriter);
-           
-            Client.Continue = true;
+
+            _selfCheckingThread = new Thread(SelfChecking);
+            _selfCheckingThread.Start();    
+
+            // Отправка запроса на инициализацию
+            SendInitializationRequest();
+
+           var initData = ReadInitialization(_readPorts[0]);
+
+           _broadcastManager = new BroadcastManager(initData.EnabledClients.Length);
+
+           _enabledClientIDs = initData.EnabledClients;
+
+           // Подписывает на события от сервера
+           _clientArray[0].AcknowledgeRecived +=
+               new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
+
+           _clientArray[0].AcknowledgeRecived +=
+                new EventHandler<MessageRecivedEventArgs>(_broadcastManager.ReceiveAcknowledge);
+
+
+
+           // Создание объекто для каждого клиента, обхект с номер равным номеру текущего клиента используется для широковещательных сообщений 
+          foreach (int client in initData.EnabledClients)
+          {
+              _clientArray.Add(client, new Client((byte)client, ClietnId, _outMessageQueueSize, _comPortWriter));
+
+              // Подписывает на события от клиента
+              _clientArray[client].AcknowledgeRecived +=
+                  new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
+
+              _clientArray[client].AcknowledgeRecived +=
+                   new EventHandler<MessageRecivedEventArgs>(_broadcastManager.ReceiveAcknowledge);
+          }
+
+            //for (int i = 0; i < 5; i++)
+            //{
+            //    //  _clientArray[i] = new Client((byte)i,ClietnId, _outMessageQueueSize, _comPortWriter);
+            //    _clientArray.Add(i, new Client((byte)i, ClietnId, _outMessageQueueSize, _comPortWriter));
+            //
+            //    // Подписывает на обработку события получения состояния  доставки пакета
+            //    _clientArray[i].AcknowledgeRecived +=
+            //        new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
+            //
+            //    _clientArray[i].AcknowledgeRecived +=
+            //        new EventHandler<MessageRecivedEventArgs>(_broadcastManager.ReceiveAcknowledge);
+            //}
+
+            _waitFileTransferAnswerTimer = new Timer(WaitFileAnswerTransfer);
+         
+            
             _readThread = new Thread(Read);
             _readThread.Start(_readPorts[0]);
 
-            _selfCheckingThread = new Thread(SelfChecking);
-            _selfCheckingThread.Start();           
+                   
         }
 
        // TODO Убрать возможность определять ID для сервера сделать его всегда 0
@@ -181,7 +248,6 @@ namespace Chat.Main
            _readPorts[0] = new SerialPort();
            _readPorts[0].PortName = readerPortName1;
          
-
            _readPorts[1] = new SerialPort();
            _readPorts[1].PortName = readerPortName2;
 
@@ -235,6 +301,8 @@ namespace Chat.Main
        //
        //  }
 
+           _enabledClientIDs = enabledClientIDs;
+
            _broadcastManager = new BroadcastManager(enabledClientIDs.Length);
 
            foreach (int client in enabledClientIDs)
@@ -274,6 +342,11 @@ namespace Chat.Main
                    Client.TryWrite(_comPortWriter, outPacket);
                }
            }
+       }
+
+       public int[] GetEnabledClients ()
+       {
+           return _enabledClientIDs;
        }
 
        private void WaitFileAnswerTransfer(object state)
@@ -700,6 +773,21 @@ namespace Chat.Main
             _clientArray[toId].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x41);
         }
 
+       private void SendInitializationRequest()
+       {
+           _clientArray[0].AddPacketToQueue(new byte[] { 0x00 }, ClietnId, 0x49);
+       }
+
+       private void SendInitializationData(DateTime dateTime, int[]clients,byte toId)
+       {
+           byte option1 = 0x00;
+           byte option2 = 0x00;
+
+           InitializationData initializationData = new InitializationData(dateTime, clients);
+
+             _clientArray[(int)toId].AddPacketToQueue(initializationData, ClietnId, option1, option2);
+       }
+
        public void AllowFileTransfer ()
         {
             if (!_waitFileTransferAnswer) return;
@@ -756,8 +844,6 @@ namespace Chat.Main
             Acknowledge acknowledge = new Acknowledge(Crc16.ComputeChecksum(packet.ByteData));
 
             _clientArray[(int)packet.Header.Sender].AddPacketToQueue(acknowledge, ClietnId, 0x06, 0x00, true);
-
-
         }
 
        private void SendFileTransferCompleted(byte toId)
@@ -839,16 +925,7 @@ namespace Chat.Main
                             //Функция разбора пакета
                             ParsePacket(packet);
                         }
-                        else
-                        {
-
-                            // MessageBox.Show("Hash or ID NOT matches!");
-                            // MessageBox.Show(Packet.Packet<Data>Info());
-                        }   
-                    }
-
-                    
-                    
+                    } 
                 }
 
                 catch (InvalidOperationException)
@@ -860,6 +937,15 @@ namespace Chat.Main
                     Thread.Sleep(3000);
                 }
 
+                catch (TimeoutException exception)
+                {
+                  //  LogHelper.GetLogger<CommunicationUnit>().Debug("ReadTimeOut");
+
+
+
+                }
+
+
                 catch (Exception exception)
                 {
 
@@ -867,6 +953,69 @@ namespace Chat.Main
 
             }
         }
+
+
+       // TODO постаратся вывести инициализацию в метод Read
+       private InitializationData ReadInitialization(SerialPort readport)
+       {
+           while (true)
+           {
+               try
+               {
+                   readport.ReadTo("\xAA\x55");
+
+                   // Считывание данных для создания пакета
+                   // Здесь важен строгий порядок считывания байтов, точно как в пакете.
+                   byte recipient = (byte)readport.ReadByte();
+                   byte sender = (byte)readport.ReadByte();
+                   ushort dataLenght = BitConverter.ToUInt16(
+                       new byte[] { (byte)readport.ReadByte(), (byte)readport.ReadByte() }, 0);
+                   byte option1 = (byte)readport.ReadByte();
+                   byte option2 = (byte)readport.ReadByte();
+                   ushort crc = BitConverter.ToUInt16(
+                       new byte[] { (byte)readport.ReadByte(), (byte)readport.ReadByte() }, 0);
+
+                   // Счетчик количества итерация цикла while 
+                   int count = 0;
+                   while (readport.BytesToRead < dataLenght)
+                   {
+                       count++;
+                       Thread.Sleep(_sleepTime);
+                       if (count > dataLenght)
+                       {
+                           break;
+                       }
+                   }
+
+                   byte[] data = new byte[dataLenght];
+                   readport.Read(data, 0, dataLenght);
+
+                   var packet = new Packet.Packet(new Header(recipient, sender, option1, option2), data);
+
+                       // Проверка crc и id клиента, id отправителя и типа пакета
+                       if (packet.Header.Crc == crc && packet.Header.Recipient == ClietnId && packet.Header.Sender == 0 && packet.Data.Type == DataType.Initialization)
+                       {
+                           SendAcknowledge(packet);
+
+                           var initialization = StructConvertor.FromBytes<InitializationData>(packet.Data.Content);
+
+                           return initialization;
+                       }
+               }
+
+               catch (InvalidOperationException)
+               {
+                   IsPortAvailable(readport);
+                   Thread.Sleep(3000);
+               }
+
+               catch (Exception exception)
+               {
+
+               }
+
+           }
+       }
 
        private void ParsePacket(Packet.Packet packet)
         {
@@ -1142,6 +1291,18 @@ namespace Chat.Main
                            SendAcknowledge(packet);
                            return true;
                        }
+                   }
+                   break;
+
+               case PacketOption1.InitializationRequest:
+                   {
+                       SendAcknowledge(packet);
+
+                       if (_clientArray.ContainsKey(packet.Header.Sender))
+                       {
+                           SendInitializationData(DateTime.Now, _enabledClientIDs, packet.Header.Sender); 
+                       }
+                       return true;
                    }
                    break;
            }

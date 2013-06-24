@@ -7,5 +7,6 @@
        FileTransferAllowed,
        FileTransferDenied,
        FileTransferCompleted,
+       InitializationRequest,
     }
 }

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using AxAXISMEDIACONTROLLib;
@@ -24,10 +26,10 @@ namespace Server
         }
 
         CommunicationUnit _cu;
-        XtraTabPage[] _tabPages = new XtraTabPage[5];
-        RichEditControl[] _richEditControls = new RichEditControl[5];
-        string[] _tabsNames = new string[5];
-        int[] _newMessageCount = new int[5];
+        private Dictionary<int, XtraTabPage>  _tabPages; // = new XtraTabPage[5];
+        private Dictionary<int, RichEditControl> _richEditControls; // = new RichEditControl[5];
+        private Dictionary<int, string> _tabsNames; // = new string[5];
+        private Dictionary<int, int> _newMessageCount; // = new int[5];
         AxAxisMediaControl[] AMCs  = new AxAxisMediaControl[4];
         PanelControl[] VideoPanels = new PanelControl[4];
 
@@ -157,16 +159,28 @@ namespace Server
             }
         }
 
-        private void RichEditControlsInitialize()
+        private void RichEditControlsInitialize(int[] clients)
         {
-            // Иницилизация вкладки "Все", ее ID равен ID клиента так как оне не используется
+
+            _tabPages = new Dictionary<int, XtraTabPage>();
+            _richEditControls = new Dictionary<int, RichEditControl>();
+            _tabsNames = new Dictionary<int, string>();
+            _newMessageCount = new Dictionary<int, int>();
+
+            foreach (int client in clients)
+            {
+                _newMessageCount.Add(client,0);
+            }
+
+
+            // Иницилизация вкладки "Все", ее ID равен ID клиента
 
             int all = _cu.ClietnId; // Хранит ClietnId в формате int так как при инициализации с переменой в byte возникают проблемы
 
-            _richEditControls[all] = new RichEditControl();
-            _tabPages[all] = new XtraTabPage();
+            _richEditControls.Add(all, new RichEditControl());
+            _tabPages.Add(all, new XtraTabPage());
             _tabPages[all].Text = "Все";
-            _tabsNames[all] = "Все";
+            _tabsNames.Add(all, "Все");
             _tabPages[all].Tag = all;
             _tabPages[all].Appearance.Header.Font = _headerFont;
 
@@ -198,41 +212,43 @@ namespace Server
             ////
 
 
-            for (int i = 0; i < 5; i++)
-            {
-                if (i != _cu.ClietnId)
-                {
-                    _richEditControls[i] = new RichEditControl();
-                    _tabPages[i] = new XtraTabPage();
-                    _tabPages[i].Text = "Клиент " + i;
-                    _tabsNames[i] = "Клиент " + i;
-                    _tabPages[i].Tag = i;
-                    _tabPages[i].Appearance.Header.Font = _headerFont;
+            //for (int i = 0; i < clients.Length; i++)
 
-                    _richEditControls[i].Name = "ClientRichEditControl" + i;
-                    _richEditControls[i].Left = 1;
-                    _richEditControls[i].Top = 1;
-                    _richEditControls[i].Width = xtraTabControl1.Width - 5;
-                    _richEditControls[i].Height = xtraTabControl1.Height - 28;
-                    _richEditControls[i].Options.HorizontalRuler.Visibility = RichEditRulerVisibility.Hidden;
-                    _richEditControls[i].Options.HorizontalScrollbar.Visibility = RichEditScrollbarVisibility.Hidden;
-                    _richEditControls[i].Options.VerticalRuler.Visibility = RichEditRulerVisibility.Hidden;
-                    _richEditControls[i].Options.VerticalScrollbar.Visibility = RichEditScrollbarVisibility.Visible;
-                    _richEditControls[i].Options.Hyperlinks.ModifierKeys = Keys.None;
-                    _richEditControls[i].ActiveViewType = RichEditViewType.Simple;
-                    _richEditControls[i].Views.SimpleView.Padding = new Padding(5, 4, 4, 0);
-                    _richEditControls[i].ReadOnly = true;
-                    _richEditControls[i].ShowCaretInReadOnly = false;
-                    _richEditControls[i].Dock = DockStyle.Fill;
-                    _richEditControls[i].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
-                    _richEditControls[i].Click += (s, ea) =>
+            foreach (int client in clients)
+            {
+                if (client != _cu.ClietnId)
+                {
+                    _richEditControls.Add(client, new RichEditControl());
+                    _tabPages.Add(client, new XtraTabPage());
+                    _tabPages[client].Text = "Клиент " + client;
+                    _tabsNames.Add(client, "Клиент " + client);
+                    _tabPages[client].Tag = client;
+                    _tabPages[client].Appearance.Header.Font = _headerFont;
+
+                    _richEditControls[client].Name = "ClientRichEditControl" + client;
+                    _richEditControls[client].Left = 1;
+                    _richEditControls[client].Top = 1;
+                    _richEditControls[client].Width = xtraTabControl1.Width - 5;
+                    _richEditControls[client].Height = xtraTabControl1.Height - 28;
+                    _richEditControls[client].Options.HorizontalRuler.Visibility = RichEditRulerVisibility.Hidden;
+                    _richEditControls[client].Options.HorizontalScrollbar.Visibility = RichEditScrollbarVisibility.Hidden;
+                    _richEditControls[client].Options.VerticalRuler.Visibility = RichEditRulerVisibility.Hidden;
+                    _richEditControls[client].Options.VerticalScrollbar.Visibility = RichEditScrollbarVisibility.Visible;
+                    _richEditControls[client].Options.Hyperlinks.ModifierKeys = Keys.None;
+                    _richEditControls[client].ActiveViewType = RichEditViewType.Simple;
+                    _richEditControls[client].Views.SimpleView.Padding = new Padding(5, 4, 4, 0);
+                    _richEditControls[client].ReadOnly = true;
+                    _richEditControls[client].ShowCaretInReadOnly = false;
+                    _richEditControls[client].Dock = DockStyle.Fill;
+                    _richEditControls[client].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
+                    _richEditControls[client].Click += (s, ea) =>
                     {
                         writeRichEditControl.Focus();
                     };
 
-                    _tabPages[i].Controls.Add(_richEditControls[i]);
+                    _tabPages[client].Controls.Add(_richEditControls[client]);
 
-                    xtraTabControl1.TabPages.Add(_tabPages[i]);
+                    xtraTabControl1.TabPages.Add(_tabPages[client]);
                 }
 
 
@@ -246,15 +262,15 @@ namespace Server
         private void XtraForm1_Load(object sender, EventArgs e)
         {
            MinimumSize = Size;
-
            WindowState = FormWindowState.Maximized;
            writeRichEditControl.Font = _defaultFont;
 
-           for (int i = 0; i < _newMessageCount.Length; i++)
-           {
-               _newMessageCount[i] = 0;
-           }
-
+          // for (int i = 0; i < _newMessageCount.Length; i++)
+         //  foreach (var key in _newMessageCount.Keys.ToList())
+         //  {
+         //      _newMessageCount[key] = 0;
+         //           //_newMessageCount[i] = 0;
+         //   }
            
         }
 
@@ -1004,9 +1020,9 @@ namespace Server
 
                                                foreach (var page in _tabPages)
                                                {
-                                                   if (Convert.ToInt16(page.Tag) == Convert.ToInt16(amc.Tag)+1)
+                                                   if (Convert.ToInt16(page.Value.Tag) == Convert.ToInt16(amc.Tag)+1)
                                                    {
-                                                       xtraTabControl1.SelectedTabPage = page;
+                                                       xtraTabControl1.SelectedTabPage = page.Value;
                                                        writeRichEditControl.Focus();
                                                    }
                                                }
@@ -1136,7 +1152,7 @@ namespace Server
 
             StatusBarInitialize();
             QuickCommandsInitialize();
-            RichEditControlsInitialize();
+            RichEditControlsInitialize(enabledIDs);
             ////
             AMCInitialize();
             ShowVideoWindows();

@@ -26,13 +26,48 @@ namespace Client
         public ClientMainForm()
         {
             InitializeComponent();
+
+            MaximizedBounds = Screen.GetWorkingArea(this);
+            WindowState = FormWindowState.Maximized;
+            writeRichEditControl.Font = _defaultFont;
+            ShowKeyboard();
+
+
+            QuickCommandsInitialize();
+
+
+       //     for (int i = 0; i < _newMessageCount.Length; i++)
+       //     {
+       //         _newMessageCount[i] = 0;
+       //     }
+       //
+
+            _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort, Properties.Settings.Default.WritePort,
+                  Properties.Settings.Default.ClientId, Properties.Settings.Default.PortSpeed);
+            // Подписывание на событие
+
+            //  Присвает ID широковещательных сообщений ID клиента
+            _broadcastId = _cu.ClietnId;
+
+            _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
+            _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
+
+            IdValueLabelControl.Text = _cu.ClietnId.ToString();
+
+
+            RichEditControlsInitialize(_cu.GetEnabledClients());
         }
 
         CommunicationUnit _cu;
-        XtraTabPage[] _tabPages = new XtraTabPage[5];
-        RichEditControl[] _richEditControls = new RichEditControl[5];
-        int[] _newMessageCount = new int[5];
-        string[] _tabsNames = new string[5];
+       // XtraTabPage[] _tabPages = new XtraTabPage[5];
+       // RichEditControl[] _richEditControls = new RichEditControl[5];
+       // int[] _newMessageCount = new int[5];
+       // string[] _tabsNames = new string[5];
+
+        private Dictionary<int, XtraTabPage> _tabPages; // = new XtraTabPage[5];
+        private Dictionary<int, RichEditControl> _richEditControls; // = new RichEditControl[5];
+        private Dictionary<int, string> _tabsNames; // = new string[5];
+        private Dictionary<int, int> _newMessageCount; // = new int[5];
 
         // ID для широковещательныйх сообщенмй равный ID клиента
         private int _broadcastId; 
@@ -80,16 +115,33 @@ namespace Client
             }
         }
 
-        private void RichEditControlsInitialize()
+        private void RichEditControlsInitialize(int[] enabledClients)
         {
-            // Иницилизация вкладки "Все", ее ID равен ID клиента так как оне не используется
+            // Добавление в список клинетов, нулевого клиента, он же сервер
+            int [] clients = new int[enabledClients.Length+1];
+            clients[0] = 0;
+            Array.Copy(enabledClients,0,clients,1,enabledClients.Length);
+
+
+            _tabPages = new Dictionary<int, XtraTabPage>();
+            _richEditControls = new Dictionary<int, RichEditControl>();
+            _tabsNames = new Dictionary<int, string>();
+            _newMessageCount = new Dictionary<int, int>();
+
+            foreach (int client in clients)
+            {
+                _newMessageCount.Add(client, 0);
+            }
+
+
+            // Иницилизация вкладки "Все", ее ID равен ID клиента
 
             int all = _cu.ClietnId; // Хранит ClietnId в формате int так как при инициализации с переменой в byte возникают проблемы
 
-            _richEditControls[all] = new RichEditControl();
-            _tabPages[all] = new XtraTabPage();
+            _richEditControls.Add(all, new RichEditControl());
+            _tabPages.Add(all, new XtraTabPage());
             _tabPages[all].Text = "Все";
-            _tabsNames[all] = "Все";
+            _tabsNames.Add(all, "Все");
             _tabPages[all].Tag = all;
             _tabPages[all].Appearance.Header.Font = _headerFont;
 
@@ -121,41 +173,43 @@ namespace Client
             ////
 
 
-            for (int i = 0; i < 5; i++)
-            {
-                if (i != _cu.ClietnId)
-                {
-                    _richEditControls[i] = new RichEditControl();
-                    _tabPages[i] = new XtraTabPage();
-                    _tabPages[i].Text = "Клиент " + i;
-                    _tabsNames[i] = "Клиент " + i;
-                    _tabPages[i].Tag = i;
-                    _tabPages[i].Appearance.Header.Font = _headerFont;
+            //for (int i = 0; i < clients.Length; i++)
 
-                    _richEditControls[i].Name = "ClientRichEditControl" + i;
-                    _richEditControls[i].Left = 1;
-                    _richEditControls[i].Top = 1;
-                    _richEditControls[i].Width = xtraTabControl1.Width - 5;
-                    _richEditControls[i].Height = xtraTabControl1.Height - 28;
-                    _richEditControls[i].Options.HorizontalRuler.Visibility = RichEditRulerVisibility.Hidden;
-                    _richEditControls[i].Options.HorizontalScrollbar.Visibility = RichEditScrollbarVisibility.Hidden;
-                    _richEditControls[i].Options.VerticalRuler.Visibility = RichEditRulerVisibility.Hidden;
-                    _richEditControls[i].Options.VerticalScrollbar.Visibility = RichEditScrollbarVisibility.Visible;
-                    _richEditControls[i].Options.Hyperlinks.ModifierKeys = Keys.None;
-                    _richEditControls[i].ActiveViewType = RichEditViewType.Simple;
-                    _richEditControls[i].Views.SimpleView.Padding = new Padding(5, 4, 4, 0);
-                    _richEditControls[i].ReadOnly = true;
-                    _richEditControls[i].ShowCaretInReadOnly = false;
-                    _richEditControls[i].Dock = DockStyle.Fill;
-                    _richEditControls[i].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
-                    _richEditControls[i].Click += (s, ea) =>
+            foreach (int client in clients)
+            {
+                if (client != _cu.ClietnId)
+                {
+                    _richEditControls.Add(client, new RichEditControl());
+                    _tabPages.Add(client, new XtraTabPage());
+                    _tabPages[client].Text = "Клиент " + client;
+                    _tabsNames.Add(client, "Клиент " + client);
+                    _tabPages[client].Tag = client;
+                    _tabPages[client].Appearance.Header.Font = _headerFont;
+
+                    _richEditControls[client].Name = "ClientRichEditControl" + client;
+                    _richEditControls[client].Left = 1;
+                    _richEditControls[client].Top = 1;
+                    _richEditControls[client].Width = xtraTabControl1.Width - 5;
+                    _richEditControls[client].Height = xtraTabControl1.Height - 28;
+                    _richEditControls[client].Options.HorizontalRuler.Visibility = RichEditRulerVisibility.Hidden;
+                    _richEditControls[client].Options.HorizontalScrollbar.Visibility = RichEditScrollbarVisibility.Hidden;
+                    _richEditControls[client].Options.VerticalRuler.Visibility = RichEditRulerVisibility.Hidden;
+                    _richEditControls[client].Options.VerticalScrollbar.Visibility = RichEditScrollbarVisibility.Visible;
+                    _richEditControls[client].Options.Hyperlinks.ModifierKeys = Keys.None;
+                    _richEditControls[client].ActiveViewType = RichEditViewType.Simple;
+                    _richEditControls[client].Views.SimpleView.Padding = new Padding(5, 4, 4, 0);
+                    _richEditControls[client].ReadOnly = true;
+                    _richEditControls[client].ShowCaretInReadOnly = false;
+                    _richEditControls[client].Dock = DockStyle.Fill;
+                    _richEditControls[client].PopupMenuShowing += new PopupMenuShowingEventHandler(HideContextMenu);
+                    _richEditControls[client].Click += (s, ea) =>
                     {
                         writeRichEditControl.Focus();
                     };
 
-                    _tabPages[i].Controls.Add(_richEditControls[i]);
+                    _tabPages[client].Controls.Add(_richEditControls[client]);
 
-                    xtraTabControl1.TabPages.Add(_tabPages[i]);
+                    xtraTabControl1.TabPages.Add(_tabPages[client]);
                 }
 
 
@@ -168,38 +222,38 @@ namespace Client
 
         private void XtraForm1_Load(object sender, EventArgs e)
         {           
-
-           MaximizedBounds = Screen.GetWorkingArea(this);
-           WindowState = FormWindowState.Maximized;
-           writeRichEditControl.Font = _defaultFont;
-           ShowKeyboard();
-
-
-            QuickCommandsInitialize();
-
-
-           for (int i = 0; i < _newMessageCount.Length; i++)
-           {
-               _newMessageCount[i] = 0;
-           }
-          
-
-            _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort, Properties.Settings.Default.WritePort, 
-                  Properties.Settings.Default.ClientId, Properties.Settings.Default.PortSpeed);
-              // Подписывание на событие
-
-            //  Присвает ID широковещательных сообщений ID клиента
-            _broadcastId = _cu.ClietnId;
-
-            _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
-            _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
-
-            IdValueLabelControl.Text = _cu.ClietnId.ToString();
-
-
-            RichEditControlsInitialize();
-
-
+//
+//   MaximizedBounds = Screen.GetWorkingArea(this);
+//   WindowState = FormWindowState.Maximized;
+//   writeRichEditControl.Font = _defaultFont;
+//   ShowKeyboard();
+//
+//
+//    QuickCommandsInitialize();
+//
+//
+//   for (int i = 0; i < _newMessageCount.Length; i++)
+//   {
+//       _newMessageCount[i] = 0;
+//   }
+//  
+//
+//    _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort, Properties.Settings.Default.WritePort, 
+//          Properties.Settings.Default.ClientId, Properties.Settings.Default.PortSpeed);
+//      // Подписывание на событие
+//
+//    //  Присвает ID широковещательных сообщений ID клиента
+//    _broadcastId = _cu.ClietnId;
+//
+//    _cu.MessageRecived += new EventHandler<MessageRecivedEventArgs>(ComPortMessageRecived);
+//    _cu.FileRequestRecived += new EventHandler<FileRequestRecivedEventArgs>(ComPortFileRequestRecived);
+//
+//    IdValueLabelControl.Text = _cu.ClietnId.ToString();
+//
+//
+//    RichEditControlsInitialize();
+//
+//
            
         }
 
@@ -226,9 +280,9 @@ namespace Client
 
                 case MessageType.TextDelivered:
                     {
-                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
+                        //AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":"), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Right);
-
                         AppendLine("Доставлено.", _richEditControls[sender], _deliveryFont, _positiveColor, ParagraphAlignment.Right);
 
                     }
@@ -236,7 +290,8 @@ namespace Client
 
                 case MessageType.TextUndelivered:
                     {
-                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
+                        //AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
+                        AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":"), _richEditControls[sender], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                         AppendLine(text, _richEditControls[sender], _defaultFont, _neutralColor, ParagraphAlignment.Right);
 
                         AppendLine("Не доставлено.", _richEditControls[sender], _deliveryFont, _negativeColor, ParagraphAlignment.Right);
@@ -1005,6 +1060,11 @@ namespace Client
         }
 
         private void panelControl1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void panelControl2_Paint(object sender, PaintEventArgs e)
         {
 
         }

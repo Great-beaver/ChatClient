@@ -142,16 +142,23 @@ namespace Chat.Main
                             // Посылает отчет о доставке текстовых пакетов
                             if ((outPacket.Data.Type == DataType.Text))
                             {
-                                // TO DO: Исправить вызов OnAcknowledgeRecived, как Sender передается Recipient
+                                // TODO: Исправить вызов OnAcknowledgeRecived, как Sender передается Recipient
+                                //TODO: Возвращать не Content а десериализованный текст 
+
+                                var text = StructConvertor.FromBytes<Text>(outPacket.Data.Content);
+
+
                                 // События получения Acknowledge, передает тип, текст отправленного сообщения и получателя сообщения   ORIGINAL 
-                                  OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextDelivered, Encoding.UTF8.GetString(text.Content), outPacket.Header.Recipient, 0));
                             }
 
                             // Если доставлен широковещательный пакет 
                             if (outPacket.Data.Type == DataType.BroadcastText)
                             {
+                                //TODO: Возвращать не Content а десериализованный текст 
+                                var broadcastText = StructConvertor.FromBytes<BroadcastText>(outPacket.Data.Content);
                                 // Генерация события о доставке
-                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.BroadcastTextDelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Sender, outPacket.Header.Recipient));
+                                OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.BroadcastTextDelivered, Encoding.UTF8.GetString(broadcastText.Content), outPacket.Header.Sender, outPacket.Header.Recipient));
                             }
 
                             break;
@@ -178,15 +185,19 @@ namespace Chat.Main
                                 // Если не доставлен широковещательный пакет
                                 if (outPacket.Data.Type == DataType.BroadcastText)
                                 {
+                                    //TODO: Возвращать не Content а десериализованный текст 
+                                    var broadcastText = StructConvertor.FromBytes<BroadcastText>(outPacket.Data.Content);
                                     // Генерация события о не доставке
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.BroadcastTextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Sender, outPacket.Header.Recipient));
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.BroadcastTextUndelivered, Encoding.UTF8.GetString(broadcastText.Content), outPacket.Header.Sender, outPacket.Header.Recipient));
                                     break;
                                 }
 
                                 // Еслит не доставлен текстовый пакет
                                 if ((outPacket.Data.Type == DataType.Text))
                                 {
-                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(outPacket.Data.Content), outPacket.Header.Recipient,0));
+                                    //TODO: Возвращать не Content а десериализованный текст 
+                                    var text = StructConvertor.FromBytes<Text>(outPacket.Data.Content);
+                                    OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.TextUndelivered, Encoding.UTF8.GetString(text.Content), outPacket.Header.Recipient, 0));
                                     break;
                                 }
                                     
