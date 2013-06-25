@@ -8,7 +8,7 @@ using ProtoBuf;
 
 namespace Chat.Helpers
 {
-    static class StructConvertor
+    static public class StructConvertor
     {
        public static byte[] GetBytes<T>(T str)
         {

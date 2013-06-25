@@ -27,11 +27,11 @@ namespace Client
         {
             InitializeComponent();
 
-            MaximizedBounds = Screen.GetWorkingArea(this);
-            WindowState = FormWindowState.Maximized;
-            writeRichEditControl.Font = _defaultFont;
-            ShowKeyboard();
-
+          //  MaximizedBounds = Screen.GetWorkingArea(this);
+          //  WindowState = FormWindowState.Maximized;
+          //  writeRichEditControl.Font = _defaultFont;
+          //  ShowKeyboard();
+          //
 
             QuickCommandsInitialize();
 
@@ -222,12 +222,12 @@ namespace Client
 
         private void XtraForm1_Load(object sender, EventArgs e)
         {           
-//
-//   MaximizedBounds = Screen.GetWorkingArea(this);
-//   WindowState = FormWindowState.Maximized;
-//   writeRichEditControl.Font = _defaultFont;
-//   ShowKeyboard();
-//
+
+            MaximizedBounds = Screen.GetWorkingArea(this);
+            WindowState = FormWindowState.Maximized;
+            writeRichEditControl.Font = _defaultFont;
+            ShowKeyboard();
+
 //
 //    QuickCommandsInitialize();
 //
@@ -751,6 +751,7 @@ namespace Client
                 {
                     return;
                 }
+                AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[_broadcastId], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                 AppendLine(writeRichEditControl.Text, _richEditControls[_broadcastId], _defaultFont, _neutralColor, ParagraphAlignment.Right);
                 _richEditControls[_broadcastId].Document.CaretPosition = _richEditControls[_broadcastId].Document.Range.End;
                 _richEditControls[_broadcastId].ScrollToCaret();
@@ -921,6 +922,7 @@ namespace Client
                     {
                         return;
                     }
+                    AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[_broadcastId], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                     AppendLine(writeRichEditControl.Text, _richEditControls[_broadcastId], _defaultFont, _neutralColor, ParagraphAlignment.Right);
                     _richEditControls[_broadcastId].Document.CaretPosition = _richEditControls[_broadcastId].Document.Range.End;
                     _richEditControls[_broadcastId].ScrollToCaret();

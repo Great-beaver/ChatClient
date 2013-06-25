@@ -117,6 +117,7 @@
     <Compile Include="Helpers\Compressor.cs" />
     <Compile Include="Helpers\Crc16.cs" />
     <Compile Include="Helpers\StructConvertor.cs" />
+    <Compile Include="Helpers\SYSTEMTIME.cs" />
     <Compile Include="LogHelper.cs">
       <SubType>Code</SubType>
     </Compile>

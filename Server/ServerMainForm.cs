@@ -772,6 +772,7 @@ namespace Server
                 {
                     return;
                 }
+                AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[_broadcastId], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                 AppendLine(writeRichEditControl.Text, _richEditControls[_broadcastId], _defaultFont, _neutralColor, ParagraphAlignment.Right);
                 _richEditControls[_broadcastId].Document.CaretPosition = _richEditControls[_broadcastId].Document.Range.End;
                 _richEditControls[_broadcastId].ScrollToCaret();
@@ -943,6 +944,7 @@ namespace Server
                     {
                         return;
                     }
+                    AppendLine(String.Format(DateTime.Now.ToString("(HH:mm:ss dd.MM.yy)") + ":", sender), _richEditControls[_broadcastId], _deliveryFont, _ClientNameColor, ParagraphAlignment.Right);
                     AppendLine(writeRichEditControl.Text, _richEditControls[_broadcastId], _defaultFont, _neutralColor, ParagraphAlignment.Right);
                     _richEditControls[_broadcastId].Document.CaretPosition = _richEditControls[_broadcastId].Document.Range.End;
                     _richEditControls[_broadcastId].ScrollToCaret();

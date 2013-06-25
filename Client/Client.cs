@@ -62,6 +62,9 @@ namespace Chat.Main
             if (handler != null) handler(this, e);
         }
 
+       
+
+
         public bool SendPacketNow(Packet.Packet packet)
         {
             if (!TryWrite(ComPortWriter, packet))
@@ -177,7 +180,7 @@ namespace Chat.Main
                                 // Если не доставлен широковещательный пакет
                                 if (outPacket.Data.Type == DataType.BroadcastText)
                                 {
-                                    var broadcastText = StructConvertor.FromBytes<BroadcastText>(outPacket.Data.Content);
+                                    var broadcastText =  StructConvertor.FromBytes<BroadcastText>(outPacket.Data.Content);
                                     // Генерация события о не доставке
                                     OnAcknowledgeRecived(new MessageRecivedEventArgs(MessageType.BroadcastTextUndelivered, Encoding.UTF8.GetString(broadcastText.Content), outPacket.Header.Sender, outPacket.Header.Recipient));
                                     break;

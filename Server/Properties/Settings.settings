@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="ReadPort1" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">COM21</Value>
+      <Value Profile="(Default)">COM1</Value>
     </Setting>
     <Setting Name="ReadPort2" Type="System.String" Scope="Application">
       <Value Profile="(Default)">COM22</Value>

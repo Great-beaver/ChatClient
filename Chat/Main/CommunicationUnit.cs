@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Chat.Helpers;
@@ -150,8 +151,6 @@ namespace Chat.Main
             // Добавление клиента "Сервер" с id 0 для получения информации для инициализации и дальнейших коммуникаций
             _clientArray.Add(0, new Client((byte)0, ClietnId, _outMessageQueueSize, _comPortWriter));
 
-            
-
             ReOpenPort(_readPorts[0]);
             ReOpenPort(_comPortWriter);
 
@@ -174,7 +173,7 @@ namespace Chat.Main
            _clientArray[0].AcknowledgeRecived +=
                 new EventHandler<MessageRecivedEventArgs>(_broadcastManager.ReceiveAcknowledge);
 
-
+           SetSystemDateTime(initData.SycDateTime);
 
            // Создание объекто для каждого клиента, обхект с номер равным номеру текущего клиента используется для широковещательных сообщений 
           foreach (int client in initData.EnabledClients)
@@ -939,23 +938,18 @@ namespace Chat.Main
 
                 catch (TimeoutException exception)
                 {
-                  //  LogHelper.GetLogger<CommunicationUnit>().Debug("ReadTimeOut");
-
-
-
                 }
 
 
                 catch (Exception exception)
                 {
-
+                    LogHelper.GetLogger<CommunicationUnit>().Error("Ошибка при чтение с порта: " + readPort.PortName, exception);
                 }
 
             }
         }
 
-
-       // TODO постаратся вывести инициализацию в метод Read
+       // TODO постараться вынести инициализацию в метод Read
        private InitializationData ReadInitialization(SerialPort readport)
        {
            while (true)
@@ -1009,12 +1003,36 @@ namespace Chat.Main
                    Thread.Sleep(3000);
                }
 
+               catch (TimeoutException exception)
+               {
+                   // TODO ограничить количество отправок запроса
+                   SendInitializationRequest();
+               }
+
+
+
                catch (Exception exception)
                {
-
+                   LogHelper.GetLogger<CommunicationUnit>().Error("Ошибка при чтение с порта", exception);
                }
 
            }
+       }
+
+       [DllImport("kernel32.dll", SetLastError = true)]
+       public static extern bool SetSystemTime([In] ref SYSTEMTIME st);
+
+       private void SetSystemDateTime (DateTime datetime)
+       {
+           SYSTEMTIME st = new SYSTEMTIME();
+           st.wYear = (ushort)datetime.Year;
+           st.wMonth = (ushort)datetime.Month;
+           st.wDay = (ushort)datetime.Day;
+           st.wHour = (ushort)datetime.Hour;
+           st.wMinute = (ushort)datetime.Minute;
+           st.wSecond = (ushort)datetime.Second;
+
+           SetSystemTime(ref st); // invoke this method.
        }
 
        private void ParsePacket(Packet.Packet packet)
@@ -1170,6 +1188,14 @@ namespace Chat.Main
                     
             }
                         break;
+
+                case DataType.Initialization:
+                    {
+                        // Выслать подверждение получения пакета
+                        SendAcknowledge(packet);
+                    }
+                    break;
+
             }
         }
 
@@ -1179,7 +1205,6 @@ namespace Chat.Main
            {
                case PacketOption1.Acknowledge:
                    {
-
                        var acknowledge = StructConvertor.FromBytes<Acknowledge>(packet.Data.Content);
                        // Обработка пакета подверждения доставки сообщения
                        // Если первый бит опций равен ACK и CRC в пакете совпала с последним отправленым пакетом для этого клиента
@@ -1300,7 +1325,7 @@ namespace Chat.Main
 
                        if (_clientArray.ContainsKey(packet.Header.Sender))
                        {
-                           SendInitializationData(DateTime.Now, _enabledClientIDs, packet.Header.Sender); 
+                           SendInitializationData(DateTime.UtcNow, _enabledClientIDs, packet.Header.Sender); 
                        }
                        return true;
                    }
@@ -1358,8 +1383,10 @@ namespace Chat.Main
                 fs.Close();
                 return true;
             }
-            catch (Exception _Exception)
+            catch (Exception exception)
             {
+                LogHelper.GetLogger<CommunicationUnit>().Error("Ошибка при создании файла", exception);
+
                 return false;
             }
 
@@ -1441,9 +1468,9 @@ namespace Chat.Main
                         }
                         return true;
                     }
-                    catch (Exception)
-                    {  
-                        // TODO: do something
+                    catch (Exception exception)
+                    {
+                        LogHelper.GetLogger<CommunicationUnit>().Error("Ошибка при удалении файла", exception);
                     }
                 }
                 Thread.Sleep(1);
@@ -1470,12 +1497,14 @@ namespace Chat.Main
                 }
                 return true;
             }
-            catch (Exception _Exception)
+            catch (Exception exception)
             {
                 // Ошибка
               //  Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
 
-                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, _Exception.ToString(), _fileSender, 0));
+                LogHelper.GetLogger<CommunicationUnit>().Error("Ошибка Byte Array To File", exception);
+
+                OnMessageRecived(new MessageRecivedEventArgs(MessageType.Error, exception.ToString(), _fileSender, 0));
             }
 
             // В случае ошибки возвращает false
@@ -1495,8 +1524,9 @@ namespace Chat.Main
 
                 return port.IsOpen;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
+                LogHelper.GetLogger<CommunicationUnit>().Error("Не удалось открыть порт: " + port.PortName, exception);
                 return false;
             }   
         }
