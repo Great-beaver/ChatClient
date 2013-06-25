@@ -30,6 +30,7 @@ namespace Server
         private Dictionary<int, RichEditControl> _richEditControls; // = new RichEditControl[5];
         private Dictionary<int, string> _tabsNames; // = new string[5];
         private Dictionary<int, int> _newMessageCount; // = new int[5];
+        private Dictionary<int, VideoWindow> _videoWindows = new Dictionary<int, VideoWindow>();
         AxAxisMediaControl[] AMCs  = new AxAxisMediaControl[4];
         PanelControl[] VideoPanels = new PanelControl[4];
 
@@ -999,138 +1000,161 @@ namespace Server
 
         }
 
-        private void AMCInitialize()
+     //   private void AMCInitialize()
+     //   {
+     //       for (int i = 0; i < AMCs.Length; i++)
+     //       {
+     //           AMCs[i] = new AxAxisMediaControl();
+     //           AMCs[i].Tag = i;
+     //           AMCs[i].OnDoubleClick += (s, ea) =>
+     //           {
+     //               if (s is AxAxisMediaControl)
+     //               {
+     //                   var amc = s as AxAxisMediaControl;
+     //                   amc.FullScreen = !amc.FullScreen;
+     //               }
+     //           };
+     //
+     //           AMCs[i].OnClick += (s, ea) =>
+     //                                  {
+     //                                      if (s is AxAxisMediaControl)
+     //                                      {
+     //                                          var amc = s as AxAxisMediaControl;
+     //
+     //                                          foreach (var page in _tabPages)
+     //                                          {
+     //                                              if (Convert.ToInt16(page.Value.Tag) == Convert.ToInt16(amc.Tag)+1)
+     //                                              {
+     //                                                  xtraTabControl1.SelectedTabPage = page.Value;
+     //                                                  writeRichEditControl.Focus();
+     //                                              }
+     //                                          }
+     //                                      }                                         
+     //                                   };
+     //
+     //
+     //
+     //           VideoPanels[i] = new PanelControl();
+     //           VideoPanels[i].Controls.Add(AMCs[i]);
+     //           AMCs[i].Controls.Add(NewVideoWindowLabelControl(String.Format("{0}",i+1)));
+     //           //   VideoPanels[i].Visible = false;
+     //
+     //       }
+     //      // VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+     //   }
+
+
+
+    //    private void ShowVideoWindows ()
+    //    {
+    //        VideoWindowsLayoutPanel.SuspendLayout();
+    //
+    //        VideoWindowsLayoutPanel.ColumnCount = 2;
+    //        VideoWindowsLayoutPanel.RowCount = 2;
+    //
+    //        VideoWindowsLayoutPanel.Controls.Clear();
+    //
+    //    //    AMCInitialize();
+    //
+    //        foreach (var panelControl in VideoPanels)
+    //        {
+    //            panelControl.Visible = false;
+    //        }
+    //
+    //        int videoWindowsCount = 0;
+    //
+    //        Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+    //
+    //        for (int i = 0; i < 4; i++)
+    //        {
+    //            if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
+    //            {
+    //                videoWindowsCount++;
+    //            }
+    //        }
+    //
+    //        switch (videoWindowsCount)
+    //        {
+    //            case 1:
+    //                {
+    //                    VideoWindowsLayoutPanel.ColumnCount = 1;
+    //                    VideoWindowsLayoutPanel.RowCount = 1;
+    //                }
+    //                break;
+    //
+    //            case 2:
+    //                {
+    //                    VideoWindowsLayoutPanel.ColumnCount = 1;
+    //                    VideoWindowsLayoutPanel.RowCount = 2;
+    //
+    //                }
+    //                break;
+    //
+    //            case 3 - 4:
+    //                {
+    //                    VideoWindowsLayoutPanel.ColumnCount = 2;
+    //                    VideoWindowsLayoutPanel.RowCount = 2;
+    //                }
+    //                break;
+    //
+    //            default:
+    //                {
+    //
+    //                }
+    //                break;
+    //
+    //        }
+    //
+    //         VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
+    //        
+    //        for (int i = 0; i < 4; i++)
+    //        {
+    //            if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
+    //            {
+    //                VideoPanels[i].Visible = true;
+    //                VideoPanels[i].Dock = DockStyle.Fill;
+    //                AMCs[i].MediaURL = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
+    //                AMCs[i].MediaType = Properties.Settings.Default.VideoType;
+    //                AMCs[i].MediaUsername = Properties.Settings.Default.VideoUser;
+    //                AMCs[i].MediaPassword = Properties.Settings.Default.VideoPass;
+    //                AMCs[i].StretchToFit = true;
+    //                //   AMCs[i].ShowStatusBar = true;
+    //                AMCs[i].MaintainAspectRatio = true;
+    //                AMCs[i].BackgroundColor = 2960685;
+    //                AMCs[i].EnableReconnect = true;
+    //                AMCs[i].SetReconnectionStrategy(300000, 20000, 1800000, 60000, 10800000, 300000, true);
+    //                AMCs[i].Dock = DockStyle.Fill;
+    //                AMCs[i].Play();
+    //            }
+    //        }
+    //        VideoWindowsLayoutPanel.ResumeLayout();
+    //    }
+
+        private void ShowVideoWindows()
         {
-            for (int i = 0; i < AMCs.Length; i++)
-            {
-                AMCs[i] = new AxAxisMediaControl();
-                AMCs[i].Tag = i;
-                AMCs[i].OnDoubleClick += (s, ea) =>
-                {
-                    if (s is AxAxisMediaControl)
-                    {
-                        var amc = s as AxAxisMediaControl;
-                        amc.FullScreen = !amc.FullScreen;
-                    }
-                };
-
-                AMCs[i].OnClick += (s, ea) =>
-                                       {
-                                           if (s is AxAxisMediaControl)
-                                           {
-                                               var amc = s as AxAxisMediaControl;
-
-                                               foreach (var page in _tabPages)
-                                               {
-                                                   if (Convert.ToInt16(page.Value.Tag) == Convert.ToInt16(amc.Tag)+1)
-                                                   {
-                                                       xtraTabControl1.SelectedTabPage = page.Value;
-                                                       writeRichEditControl.Focus();
-                                                   }
-                                               }
-                                           }                                         
-                                        };
-
-
-
-                VideoPanels[i] = new PanelControl();
-                VideoPanels[i].Controls.Add(AMCs[i]);
-                AMCs[i].Controls.Add(NewVideoWindowLabelControl(String.Format("{0}",i+1)));
-                //   VideoPanels[i].Visible = false;
-
-            }
-           // VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
-        }
-
-        private void ShowVideoWindows ()
-        {
-            VideoWindowsLayoutPanel.SuspendLayout();
-
-            VideoWindowsLayoutPanel.ColumnCount = 2;
-            VideoWindowsLayoutPanel.RowCount = 2;
-
-            VideoWindowsLayoutPanel.Controls.Clear();
-
-        //    AMCInitialize();
-
-            foreach (var panelControl in VideoPanels)
-            {
-                panelControl.Visible = false;
-            }
-
-            int videoWindowsCount = 0;
-
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 
+            foreach (var window in _videoWindows.Values.ToList())
+            {
+                window.Close();
+            }
+
+            _videoWindows.Clear();
+
             for (int i = 0; i < 4; i++)
             {
                 if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
                 {
-                    videoWindowsCount++;
+                    var videoInfo = new VideoInfo();
+                    videoInfo.MediaUrl = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
+                    videoInfo.MediaType = Properties.Settings.Default.VideoType;
+                    videoInfo.MediaUsername = Properties.Settings.Default.VideoUser;
+                    videoInfo.MediaPassword = Properties.Settings.Default.VideoPass;
+                    videoInfo.Number = i+1;
+                    _videoWindows.Add(i, new VideoWindow(videoInfo));
+                    _videoWindows[i].Show();
                 }
             }
-
-
-            switch (videoWindowsCount)
-            {
-                case 1:
-                    {
-                        VideoWindowsLayoutPanel.ColumnCount = 1;
-                        VideoWindowsLayoutPanel.RowCount = 1;
-                    }
-                    break;
-
-                case 2:
-                    {
-                        VideoWindowsLayoutPanel.ColumnCount = 1;
-                        VideoWindowsLayoutPanel.RowCount = 2;
-
-                    }
-                    break;
-
-                case 3 - 4:
-                    {
-                        VideoWindowsLayoutPanel.ColumnCount = 2;
-                        VideoWindowsLayoutPanel.RowCount = 2;
-                    }
-                    break;
-
-                default:
-                    {
-
-                    }
-                    break;
-
-            }
-
-             VideoWindowsLayoutPanel.Controls.AddRange(VideoPanels);
-            
-            
-            
-            for (int i = 0; i < 4; i++)
-            {
-                if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
-                {
-                    VideoPanels[i].Visible = true;
-                    VideoPanels[i].Dock = DockStyle.Fill;
-                    AMCs[i].MediaURL = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
-                    AMCs[i].MediaType = Properties.Settings.Default.VideoType;
-                    AMCs[i].MediaUsername = Properties.Settings.Default.VideoUser;
-                    AMCs[i].MediaPassword = Properties.Settings.Default.VideoPass;
-                    AMCs[i].StretchToFit = true;
-                    //   AMCs[i].ShowStatusBar = true;
-                    AMCs[i].MaintainAspectRatio = true;
-                    AMCs[i].BackgroundColor = 2960685;
-                    AMCs[i].EnableReconnect = true;
-                    AMCs[i].SetReconnectionStrategy(300000, 20000, 1800000, 60000, 10800000, 300000, true);
-                    AMCs[i].Dock = DockStyle.Fill;
-                    AMCs[i].Play();
-                }
-            
-            }
-
-            VideoWindowsLayoutPanel.ResumeLayout();
-
         }
 
         private void XtraForm1_Shown(object sender, EventArgs e)
@@ -1156,7 +1180,7 @@ namespace Server
             QuickCommandsInitialize();
             RichEditControlsInitialize(enabledIDs);
             ////
-            AMCInitialize();
+           // AMCInitialize();
             ShowVideoWindows();
         }
 

@@ -537,7 +537,7 @@ namespace Chat.Main
                         {
                             return;
                         }
-                        // Если эот не последний пакет то отправляем весь буфер
+                        // Если это не последний пакет то отправляем весь буфер
                         if (countOfSendedPackets < totalCountOfPackets)
                         {
                             SendFilePacket(buffer, (byte) toId,Client.CountOfFilePackets);
