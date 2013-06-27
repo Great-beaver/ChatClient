@@ -28,15 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.OkButton = new DevExpress.XtraEditors.SimpleButton();
             this.CancelButton = new DevExpress.XtraEditors.SimpleButton();
             this.WindowStateCheckEdit1 = new DevExpress.XtraEditors.CheckEdit();
-            this.settingBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.settingBindingSource = new System.Windows.Forms.BindingSource();
             this.WindowStateCheckEdit2 = new DevExpress.XtraEditors.CheckEdit();
             this.WindowStateCheckEdit3 = new DevExpress.XtraEditors.CheckEdit();
             this.WindowStateCheckEdit4 = new DevExpress.XtraEditors.CheckEdit();
-            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel(this.components);
+            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit1.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit2.Properties)).BeginInit();
@@ -73,6 +72,7 @@
             this.WindowStateCheckEdit1.Properties.Caption = "Видео окно 1";
             this.WindowStateCheckEdit1.Size = new System.Drawing.Size(146, 26);
             this.WindowStateCheckEdit1.TabIndex = 2;
+            this.WindowStateCheckEdit1.CheckedChanged += new System.EventHandler(this.WindowStateCheckEdit1_CheckedChanged);
             // 
             // settingBindingSource
             // 

@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -62,7 +63,9 @@ namespace Chat.Main
        //private Client[] _clientArray = new Client[5];
        private BroadcastManager _broadcastManager;
        private FileStream _fileStream;
-       
+
+       public Dictionary<int, string> ClientNames { get; private set;}
+
        private bool _isServer = false;
 
        private int[] _enabledClientIDs;
@@ -166,6 +169,8 @@ namespace Chat.Main
 
            _enabledClientIDs = initData.EnabledClients;
 
+           ClientNames = initData.Names;
+
            // Подписывает на события от сервера
            _clientArray[0].AcknowledgeRecived +=
                new EventHandler<MessageRecivedEventArgs>(ClientAcknowledgeRecived);
@@ -222,9 +227,15 @@ namespace Chat.Main
        /// <param name="id">Идентификатор сервера, необходимо установить 0</param>
        /// <param name="portSpeed">Скорость портов</param>
        /// <param name="enabledClientIDs">ID достуаных клиентов</param>
-       public CommunicationUnit(string readerPortName1, string readerPortName2, string readerPortName3, string readerPortName4, string writerPortName, byte id, int portSpeed, int[] enabledClientIDs)
+       public CommunicationUnit(string readerPortName1, string readerPortName2, string readerPortName3, string readerPortName4, string writerPortName, byte id, int portSpeed, int[] enabledClientIDs, Dictionary<int, string> names)
        {
            _isServer = true;
+
+           //ClientNames = new Dictionary<int, string>();
+           //ClientNames = (from x in names
+           //                  select x).ToDictionary(x => x.Key, x => x.Value);
+
+           ClientNames = new Dictionary<int, string>(names); 
 
            _readPorts = new SerialPort[4];
 
@@ -782,7 +793,7 @@ namespace Chat.Main
            byte option1 = 0x00;
            byte option2 = 0x00;
 
-           InitializationData initializationData = new InitializationData(dateTime, clients);
+           InitializationData initializationData = new InitializationData(dateTime, clients, ClientNames);
 
              _clientArray[(int)toId].AddPacketToQueue(initializationData, ClietnId, option1, option2);
        }

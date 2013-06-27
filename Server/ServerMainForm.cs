@@ -23,16 +23,21 @@ namespace Server
         public ServerMainForm()
         {
             InitializeComponent();
+
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            this.Top = int.Parse(config.AppSettings.Settings["MainWindowTop"].Value);
+            this.Left = int.Parse(config.AppSettings.Settings["MainWindowLeft"].Value);
+            this.Width = int.Parse(config.AppSettings.Settings["MainWindowWidth"].Value);
+            this.Height = int.Parse(config.AppSettings.Settings["MainWindowHeight"].Value);
         }
 
         CommunicationUnit _cu;
-        private Dictionary<int, XtraTabPage>  _tabPages; // = new XtraTabPage[5];
-        private Dictionary<int, RichEditControl> _richEditControls; // = new RichEditControl[5];
-        private Dictionary<int, string> _tabsNames; // = new string[5];
-        private Dictionary<int, int> _newMessageCount; // = new int[5];
+        private Dictionary<int, XtraTabPage>  _tabPages = new Dictionary<int, XtraTabPage>(); // = new XtraTabPage[5];
+        private Dictionary<int, RichEditControl> _richEditControls = new Dictionary<int, RichEditControl>(); // = new RichEditControl[5];
+        private Dictionary<int, string> _names; // = new string[5];
+        private Dictionary<int, int> _newMessageCount = new Dictionary<int, int>(); // = new int[5];
         private Dictionary<int, VideoWindow> _videoWindows = new Dictionary<int, VideoWindow>();
-        AxAxisMediaControl[] AMCs  = new AxAxisMediaControl[4];
-        PanelControl[] VideoPanels = new PanelControl[4];
 
         // ID для широковещательныйх сообщенмй равный ID клиента
         private int _broadcastId; 
@@ -125,10 +130,39 @@ namespace Server
                                                     }   
                                                 }
                                             };
+
+            BarButtonItem saveButton = new BarButtonItem();
+            saveButton.Caption = "Сохранить";
+            saveButton.Alignment = BarItemLinkAlignment.Right;
+            saveButton.ItemClick += (ea, s) =>
+                                        {
+                                            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                                            foreach (var window in _videoWindows)
+                                            {
+                                                config.AppSettings.Settings[String.Format("VideoWindowTop{0}", window.Key + 1)].Value = window.Value.Top.ToString();
+                                                config.AppSettings.Settings[String.Format("VideoWindowLeft{0}", window.Key + 1)].Value = window.Value.Left.ToString();
+                                                config.AppSettings.Settings[String.Format("VideoWindowHeight{0}", window.Key + 1)].Value = window.Value.Height.ToString();
+                                                config.AppSettings.Settings[String.Format("VideoWindowWidth{0}", window.Key + 1)].Value = window.Value.Width.ToString();
+                                                //    videoWindowInfo.Top = int.Parse(config.AppSettings.Settings[String.Format("VideoWindowTop{0}", i + 1)].Value);
+                                            }
+
+                                            config.AppSettings.Settings["MainWindowTop"].Value = this.Top.ToString();
+                                            config.AppSettings.Settings["MainWindowLeft"].Value = this.Left.ToString();
+                                            config.AppSettings.Settings["MainWindowHeight"].Value = this.Height.ToString();
+                                            config.AppSettings.Settings["MainWindowWidth"].Value = this.Width.ToString();
+
+                                            config.Save(ConfigurationSaveMode.Modified);
+                                            ConfigurationManager.RefreshSection("appSettings");
+                                        };
+
+
+
            
 
             bar1.AddItem(settingsButton);
-            
+
+            bar1.AddItem(saveButton);
+
             if (_cu != null && _cu.ClietnId != null)
                 
             _IdValueStaticitem.Caption = _cu.ClietnId.ToString();
@@ -160,19 +194,14 @@ namespace Server
             }
         }
 
-        private void RichEditControlsInitialize(int[] clients)
+        private void RichEditControlsInitialize(int[] clients, Dictionary<int, string> names)
         {
-
-            _tabPages = new Dictionary<int, XtraTabPage>();
-            _richEditControls = new Dictionary<int, RichEditControl>();
-            _tabsNames = new Dictionary<int, string>();
-            _newMessageCount = new Dictionary<int, int>();
+            xtraTabControl1.TabPages.Clear();
 
             foreach (int client in clients)
             {
                 _newMessageCount.Add(client,0);
             }
-
 
             // Иницилизация вкладки "Все", ее ID равен ID клиента
 
@@ -180,8 +209,10 @@ namespace Server
 
             _richEditControls.Add(all, new RichEditControl());
             _tabPages.Add(all, new XtraTabPage());
-            _tabPages[all].Text = "Все";
-            _tabsNames.Add(all, "Все");
+            //_tabPages[all].Text = "Все";
+            names[all] = "Все";
+            _tabPages[all].Text = names[all];
+            //_tabsNames.Add(all, "Все");
             _tabPages[all].Tag = all;
             _tabPages[all].Appearance.Header.Font = _headerFont;
 
@@ -221,8 +252,9 @@ namespace Server
                 {
                     _richEditControls.Add(client, new RichEditControl());
                     _tabPages.Add(client, new XtraTabPage());
-                    _tabPages[client].Text = "Клиент " + client;
-                    _tabsNames.Add(client, "Клиент " + client);
+                    //_tabPages[client].Text = "Клиент " + client;
+                    _tabPages[client].Text = names[client];
+                    //_tabsNames.Add(client, "Клиент " + client);
                     _tabPages[client].Tag = client;
                     _tabPages[client].Appearance.Header.Font = _headerFont;
 
@@ -263,16 +295,16 @@ namespace Server
         private void XtraForm1_Load(object sender, EventArgs e)
         {
            MinimumSize = Size;
-           WindowState = FormWindowState.Maximized;
+           //WindowState = FormWindowState.Maximized;
            writeRichEditControl.Font = _defaultFont;
 
-          // for (int i = 0; i < _newMessageCount.Length; i++)
-         //  foreach (var key in _newMessageCount.Keys.ToList())
-         //  {
-         //      _newMessageCount[key] = 0;
-         //           //_newMessageCount[i] = 0;
-         //   }
-           
+            // for (int i = 0; i < _newMessageCount.Length; i++)
+            //  foreach (var key in _newMessageCount.Keys.ToList())
+            //  {
+            //      _newMessageCount[key] = 0;
+            //           //_newMessageCount[i] = 0;
+            //   }
+
         }
 
         // Делегат обработчика  текстовых сообщений 
@@ -300,7 +332,8 @@ namespace Server
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
                         {
-                            _tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
+                            //_tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
+                            _tabPages[sender].Text = _names[sender] + " +" + ++_newMessageCount[sender];
                             return;
                         }
 
@@ -334,7 +367,7 @@ namespace Server
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != _cu.ClietnId)
                         {
-                            _tabPages[_cu.ClietnId].Text = _tabsNames[_cu.ClietnId] + " +" + ++_newMessageCount[_cu.ClietnId];
+                            _tabPages[_cu.ClietnId].Text = _names[_cu.ClietnId] + " +" + ++_newMessageCount[_cu.ClietnId];
                             return;
                         }
 
@@ -682,8 +715,6 @@ namespace Server
 
             AppendLine("Прниять файл " + e.FileName + " размером " + filesize.ToString("0.00") + "МБ?", _richEditControls[e.Sender], _defaultFont, _systemColor, ParagraphAlignment.Left);
 
-
-
             // Скрол вниз
            // if (_richEditControls[e.Sender].Document.Text.Length > 0)
            //     _richEditControls[e.Sender].Select(_richEditControls[e.Sender].TextLength - 1, 0);
@@ -706,10 +737,8 @@ namespace Server
 
             if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != e.Sender)
             {
-                _tabPages[e.Sender].Text = "Клиент " + e.Sender + " +" + ++_newMessageCount[e.Sender];
+                _tabPages[e.Sender].Text = _names[e.Sender] + " +" + ++_newMessageCount[e.Sender];
             }
-
-
         }
 
         // Получение данных и вызов обработчика запроса на передачу
@@ -837,7 +866,7 @@ namespace Server
 
         private void xtraTabControl1_SelectedPageChanged(object sender, TabPageChangedEventArgs e)
         {
-            xtraTabControl1.SelectedTabPage.Text = _tabsNames[(int)xtraTabControl1.SelectedTabPage.Tag];
+            xtraTabControl1.SelectedTabPage.Text = _names[(int)xtraTabControl1.SelectedTabPage.Tag];
             _newMessageCount[(int)xtraTabControl1.SelectedTabPage.Tag] = 0;
     
         }
@@ -902,7 +931,7 @@ namespace Server
        //
        // }
 
-        private void richEditControl1_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
+        private void richEditControl1_PopupMenuShowing  (object sender, PopupMenuShowingEventArgs e)
         {
             e.Menu.Items.Clear();
         }
@@ -962,15 +991,6 @@ namespace Server
             }
         }
 
-        private void writeRichEditControl_KeyUp(object sender, KeyEventArgs e)
-        {
-
-        }
-
-        private void writeRichEditControl_Click(object sender, EventArgs e)
-        {            
-        }
-
         private void writeRichEditControl_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)Keys.Return && _needClearWriteRichEditControl)
@@ -988,16 +1008,6 @@ namespace Server
         private void xtraTabControl1_Click(object sender, EventArgs e)
         {
             writeRichEditControl.Focus();
-        }
-
-        private void panelControl2_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
-        {
-
         }
 
      //   private void AMCInitialize()
@@ -1145,18 +1155,24 @@ namespace Server
             {
                 if (Convert.ToBoolean(config.AppSettings.Settings[String.Format("EnabledVideoWindow{0}", i + 1)].Value))
                 {
-                    var videoInfo = new VideoInfo();
-                    videoInfo.MediaUrl = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
-                    videoInfo.MediaType = Properties.Settings.Default.VideoType;
-                    videoInfo.MediaUsername = Properties.Settings.Default.VideoUser;
-                    videoInfo.MediaPassword = Properties.Settings.Default.VideoPass;
-                    videoInfo.Number = i+1;
-                    _videoWindows.Add(i, new VideoWindow(videoInfo));
+                    var videoWindowInfo = new VideoWindowInfo();
+                    videoWindowInfo.MediaUrl = CompleteURL(Properties.Settings.Default[string.Format("VideoURL{0}", i + 1)].ToString(), Properties.Settings.Default.VideoType);
+                    videoWindowInfo.MediaType = Properties.Settings.Default.VideoType;
+                    videoWindowInfo.MediaUsername = Properties.Settings.Default.VideoUser;
+                    videoWindowInfo.MediaPassword = Properties.Settings.Default.VideoPass;
+                    videoWindowInfo.Top = int.Parse(config.AppSettings.Settings[String.Format("VideoWindowTop{0}", i + 1)].Value);
+                    videoWindowInfo.Left = int.Parse(config.AppSettings.Settings[String.Format("VideoWindowLeft{0}", i + 1)].Value);
+                    videoWindowInfo.Width = int.Parse(config.AppSettings.Settings[String.Format("VideoWindowWidth{0}", i + 1)].Value);
+                    videoWindowInfo.Height = int.Parse(config.AppSettings.Settings[String.Format("VideoWindowHeight{0}", i + 1)].Value);
+                    videoWindowInfo.Number = i+1;
+                  //  videoInfo.Name = _tabsNames[i+1];
+                    videoWindowInfo.Name = _names[i + 1];
+                    _videoWindows.Add(i, new VideoWindow(videoWindowInfo));
                     _videoWindows[i].Show();
                 }
             }
         }
-
+        
         private void XtraForm1_Shown(object sender, EventArgs e)
         {
             // Получения конфигурации програмы
@@ -1165,9 +1181,17 @@ namespace Server
             // Преобразование ID клиентов в int[] для передачи в конструктор серверной части
             int[] enabledIDs = Array.ConvertAll(config.AppSettings.Settings["EnabledClientIDs"].Value.Split('|'), int.Parse);
 
+             _names = new Dictionary<int, string>();
+
+             _names.Add(0, Properties.Settings.Default.ServerName);
+             _names.Add(1, Properties.Settings.Default.ClietntName1);
+             _names.Add(2, Properties.Settings.Default.ClietntName2);
+             _names.Add(3, Properties.Settings.Default.ClietntName3);
+             _names.Add(4, Properties.Settings.Default.ClietntName4);
+
             //// Создание объекта серверной части
             _cu = new CommunicationUnit(Properties.Settings.Default.ReadPort1, Properties.Settings.Default.ReadPort2, Properties.Settings.Default.ReadPort3,
-             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed, enabledIDs);
+             Properties.Settings.Default.ReadPort4, Properties.Settings.Default.WritePort, Properties.Settings.Default.ClientID, Properties.Settings.Default.PortsSpeed, enabledIDs, _names);
 
             //  Присвает ID широковещательных сообщений ID клиента
             _broadcastId = _cu.ClietnId;
@@ -1178,7 +1202,7 @@ namespace Server
 
             StatusBarInitialize();
             QuickCommandsInitialize();
-            RichEditControlsInitialize(enabledIDs);
+            RichEditControlsInitialize(enabledIDs, _names);
             ////
            // AMCInitialize();
             ShowVideoWindows();
@@ -1238,6 +1262,11 @@ namespace Server
             }
 
             return anURL;
+        }
+
+        private void writeRichEditControl_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
+        {
+            e.Menu.Items.Clear();
         }
 
 

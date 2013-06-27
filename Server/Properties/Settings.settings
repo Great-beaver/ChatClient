@@ -47,5 +47,20 @@
     <Setting Name="VideoType" Type="System.String" Scope="User">
       <Value Profile="(Default)">mjpeg</Value>
     </Setting>
+    <Setting Name="ServerName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Сервер</Value>
+    </Setting>
+    <Setting Name="ClietntName1" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Сердитый бобер 1</Value>
+    </Setting>
+    <Setting Name="ClietntName2" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Святой ежик 2</Value>
+    </Setting>
+    <Setting Name="ClietntName3" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Мармеладный воробушек 3</Value>
+    </Setting>
+    <Setting Name="ClietntName4" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Тенистый зяблик 4</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

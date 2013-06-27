@@ -164,7 +164,7 @@
     <Compile Include="ServerMainForm.Designer.cs">
       <DependentUpon>ServerMainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="VideoInfo.cs" />
+    <Compile Include="VideoWindowInfo.cs" />
     <Compile Include="VideoWindow.cs">
       <SubType>Form</SubType>
     </Compile>

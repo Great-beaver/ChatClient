@@ -55,7 +55,7 @@ namespace Client
             IdValueLabelControl.Text = _cu.ClietnId.ToString();
 
 
-            RichEditControlsInitialize(_cu.GetEnabledClients());
+            RichEditControlsInitialize(_cu.GetEnabledClients(), _cu.ClientNames);
         }
 
         CommunicationUnit _cu;
@@ -115,7 +115,7 @@ namespace Client
             }
         }
 
-        private void RichEditControlsInitialize(int[] enabledClients)
+        private void RichEditControlsInitialize(int[] enabledClients, Dictionary<int, string> names)
         {
             // Добавление в список клинетов, нулевого клиента, он же сервер
             int [] clients = new int[enabledClients.Length+1];
@@ -125,7 +125,8 @@ namespace Client
 
             _tabPages = new Dictionary<int, XtraTabPage>();
             _richEditControls = new Dictionary<int, RichEditControl>();
-            _tabsNames = new Dictionary<int, string>();
+            //_tabsNames = new Dictionary<int, string>();
+            _tabsNames = names;
             _newMessageCount = new Dictionary<int, int>();
 
             foreach (int client in clients)
@@ -140,8 +141,10 @@ namespace Client
 
             _richEditControls.Add(all, new RichEditControl());
             _tabPages.Add(all, new XtraTabPage());
-            _tabPages[all].Text = "Все";
-            _tabsNames.Add(all, "Все");
+           // _tabPages[all].Text = "Все";
+            _tabsNames[all] = "Все";
+            _tabPages[all].Text = _tabsNames[all];
+           // _tabsNames.Add(all, "Все");
             _tabPages[all].Tag = all;
             _tabPages[all].Appearance.Header.Font = _headerFont;
 
@@ -181,8 +184,9 @@ namespace Client
                 {
                     _richEditControls.Add(client, new RichEditControl());
                     _tabPages.Add(client, new XtraTabPage());
-                    _tabPages[client].Text = "Клиент " + client;
-                    _tabsNames.Add(client, "Клиент " + client);
+                    //_tabPages[client].Text = "Клиент " + client;
+                    _tabPages[client].Text = _tabsNames[client];
+                    //_tabsNames.Add(client, "Клиент " + client);
                     _tabPages[client].Tag = client;
                     _tabPages[client].Appearance.Header.Font = _headerFont;
 
@@ -272,7 +276,8 @@ namespace Client
 
                         if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != sender)
                         {
-                            _tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
+                            //_tabPages[sender].Text = "Клиент " + sender + " +" + ++_newMessageCount[sender];
+                            _tabPages[sender].Text = _tabsNames[sender] + " +" + ++_newMessageCount[sender];
                             return;
                         }
                     }
@@ -682,7 +687,7 @@ namespace Client
 
             if (Convert.ToByte(xtraTabControl1.SelectedTabPage.Tag) != e.Sender)
             {
-                _tabPages[e.Sender].Text = "Клиент " + e.Sender + " +" + ++_newMessageCount[e.Sender];
+                _tabPages[e.Sender].Text = _tabsNames[e.Sender] + " +" + ++_newMessageCount[e.Sender];
             }
 
 

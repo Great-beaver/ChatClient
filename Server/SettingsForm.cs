@@ -39,6 +39,11 @@ namespace Server
         {
 
         }
+
+        private void WindowStateCheckEdit1_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 
     public class Setting

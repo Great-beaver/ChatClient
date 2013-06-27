@@ -167,5 +167,65 @@ namespace Server.Properties {
                 this["VideoType"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Сервер")]
+        public string ServerName {
+            get {
+                return ((string)(this["ServerName"]));
+            }
+            set {
+                this["ServerName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Сердитый бобер 1")]
+        public string ClietntName1 {
+            get {
+                return ((string)(this["ClietntName1"]));
+            }
+            set {
+                this["ClietntName1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Святой ежик 2")]
+        public string ClietntName2 {
+            get {
+                return ((string)(this["ClietntName2"]));
+            }
+            set {
+                this["ClietntName2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Мармеладный воробушек 3")]
+        public string ClietntName3 {
+            get {
+                return ((string)(this["ClietntName3"]));
+            }
+            set {
+                this["ClietntName3"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Тенистый зяблик 4")]
+        public string ClietntName4 {
+            get {
+                return ((string)(this["ClietntName4"]));
+            }
+            set {
+                this["ClietntName4"] = value;
+            }
+        }
     }
 }
