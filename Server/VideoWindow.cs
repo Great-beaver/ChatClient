@@ -35,13 +35,15 @@ namespace Server
                     amc.FullScreen = !amc.FullScreen;
                 }
             };
-
-            this.Text = videoWindowInfo.Name;
+            Name = videoWindowInfo.Name;
+            this.Text = WindowName;
         }
 
         private AxAxisMediaControl AMC;
         private VideoWindowInfo _videoWindowInfo;
         private bool _altF4Pressed = false;
+
+        public string WindowName;
 
         private void VideoWindow_Shown(object sender, EventArgs e)
         {     
@@ -76,7 +78,7 @@ namespace Server
         }
 
         private void VideoWindow_Move(object sender, EventArgs e)
-        {
+        {   
         }
 
         private void VideoWindow_Resize(object sender, EventArgs e)

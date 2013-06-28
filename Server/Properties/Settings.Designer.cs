@@ -227,5 +227,53 @@ namespace Server.Properties {
                 this["ClietntName4"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int DefaultTop {
+            get {
+                return ((int)(this["DefaultTop"]));
+            }
+            set {
+                this["DefaultTop"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int DefaultLeft {
+            get {
+                return ((int)(this["DefaultLeft"]));
+            }
+            set {
+                this["DefaultLeft"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("602")]
+        public int DefaultWidth {
+            get {
+                return ((int)(this["DefaultWidth"]));
+            }
+            set {
+                this["DefaultWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("471")]
+        public int DefaultHeight {
+            get {
+                return ((int)(this["DefaultHeight"]));
+            }
+            set {
+                this["DefaultHeight"] = value;
+            }
+        }
     }
 }

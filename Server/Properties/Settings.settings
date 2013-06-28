@@ -62,5 +62,17 @@
     <Setting Name="ClietntName4" Type="System.String" Scope="User">
       <Value Profile="(Default)">Тенистый зяблик 4</Value>
     </Setting>
+    <Setting Name="DefaultTop" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="DefaultLeft" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="DefaultWidth" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">602</Value>
+    </Setting>
+    <Setting Name="DefaultHeight" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">471</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -31,16 +31,16 @@
             this.OkButton = new DevExpress.XtraEditors.SimpleButton();
             this.CancelButton = new DevExpress.XtraEditors.SimpleButton();
             this.WindowStateCheckEdit1 = new DevExpress.XtraEditors.CheckEdit();
-            this.settingBindingSource = new System.Windows.Forms.BindingSource();
             this.WindowStateCheckEdit2 = new DevExpress.XtraEditors.CheckEdit();
             this.WindowStateCheckEdit3 = new DevExpress.XtraEditors.CheckEdit();
             this.WindowStateCheckEdit4 = new DevExpress.XtraEditors.CheckEdit();
             this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel();
+            this.settingBindingSource = new System.Windows.Forms.BindingSource();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit1.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit2.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit3.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit4.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // OkButton
@@ -73,10 +73,6 @@
             this.WindowStateCheckEdit1.Size = new System.Drawing.Size(146, 26);
             this.WindowStateCheckEdit1.TabIndex = 2;
             this.WindowStateCheckEdit1.CheckedChanged += new System.EventHandler(this.WindowStateCheckEdit1_CheckedChanged);
-            // 
-            // settingBindingSource
-            // 
-            this.settingBindingSource.DataSource = typeof(Server.Setting);
             // 
             // WindowStateCheckEdit2
             // 
@@ -115,6 +111,10 @@
             // 
             this.defaultLookAndFeel1.LookAndFeel.SkinName = "Darkroom";
             // 
+            // settingBindingSource
+            // 
+            this.settingBindingSource.DataSource = typeof(Server.Setting);
+            // 
             // SettingsForm
             // 
             this.AcceptButton = this.OkButton;
@@ -135,10 +135,10 @@
             this.Load += new System.EventHandler(this.SettingsForm_Load);
             this.Shown += new System.EventHandler(this.SettingsForm_Shown);
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit1.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit2.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit3.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.WindowStateCheckEdit4.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.settingBindingSource)).EndInit();
             this.ResumeLayout(false);
 
         }

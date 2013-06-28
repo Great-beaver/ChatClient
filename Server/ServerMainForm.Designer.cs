@@ -40,6 +40,9 @@
             this.barStaticItem3 = new DevExpress.XtraBars.BarStaticItem();
             this.barEditItem1 = new DevExpress.XtraBars.BarEditItem();
             this.repositoryItemTextEdit1 = new DevExpress.XtraEditors.Repository.RepositoryItemTextEdit();
+            this.barSubItem1 = new DevExpress.XtraBars.BarSubItem();
+            this.barButtonItem1 = new DevExpress.XtraBars.BarButtonItem();
+            this.barButtonItem2 = new DevExpress.XtraBars.BarButtonItem();
             this.barStaticItem2 = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticItem1 = new DevExpress.XtraBars.BarStaticItem();
             this.panelControl2 = new DevExpress.XtraEditors.PanelControl();
@@ -81,8 +84,11 @@
             this.barManager1.Form = this;
             this.barManager1.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
             this.barStaticItem3,
-            this.barEditItem1});
-            this.barManager1.MaxItemId = 6;
+            this.barEditItem1,
+            this.barSubItem1,
+            this.barButtonItem1,
+            this.barButtonItem2});
+            this.barManager1.MaxItemId = 9;
             this.barManager1.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
             this.repositoryItemTextEdit1});
             // 
@@ -145,6 +151,27 @@
             // 
             this.repositoryItemTextEdit1.AutoHeight = false;
             this.repositoryItemTextEdit1.Name = "repositoryItemTextEdit1";
+            // 
+            // barSubItem1
+            // 
+            this.barSubItem1.Caption = "barSubItem1";
+            this.barSubItem1.Id = 6;
+            this.barSubItem1.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
+            new DevExpress.XtraBars.LinkPersistInfo(this.barButtonItem1),
+            new DevExpress.XtraBars.LinkPersistInfo(this.barButtonItem2)});
+            this.barSubItem1.Name = "barSubItem1";
+            // 
+            // barButtonItem1
+            // 
+            this.barButtonItem1.Caption = "barButtonItem1";
+            this.barButtonItem1.Id = 7;
+            this.barButtonItem1.Name = "barButtonItem1";
+            // 
+            // barButtonItem2
+            // 
+            this.barButtonItem2.Caption = "barButtonItem2";
+            this.barButtonItem2.Id = 8;
+            this.barButtonItem2.Name = "barButtonItem2";
             // 
             // barStaticItem2
             // 
@@ -326,9 +353,11 @@
             this.Name = "ServerMainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Командный центр";
+            this.Activated += new System.EventHandler(this.ServerMainForm_Activated);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XtraForm1_FormClosing);
             this.Load += new System.EventHandler(this.XtraForm1_Load);
             this.Shown += new System.EventHandler(this.XtraForm1_Shown);
+            this.Paint += new System.Windows.Forms.PaintEventHandler(this.ServerMainForm_Paint);
             this.Resize += new System.EventHandler(this.XtraForm1_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.barManager1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.repositoryItemTextEdit1)).EndInit();
@@ -367,5 +396,8 @@
         private DevExpress.XtraEditors.SimpleButton CancelBut;
         private DevExpress.XtraEditors.LabelControl FileRequestLabel;
         private DevExpress.XtraEditors.ProgressBarControl progressBarControl1;
+        private DevExpress.XtraBars.BarSubItem barSubItem1;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem1;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem2;
     }
 }

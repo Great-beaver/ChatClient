@@ -28,9 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ClientMainForm));
-            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel(this.components);
+            this.defaultLookAndFeel1 = new DevExpress.LookAndFeel.DefaultLookAndFeel();
             this.xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
             this.progressBarControl1 = new DevExpress.XtraEditors.ProgressBarControl();
             this.SendBut = new DevExpress.XtraEditors.SimpleButton();
@@ -39,7 +38,7 @@
             this.FileRequestLabel = new DevExpress.XtraEditors.LabelControl();
             this.AllowBut = new DevExpress.XtraEditors.SimpleButton();
             this.DenyBut = new DevExpress.XtraEditors.SimpleButton();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.timer1 = new System.Windows.Forms.Timer();
             this.writeRichEditControl = new DevExpress.XtraRichEdit.RichEditControl();
             this.barStaticItem2 = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticItem1 = new DevExpress.XtraBars.BarStaticItem();

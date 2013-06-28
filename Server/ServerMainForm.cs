@@ -29,7 +29,7 @@ namespace Server
             this.Top = int.Parse(config.AppSettings.Settings["MainWindowTop"].Value);
             this.Left = int.Parse(config.AppSettings.Settings["MainWindowLeft"].Value);
             this.Width = int.Parse(config.AppSettings.Settings["MainWindowWidth"].Value);
-            this.Height = int.Parse(config.AppSettings.Settings["MainWindowHeight"].Value);
+            this.Height = int.Parse(config.AppSettings.Settings["MainWindowHeight"].Value); 
         }
 
         CommunicationUnit _cu;
@@ -85,21 +85,21 @@ namespace Server
 
         private void StatusBarInitialize() 
         {
-            bar1.AddItem(NewBarStaticItem("Прием:"));
-
-            for (int i = 0; i < _readPortsValuesStaticItems.Length; i++)
-            {
-                bar1.AddItem(NewBarStaticItem("Порт " + (i + 1)));
-                _readPortsValuesStaticItems[i] = NewBarStaticItem("Value" + (i + 1));
-                bar1.AddItem(_readPortsValuesStaticItems[i]);
-            }
-
+           // bar1.AddItem(NewBarStaticItem("Прием:"));
+           // 
+           // for (int i = 0; i < _readPortsValuesStaticItems.Length; i++)
+           // {
+           //     bar1.AddItem(NewBarStaticItem("Порт " + (i + 1)));
+           //     _readPortsValuesStaticItems[i] = NewBarStaticItem("Value" + (i + 1));
+           //     bar1.AddItem(_readPortsValuesStaticItems[i]);
+           // }
+            
             bar1.AddItem(NewBarStaticItem("Передача:"));
-
+            
             _writePortValueStaticitem.Caption = "Value";
             bar1.AddItem(_writePortValueStaticitem);
-
-
+            
+            
             bar1.AddItem(NewBarStaticItem("ID:"));
             _IdValueStaticitem.Caption = "Value";
             bar1.AddItem(_IdValueStaticitem);
@@ -131,6 +131,12 @@ namespace Server
                                                 }
                                             };
 
+            bar1.AddItem(settingsButton);
+
+            
+
+            
+
             BarButtonItem saveButton = new BarButtonItem();
             saveButton.Caption = "Сохранить";
             saveButton.Alignment = BarItemLinkAlignment.Right;
@@ -143,7 +149,6 @@ namespace Server
                                                 config.AppSettings.Settings[String.Format("VideoWindowLeft{0}", window.Key + 1)].Value = window.Value.Left.ToString();
                                                 config.AppSettings.Settings[String.Format("VideoWindowHeight{0}", window.Key + 1)].Value = window.Value.Height.ToString();
                                                 config.AppSettings.Settings[String.Format("VideoWindowWidth{0}", window.Key + 1)].Value = window.Value.Width.ToString();
-                                                //    videoWindowInfo.Top = int.Parse(config.AppSettings.Settings[String.Format("VideoWindowTop{0}", i + 1)].Value);
                                             }
 
                                             config.AppSettings.Settings["MainWindowTop"].Value = this.Top.ToString();
@@ -155,13 +160,55 @@ namespace Server
                                             ConfigurationManager.RefreshSection("appSettings");
                                         };
 
+           // bar1.AddItem(saveButton);
+
+            BarButtonItem resetButton = new BarButtonItem();
+            resetButton.Caption = "Сбросить";
+            resetButton.Alignment = BarItemLinkAlignment.Right;
+            resetButton.ItemClick += (ea, s) =>
+            {
+                Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+                config.AppSettings.Settings["MainWindowTop"].Value = Properties.Settings.Default.DefaultTop.ToString();
+                config.AppSettings.Settings["MainWindowLeft"].Value = Properties.Settings.Default.DefaultLeft.ToString();
+                config.AppSettings.Settings["MainWindowHeight"].Value = this.MinimumSize.Height.ToString();
+                config.AppSettings.Settings["MainWindowWidth"].Value = this.MinimumSize.Width.ToString();
 
 
-           
+                int i = 10;
 
-            bar1.AddItem(settingsButton);
+                foreach (var window in _videoWindows)
+                {
+                    config.AppSettings.Settings[String.Format("VideoWindowTop{0}", window.Key + 1)].Value = Properties.Settings.Default.DefaultTop+i.ToString();
+                    config.AppSettings.Settings[String.Format("VideoWindowLeft{0}", window.Key + 1)].Value = Properties.Settings.Default.DefaultLeft+i.ToString();
+                    config.AppSettings.Settings[String.Format("VideoWindowHeight{0}", window.Key + 1)].Value = Properties.Settings.Default.DefaultHeight.ToString();
+                    config.AppSettings.Settings[String.Format("VideoWindowWidth{0}", window.Key + 1)].Value = Properties.Settings.Default.DefaultWidth.ToString();
+                    i += 10;
+                }
 
-            bar1.AddItem(saveButton);
+                config.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection("appSettings");
+
+                this.Top = int.Parse(config.AppSettings.Settings["MainWindowTop"].Value);
+                this.Left = int.Parse(config.AppSettings.Settings["MainWindowLeft"].Value);
+                this.Width = int.Parse(config.AppSettings.Settings["MainWindowWidth"].Value);
+                this.Height = int.Parse(config.AppSettings.Settings["MainWindowHeight"].Value); 
+
+                ShowVideoWindows();
+            };
+
+           // bar1.AddItem(resetButton);
+
+
+            var windowMenu = new BarSubItem();
+            windowMenu.Caption = "Окна";
+            windowMenu.Alignment = BarItemLinkAlignment.Right;
+            
+
+            bar1.AddItem(windowMenu);
+
+            windowMenu.AddItem(saveButton);
+            windowMenu.AddItem(resetButton);
 
             if (_cu != null && _cu.ClietnId != null)
                 
@@ -623,34 +670,54 @@ namespace Server
                     }
                     break;
 
-                case MessageType.ReadPortAvailable:
-                    {
-                        _readPortsValuesStaticItems[sender].Caption = "Доступен";
-                        
-                        return;
-                    }
-                    break;
+               case MessageType.ReadPortAvailable:
+                   {
+                       //_readPortsValuesStaticItems[sender].Caption = "Доступен";
 
-                case MessageType.ReadPortUnavailable:
-                    {
-                        _readPortsValuesStaticItems[sender].Caption = "Не доступен";
-                        return;
-                    }
-                    break;
+                       try
+                       {
+                           _videoWindows[sender].Text = _videoWindows[sender].Name  + " Порт доступен";
+                       }
+                       catch (Exception)
+                       {
+                           
+                           
+                       }
 
-                case MessageType.WritePortAvailable:
-                    {
-                        _writePortValueStaticitem.Caption = "Доступна";
-                        return;
-                    }
-                    break;
+                       return;
+                   }
+                   break;
+           
+               case MessageType.ReadPortUnavailable:
+                   {
+                       //_readPortsValuesStaticItems[sender].Caption = "Не доступен";
 
-                case MessageType.WritePortUnavailable:
-                    {
-                        _writePortValueStaticitem.Caption = "Не доступна";
-                        return;
-                    }
-                    break;
+                       try
+                       {
+                           _videoWindows[sender].Text = _videoWindows[sender].Name + " Порт недоступен";
+                       }
+                       catch (Exception)
+                       {
+
+
+                       }
+                       return;
+                   }
+                   break;
+           
+               case MessageType.WritePortAvailable:
+                   {
+                       _writePortValueStaticitem.Caption = "Доступна";
+                       return;
+                   }
+                   break;
+           
+               case MessageType.WritePortUnavailable:
+                   {
+                       _writePortValueStaticitem.Caption = "Не доступна";
+                       return;
+                   }
+                   break;
 
                 case MessageType.WaitFileRecipientAnswer:
                     {
@@ -1168,7 +1235,10 @@ namespace Server
                   //  videoInfo.Name = _tabsNames[i+1];
                     videoWindowInfo.Name = _names[i + 1];
                     _videoWindows.Add(i, new VideoWindow(videoWindowInfo));
-                    _videoWindows[i].Show();
+
+                    _videoWindows[i].ShowInTaskbar = false;
+                    // this передается для того что бы при активации главной формы активировались и все дочернии
+                    _videoWindows[i].Show(this);
                 }
             }
         }
@@ -1267,6 +1337,18 @@ namespace Server
         private void writeRichEditControl_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
         {
             e.Menu.Items.Clear();
+        }
+
+        private void ServerMainForm_Activated(object sender, EventArgs e)
+        {
+
+        }
+
+        private void ServerMainForm_Paint(object sender, PaintEventArgs e)
+        {
+
+
+
         }
 
 
